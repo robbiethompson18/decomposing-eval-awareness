@@ -29,7 +29,7 @@ BENCHMARKS = ["harmbench", "agenticmisalignment", "agentharm", "agentharm_benign
 
 JUDGE_MODEL = "gpt-5"
 
-PROMPT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+PROMPT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                            "prompts", "judgeEvalFactorIdentification.txt")
 
 

@@ -40,31 +40,39 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-For the AgentHarm benchmark (which uses Inspect AI), additionally install:
-
-```bash
-pip install inspect-ai inspect-evals[agentharm]
-```
+This installs all required dependencies, including `inspect-ai` and `inspect-evals[agentharm]` for the AgentHarm benchmark.
 
 ### 1.3 Configure API Keys
 
-The code reads API keys exclusively from environment variables. No keys are hardcoded — you must provide your own.
+The code reads API keys from environment variables via `os.getenv()` in `utils.py`. You can either export them in your shell or set them directly in the `get_api_keys_config()` function in `utils.py`.
 
-Create a `.env` file (not tracked by git) or export directly:
+**Option 1: Environment variables (recommended)**
 
 ```bash
-# Required — used by the judge model in all evaluation scripts
+# Required: used by the judge model in all evaluation scripts
 export OPENAI_API_KEY="your-openai-api-key"
 
 # Required for corresponding target model backends
 export ANTHROPIC_API_KEY="your-anthropic-api-key"    # For Claude models
 export OPENROUTER_API_KEY="your-openrouter-api-key"  # For most models (Qwen, DeepSeek, Kimi, GLM, GPT-oss)
 
-# Optional — only needed if using this specific backend
+# Optional: only needed if using this specific backend
 export DEEPSEEK_API_KEY="your-deepseek-api-key"      # For DeepSeek native API
 ```
 
-To persist across sessions, add these to your shell profile (`~/.bashrc` or `~/.zshrc`) or use a secrets manager.
+To persist across sessions, add these lines to your shell profile (`~/.bashrc` or `~/.zshrc`).
+
+> **Note:** The code does **not** load `.env` files automatically. You must `export` the variables in your terminal session or shell profile.
+
+**Option 2: Set keys directly in `utils.py`**
+
+Edit the `get_api_keys_config()` function in `utils.py` and replace the empty string defaults with your keys:
+
+```python
+"OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", "your-openai-api-key"),
+"ANTHROPIC_API_KEY": os.getenv("ANTHROPIC_API_KEY", "your-anthropic-api-key"),
+"OPENROUTER_API_KEY": os.getenv("OPENROUTER_API_KEY", "your-openrouter-api-key"),
+```
 
 ## 2. Dataset Preparation
 
@@ -118,7 +126,7 @@ The full dataset is also available on Hugging Face: [https://huggingface.co/data
 
 ## 3. Running Benchmarks
 
-All benchmarks save responses to `results/<benchmark>/response/`. Runs are resumable — re-running the same command auto-detects existing output and skips completed samples.
+All benchmarks save responses to `results/<benchmark>/response/`. Runs are resumable - re-running the same command auto-detects existing output and skips completed samples.
 
 ### 3.1 HarmBench
 
@@ -150,13 +158,17 @@ Output: `results/agenticmisalignment/response/responses_{model}_{timestamp}.json
 
 ```bash
 # Harmful variant:
-TARGET_BACKEND=openrouter OPENROUTER_MODEL_KEY=qwen3-30b DATASET=harmful EPOCHS=1 python run/run_agentharm.py
+MODEL_KEY=qwen3-30b DATASET=harmful EPOCHS=1 python run/run_agentharm.py
 
 # Benign variant:
-TARGET_BACKEND=openrouter OPENROUTER_MODEL_KEY=qwen3-30b DATASET=benign EPOCHS=1 python run/run_agentharm.py
+MODEL_KEY=qwen3-30b DATASET=benign EPOCHS=1 python run/run_agentharm.py
 ```
 
-Output: `results/agentharm/response/responses_{model}_harmful_{timestamp}.json` (or `agentharm_benign`)
+The AgentHarm runner uses `MODEL_KEY` (not `TARGET_BACKEND`) to select the model. The backend is derived automatically from the model key (e.g., `claude-*` uses Anthropic, `gpt-*` uses OpenAI, others use OpenRouter).
+
+Output:
+- Harmful: `results/agentharm/response/responses_{model}_harmful_{timestamp}.json`
+- Benign: `results/agentharm_benign/response/responses_{model}_benign_{timestamp}.json`
 
 ### 3.4 EvalAware-Bench
 
@@ -175,7 +187,7 @@ Evaluation scripts analyze model responses using a judge model (default: GPT-5 v
 Evaluates model reasoning traces for evaluation awareness signals.
 
 ```bash
-# HarmBench — auto-finds latest response file for the model:
+# HarmBench - auto-finds latest response file for the model:
 MODEL_KEY=qwen3-30b python eval/eval_harmbench_cot.py
 
 # Agentic Misalignment:
@@ -197,47 +209,68 @@ Outputs:
 
 ### 4.2 Self-Report Evaluation
 
-Re-queries the target model about its awareness after the original interaction. Requires CoT results from Step 4.1.
+Re-queries the target model about its awareness after the original interaction. Requires CoT results from Step 4.1. These scripts re-query models via OpenRouter, so `OPENROUTER_API_KEY` must be set (see Section 1.3).
 
 ```bash
-# HarmBench:
-COT_FILE=results/harmbench/cot/cot_qwen3-30b_YYYYMMDD_HHMMSS.json python eval/eval_harmbench_selfreport.py
+# HarmBench (set OPENROUTER_MODEL_KEY to match the model you evaluated):
+OPENROUTER_MODEL_KEY=qwen3-30b \
+  COT_FILE=results/harmbench/cot/cot_qwen3-30b_YYYYMMDD_HHMMSS.json \
+  python eval/eval_harmbench_selfreport.py
 
 # Agentic Misalignment:
-COT_FILE=results/agenticmisalignment/cot/cot_qwen3-30b_YYYYMMDD_HHMMSS.json python eval/eval_agenticmisalignment_selfreport.py
+OPENROUTER_MODEL_KEY=qwen3-30b \
+  COT_FILE=results/agenticmisalignment/cot/cot_qwen3-30b_YYYYMMDD_HHMMSS.json \
+  python eval/eval_agenticmisalignment_selfreport.py
 
-# AgentHarm:
-RESPONSE_FILE=results/agentharm/response/responses_qwen3-30b_harmful_YYYYMMDD_HHMMSS.json python eval/eval_agentharm_selfreport.py
+# AgentHarm (requires both RESPONSE_FILE and COT_FILE):
+OPENROUTER_MODEL_KEY=qwen3-30b \
+  RESPONSE_FILE=results/agentharm/response/responses_qwen3-30b_harmful_YYYYMMDD_HHMMSS.json \
+  COT_FILE=results/agentharm/cot/cot_qwen3-30b_YYYYMMDD_HHMMSS.json \
+  python eval/eval_agentharm_selfreport.py
 ```
 
 ### 4.3 Purpose-Guess Evaluation
 
-Asks models to guess the purpose of the evaluation they just participated in.
+Asks models to guess the purpose of the evaluation they just participated in. Requires `OPENROUTER_API_KEY` and `OPENAI_API_KEY`.
 
 ```bash
 # HarmBench:
-COT_FILE=results/harmbench/cot/cot_qwen3-30b_YYYYMMDD_HHMMSS.json python eval/eval_harmbench_purposeguess.py
+OPENROUTER_MODEL_KEY=qwen3-30b \
+  COT_FILE=results/harmbench/cot/cot_qwen3-30b_YYYYMMDD_HHMMSS.json \
+  python eval/eval_harmbench_purposeguess.py
 
 # Agentic Misalignment:
-COT_FILE=results/agenticmisalignment/cot/cot_qwen3-30b_YYYYMMDD_HHMMSS.json python eval/eval_agenticmisalignment_purposeguess.py
+OPENROUTER_MODEL_KEY=qwen3-30b \
+  COT_FILE=results/agenticmisalignment/cot/cot_qwen3-30b_YYYYMMDD_HHMMSS.json \
+  python eval/eval_agenticmisalignment_purposeguess.py
 
-# AgentHarm:
-RESPONSE_FILE=results/agentharm/response/responses_qwen3-30b_harmful_YYYYMMDD_HHMMSS.json python eval/eval_agentharm_purposeguess.py
+# AgentHarm (requires both RESPONSE_FILE and COT_FILE):
+OPENROUTER_MODEL_KEY=qwen3-30b \
+  RESPONSE_FILE=results/agentharm/response/responses_qwen3-30b_harmful_YYYYMMDD_HHMMSS.json \
+  COT_FILE=results/agentharm/cot/cot_qwen3-30b_YYYYMMDD_HHMMSS.json \
+  python eval/eval_agentharm_purposeguess.py
 ```
 
 ### 4.4 Third-Person Evaluation
 
-A separate model instance evaluates awareness from a third-person perspective.
+A separate model instance evaluates awareness from a third-person perspective. Requires `OPENROUTER_API_KEY`.
 
 ```bash
 # HarmBench:
-COT_FILE=results/harmbench/cot/cot_qwen3-30b_YYYYMMDD_HHMMSS.json python eval/eval_harmbench_thirdperson.py
+OPENROUTER_MODEL_KEY=qwen3-30b \
+  COT_FILE=results/harmbench/cot/cot_qwen3-30b_YYYYMMDD_HHMMSS.json \
+  python eval/eval_harmbench_thirdperson.py
 
 # Agentic Misalignment:
-COT_FILE=results/agenticmisalignment/cot/cot_qwen3-30b_YYYYMMDD_HHMMSS.json python eval/eval_agenticmisalignment_thirdperson.py
+OPENROUTER_MODEL_KEY=qwen3-30b \
+  COT_FILE=results/agenticmisalignment/cot/cot_qwen3-30b_YYYYMMDD_HHMMSS.json \
+  python eval/eval_agenticmisalignment_thirdperson.py
 
-# AgentHarm:
-RESPONSE_FILE=results/agentharm/response/responses_qwen3-30b_harmful_YYYYMMDD_HHMMSS.json python eval/eval_agentharm_thirdperson.py
+# AgentHarm (requires both RESPONSE_FILE and COT_FILE):
+OPENROUTER_MODEL_KEY=qwen3-30b \
+  RESPONSE_FILE=results/agentharm/response/responses_qwen3-30b_harmful_YYYYMMDD_HHMMSS.json \
+  COT_FILE=results/agentharm/cot/cot_qwen3-30b_YYYYMMDD_HHMMSS.json \
+  python eval/eval_agentharm_thirdperson.py
 ```
 
 ### 4.5 Factor Analysis
@@ -355,7 +388,7 @@ sbatch scripts/submit_eval_factor_analysis.sh  # Array job: 4 benchmarks
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `TARGET_BACKEND` | API backend: `openrouter`, `anthropic_api`, `openai_api`, `deepseek_api` | `openrouter` |
+| `TARGET_BACKEND` | API backend: `openrouter`, `anthropic_api`, `openai_api`, `deepseek_api` | varies by script |
 | `OPENROUTER_MODEL_KEY` | Model key for OpenRouter | `qwen3-30b` |
 | `ANTHROPIC_MODEL_KEY` | Model key for Anthropic API | `claude-sonnet-4.5` |
 | `OPENAI_MODEL_KEY` | Model key for OpenAI API | `gpt-5` |
@@ -365,10 +398,12 @@ sbatch scripts/submit_eval_factor_analysis.sh  # Array job: 4 benchmarks
 | `SAMPLES_PER_CONFIG` | Samples per factor config (EvalAware-Bench) | `3` |
 | `MAX_EXAMPLES` | Max behaviors/conditions to evaluate | all |
 | `MAX_CONCURRENT` | Max parallel API calls | `10` |
-| `MODEL_KEY` | Target model for evaluation scripts | — |
-| `COT_FILE` | Path to CoT results for downstream evaluations | — |
-| `RESPONSE_FILE` | Direct path to response file (overrides auto-detection) | — |
+| `MODEL_KEY` | Target model for evaluation scripts | - |
+| `OPENAI_EVAL_MODEL` | Judge model for CoT evaluation | `gpt-5` |
+| `COT_FILE` | Path to CoT results for downstream evaluations | - |
+| `RESPONSE_FILE` | Direct path to response file (overrides auto-detection) | - |
 | `DATASET` | AgentHarm dataset type: `harmful` or `benign` | `harmful` |
+| `EPOCHS` | Runs per behavior (AgentHarm) | `5` |
 
 ## 8. Supported Models
 
