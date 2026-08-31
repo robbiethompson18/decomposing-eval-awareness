@@ -23,6 +23,10 @@
   `DEFAULT_ANTHROPIC_MODELS` will fail as *targets* in self-report/purpose-guess followups until
   this branches on model generation. (Judge path is fine — `judge_completion_async` omits
   `thinking`.)
+- **2026-08-31** `README.md` still documents `run/run_harmbench.py` and
+  `scripts/submit_run_harmbench.sh` (usage examples §3.1, repo-structure tree, sbatch table), but
+  neither file exists in the repo — the README's script inventory has drifted from `run/` (which
+  now only holds `run_eval_bench.py`). Needs a docs sweep.
 - **2026-08-31** The sync judge functions `evaluate_response` / `evaluate_agenticmisalignment_response`
   in `core/evaluator.py` have no callers in the repo (only the `_async` variants are used) and are
   still OpenAI-only. Candidates for deletion.
