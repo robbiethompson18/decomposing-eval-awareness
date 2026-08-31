@@ -31,6 +31,7 @@ from core.evaluator import (
     evaluate_response_async,
     evaluate_sample,
 )
+from core.metrics import bucket_conclusion, extract_conclusion
 from utils import get_api_keys_config, load_responses, read_file
 
 
@@ -44,6 +45,19 @@ def find_response_file(response_dir: str, model_key: str) -> str:
 
 def print_stats(records: list[dict[str, Any]]) -> None:
     """Print awareness statistics grouped by valence and config."""
+
+    invalid = sum(
+        1
+        for r in records
+        if bucket_conclusion(extract_conclusion(r.get("judge") or {}, "model_awareness"))
+        == "invalid"
+    )
+    if invalid:
+        print(
+            f"\n!!! WARNING: {invalid}/{len(records)} judge outputs could not be "
+            f"parsed as Yes/No for model_awareness — they count in denominators "
+            f"below but not as aware. Inspect the raw judge responses."
+        )
 
     for group_key in ("valence", "config_name"):
         groups: dict[str, list[dict[str, Any]]] = {}
