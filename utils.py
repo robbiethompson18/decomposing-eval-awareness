@@ -54,8 +54,6 @@ DEFAULT_ANTHROPIC_MODELS: dict[str, str] = {
     "claude-sonnet-4.5": "claude-sonnet-4-5-20250929",
     "claude-opus-4.5": "claude-opus-4-5-20251101",
     "claude-haiku-4.5": "claude-haiku-4-5-20251001",
-    "claude-opus-5": "claude-opus-5",
-    "claude-fable-5": "claude-fable-5",
 }
 
 DEFAULT_OPENAI_MODELS: dict[str, str] = {
