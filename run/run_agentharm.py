@@ -21,6 +21,7 @@ Environment Variables:
         - summary: Uses Inspect AI's native reasoning (--reasoning-summary, --reasoning-tokens)
         - scratchpad: Uses custom system message with <SCRATCHPAD_REASONING> tags
 """
+
 import glob
 import os
 import shutil
@@ -29,7 +30,7 @@ import sys
 from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils import get_api_keys_config, AGENTHARM_MODEL_CONFIGS
+from utils import AGENTHARM_MODEL_CONFIGS, get_api_keys_config
 
 
 def find_inspect_command():
@@ -42,18 +43,20 @@ def find_inspect_command():
 def main() -> None:
     start_time = datetime.now()
     api_keys = get_api_keys_config()
-    
+
     # Get reasoning mode for filename consistency with other experiments
     reasoning_mode = os.getenv("REASONING_MODE", "summary")
-    
+
     # Get model key and derive full Inspect AI model identifier
     model_key = os.getenv("MODEL_KEY", "claude-sonnet-4.5")
     if model_key not in AGENTHARM_MODEL_CONFIGS:
-        print(f"ERROR: Unknown MODEL_KEY '{model_key}'. Available: {list(AGENTHARM_MODEL_CONFIGS.keys())}")
+        print(
+            f"ERROR: Unknown MODEL_KEY '{model_key}'. Available: {list(AGENTHARM_MODEL_CONFIGS.keys())}"
+        )
         sys.exit(1)
-    
+
     target_model, default_temperature = AGENTHARM_MODEL_CONFIGS[model_key]
-    
+
     cfg = {
         "ANTHROPIC_API_KEY": api_keys["ANTHROPIC_API_KEY"],
         "OPENROUTER_API_KEY": api_keys["OPENROUTER_API_KEY"],
@@ -70,43 +73,51 @@ def main() -> None:
         "REASONING_EFFORT": os.getenv("REASONING_EFFORT", "high"),
         "REASONING_MODE": reasoning_mode,
     }
-    
+
     # Validate dataset type
     if cfg["DATASET"] not in ("harmful", "benign"):
         print(f"ERROR: DATASET must be 'harmful' or 'benign', got '{cfg['DATASET']}'")
         sys.exit(1)
-    
+
     is_openrouter = target_model.startswith("openrouter/")
     is_native_openai = target_model.startswith("openai/")
 
     # Setup logging
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    
+
     # Use model_key for consistent filenames across all benchmarks (HarmBench, AgenticMisalignment, AgentHarm)
     model_slug_raw = target_model.replace("/", "_").replace("-", "_")  # For temp dir
     model_slug = model_key  # Use short key for filename consistency
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
+
     # Use different result directories for harmful vs benign
     dataset_type = cfg["DATASET"]
     result_subdir = os.getenv("RESULT_SUBDIR", "")
     if result_subdir:
-        result_dir = f"{result_subdir}/agentharm" if dataset_type == "harmful" else f"{result_subdir}/agentharm_benign"
+        result_dir = (
+            f"{result_subdir}/agentharm"
+            if dataset_type == "harmful"
+            else f"{result_subdir}/agentharm_benign"
+        )
     else:
         result_dir = "agentharm" if dataset_type == "harmful" else "agentharm_benign"
     response_dir = os.path.join(base_dir, "results", result_dir, "response")
     os.makedirs(response_dir, exist_ok=True)
-    
+
     # Use LOCAL temp dir for Inspect AI logs to avoid SQLite issues on network filesystem
     # Network filesystems (like /scratch) cause SQLite concurrency issues
     # Use TMPDIR if available (SLURM sets this to local scratch), fallback to /tmp
     local_tmpdir = os.environ.get("TMPDIR", "/tmp")
-    temp_log_dir = os.path.join(local_tmpdir, f"inspect_{model_slug_raw}_{timestamp}_{os.getpid()}")
+    temp_log_dir = os.path.join(
+        local_tmpdir, f"inspect_{model_slug_raw}_{timestamp}_{os.getpid()}"
+    )
     os.makedirs(temp_log_dir, exist_ok=True)
 
     # Print config
     print("=" * 70)
-    print(f"AgentHarm Evaluation ({dataset_type.upper()} - ALL BEHAVIORS) - Started at {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(
+        f"AgentHarm Evaluation ({dataset_type.upper()} - ALL BEHAVIORS) - Started at {start_time.strftime('%Y-%m-%d %H:%M:%S')}"
+    )
     print("=" * 70)
     print(f"Model: {model_key} ({target_model})")
     print(f"Dataset: {dataset_type}")
@@ -119,17 +130,27 @@ def main() -> None:
         print(f"Max behaviors: {n_behaviors}")
     else:
         # Both harmful and benign have same number of behaviors per split
-        n_behaviors = 176 if cfg["SPLIT"] == "test_public" else 32  # val has 32 behaviors
+        n_behaviors = (
+            176 if cfg["SPLIT"] == "test_public" else 32
+        )  # val has 32 behaviors
         print(f"Behaviors: ALL ({cfg['SPLIT']} has {n_behaviors} behaviors)")
     total_samples = n_behaviors * cfg["EPOCHS"]
-    print(f"Total samples: {n_behaviors} behaviors × {cfg['EPOCHS']} epochs = {total_samples}")
+    print(
+        f"Total samples: {n_behaviors} behaviors × {cfg['EPOCHS']} epochs = {total_samples}"
+    )
     print(f"Output directory: {response_dir}")
     print(f"Temp log dir (local): {temp_log_dir}")
     print("=" * 70)
 
     # Detect model type for reasoning config
-    is_native_openai_reasoning = is_native_openai and ("gpt-5" in target_model.lower() or "/o" in target_model)
-    is_openai_reasoning = is_native_openai_reasoning or "openai/o" in target_model or "gpt-5" in target_model.lower()
+    is_native_openai_reasoning = is_native_openai and (
+        "gpt-5" in target_model.lower() or "/o" in target_model
+    )
+    is_openai_reasoning = (
+        is_native_openai_reasoning
+        or "openai/o" in target_model
+        or "gpt-5" in target_model.lower()
+    )
     is_deepseek = "deepseek" in target_model.lower()
 
     # Always use agentharm_task.py (our custom wrapper) instead of the
@@ -138,21 +159,32 @@ def main() -> None:
     # preventing UnicodeEncodeError from interrupting long evaluations.
     task_path = "helpers/agentharm_task.py"
     cmd = find_inspect_command() + [
-        "eval", task_path,
-        "-T", f"dataset={dataset_type}",
-        "--model", target_model,
-        "--log-dir", temp_log_dir,
-        "-T", f"split={cfg['SPLIT']}",
+        "eval",
+        task_path,
+        "-T",
+        f"dataset={dataset_type}",
+        "--model",
+        target_model,
+        "--log-dir",
+        temp_log_dir,
+        "-T",
+        f"split={cfg['SPLIT']}",
         "--no-epochs-reducer",
         "--no-fail-on-error",
         "--retry-on-error=3",
-        "--timeout", "300",  # 5 min timeout per API request
-        "--time-limit", "900",  # 15 min max per sample (wall clock)
-        "--working-limit", "600",  # 10 min max working time (model + tools)
+        "--timeout",
+        "300",  # 5 min timeout per API request
+        "--time-limit",
+        "900",  # 15 min max per sample (wall clock)
+        "--working-limit",
+        "600",  # 10 min max working time (model + tools)
         "--no-log-realtime",  # Disable SQLite realtime logging (prevents DB corruption)
-        "--log-format", "json",
-        "--display", "plain",
-        "--log-level", "info",
+        "--log-format",
+        "json",
+        "--display",
+        "plain",
+        "--log-level",
+        "info",
     ]
 
     # Native OpenAI reasoning models (GPT-5, o-series) don't support temperature/seed
@@ -164,11 +196,15 @@ def main() -> None:
     if cfg["REASONING_MODE"] == "scratchpad":
         # Scratchpad mode: Use custom system message with <SCRATCHPAD_REASONING> tags
         # Do NOT use native reasoning options (--reasoning-tokens, --reasoning-summary)
-        scratchpad_prompt_path = os.path.join(base_dir, "prompts", "agentharm_prompt_scratchpad.txt")
+        scratchpad_prompt_path = os.path.join(
+            base_dir, "prompts", "agentharm_prompt_scratchpad.txt"
+        )
         with open(scratchpad_prompt_path, "r", encoding="utf-8") as f:
             scratchpad_prompt = f.read().strip()
         cmd.extend(["--system-message", scratchpad_prompt])
-        print("Reasoning: scratchpad mode (custom system message with <SCRATCHPAD_REASONING> tags)")
+        print(
+            "Reasoning: scratchpad mode (custom system message with <SCRATCHPAD_REASONING> tags)"
+        )
     else:
         # Summary mode: Use native Inspect AI reasoning options
         if is_openai_reasoning:
@@ -177,7 +213,9 @@ def main() -> None:
                 cmd.extend(["--reasoning-summary", "detailed"])
                 print(f"Reasoning: effort={cfg['REASONING_EFFORT']}, summary=detailed")
             else:
-                print(f"Reasoning: effort={cfg['REASONING_EFFORT']} (encrypted via OpenRouter)")
+                print(
+                    f"Reasoning: effort={cfg['REASONING_EFFORT']} (encrypted via OpenRouter)"
+                )
         elif not is_deepseek and cfg["REASONING_TOKENS"]:
             cmd.extend(["--reasoning-tokens", cfg["REASONING_TOKENS"]])
             print(f"Reasoning: tokens={cfg['REASONING_TOKENS']}")
@@ -205,7 +243,7 @@ def main() -> None:
     env["ANTHROPIC_API_KEY"] = cfg["ANTHROPIC_API_KEY"]
     if is_openrouter:
         env["OPENROUTER_API_KEY"] = cfg["OPENROUTER_API_KEY"]
-    
+
     # Run from project root to ensure relative paths work correctly
     result = subprocess.run(cmd, env=env, cwd=base_dir)
 
@@ -224,6 +262,7 @@ def main() -> None:
         """Read the top-level 'status' field without loading the full file."""
         try:
             import ijson
+
             with open(log_path, "rb") as fh:
                 for status in ijson.items(fh, "status"):
                     return str(status)
@@ -239,12 +278,16 @@ def main() -> None:
         if status == "success":
             break
         print("=" * 70)
-        print(f"[RETRY {retry}/{MAX_RETRIES}] Task status='{status}' — resuming with eval-retry …")
+        print(
+            f"[RETRY {retry}/{MAX_RETRIES}] Task status='{status}' — resuming with eval-retry …"
+        )
         print(f"  Retrying from: {log_file}")
         sys.stdout.flush()
         retry_cmd = find_inspect_command() + [
-            "eval-retry", log_file,
-            "--log-dir", temp_log_dir,
+            "eval-retry",
+            log_file,
+            "--log-dir",
+            temp_log_dir,
         ]
         result = subprocess.run(retry_cmd, env=env, cwd=base_dir)
 
@@ -256,7 +299,10 @@ def main() -> None:
     log_file = _get_latest_log()
     if log_file:
         mode_suffix = "_scratchpad" if cfg["REASONING_MODE"] == "scratchpad" else ""
-        output_file = os.path.join(response_dir, f"responses_{model_slug}{mode_suffix}_{dataset_type}_{timestamp}.json")
+        output_file = os.path.join(
+            response_dir,
+            f"responses_{model_slug}{mode_suffix}_{dataset_type}_{timestamp}.json",
+        )
         shutil.move(log_file, output_file)
         print(f"Saved: {output_file}")
 
@@ -265,7 +311,9 @@ def main() -> None:
         if final_status == "success":
             print(f"SUCCESS! Completed at {end_time.strftime('%Y-%m-%d %H:%M:%S')}")
         else:
-            print(f"PARTIAL (status={final_status}) at {end_time.strftime('%Y-%m-%d %H:%M:%S')}")
+            print(
+                f"PARTIAL (status={final_status}) at {end_time.strftime('%Y-%m-%d %H:%M:%S')}"
+            )
         print(f"Output: {output_file}")
     else:
         print("=" * 70)

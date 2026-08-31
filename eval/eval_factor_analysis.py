@@ -24,13 +24,15 @@ from openai import AsyncOpenAI
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils import get_api_keys_config, read_file
 
-
 BENCHMARKS = ["harmbench", "agenticmisalignment", "agentharm", "agentharm_benign"]
 
 JUDGE_MODEL = "gpt-5"
 
-PROMPT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                           "prompts", "judgeEvalFactorIdentification.txt")
+PROMPT_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "prompts",
+    "judgeEvalFactorIdentification.txt",
+)
 
 
 def build_user_message(task_prompt: str, reasoning_traces: list[str]) -> str:
@@ -58,7 +60,9 @@ def aggregate_votes(judgments: list[dict]) -> dict:
     majority_factor, majority_count = counter.most_common(1)[0]
 
     # Pick the first judgment matching the majority factor for evidence/notes
-    representative = next(j for j in judgments if j.get("primary_factor") == majority_factor)
+    representative = next(
+        j for j in judgments if j.get("primary_factor") == majority_factor
+    )
 
     result = {
         "primary_factor": majority_factor,
@@ -91,7 +95,9 @@ async def judge_one(
                 )
                 content = (resp.choices[0].message.content or "").strip()
                 if content.startswith("```"):
-                    content = content.split("\n", 1)[1] if "\n" in content else content[3:]
+                    content = (
+                        content.split("\n", 1)[1] if "\n" in content else content[3:]
+                    )
                     if content.endswith("```"):
                         content = content[:-3].strip()
                 return json.loads(content)
@@ -99,15 +105,25 @@ async def judge_one(
                 return {"raw": content}
             except Exception as e:
                 if attempt < max_retries - 1:
-                    await asyncio.sleep(2 ** attempt)
-                    print(f"  [WARN] Judge call failed (attempt {attempt + 1}/{max_retries}): {type(e).__name__}: {e}")
+                    await asyncio.sleep(2**attempt)
+                    print(
+                        f"  [WARN] Judge call failed (attempt {attempt + 1}/{max_retries}): {type(e).__name__}: {e}"
+                    )
                     continue
                 raise
 
 
-async def process_benchmark(bench: str, api_key: str, max_concurrent: int, k: int) -> None:
+async def process_benchmark(
+    bench: str, api_key: str, max_concurrent: int, k: int
+) -> None:
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    input_path = os.path.join(base_dir, "results", bench, "stable_awareness_tasks", "stable_awareness_tasks.json")
+    input_path = os.path.join(
+        base_dir,
+        "results",
+        bench,
+        "stable_awareness_tasks",
+        "stable_awareness_tasks.json",
+    )
 
     if not os.path.exists(input_path):
         print(f"  Skipping {bench}: no stable_awareness_tasks.json found")
@@ -129,7 +145,9 @@ async def process_benchmark(bench: str, api_key: str, max_concurrent: int, k: in
             pairs.append((task_idx, model_name, user_msg))
 
     total_calls = len(pairs) * k
-    print(f"\n  {bench}: {len(tasks)} tasks, {len(pairs)} pairs, {total_calls} judge calls (k={k})")
+    print(
+        f"\n  {bench}: {len(tasks)} tasks, {len(pairs)} pairs, {total_calls} judge calls (k={k})"
+    )
 
     # Check for existing partial results to enable resumption
     out_dir = os.path.join(base_dir, "results", bench, "factor_analysis")
@@ -145,24 +163,32 @@ async def process_benchmark(bench: str, api_key: str, max_concurrent: int, k: in
                     if "votes" in result and len(result["votes"]) >= k:
                         existing[(tid, m)] = result
         if existing:
-            print(f"  Found {len(existing)} completed results (k>={k}), will skip those")
+            print(
+                f"  Found {len(existing)} completed results (k>={k}), will skip those"
+            )
 
     # Run all judge calls
     done = []
 
     async with AsyncOpenAI(api_key=api_key, max_retries=5) as client:
+
         async def do_pair(task_idx, model_name, user_msg):
             tid = tasks[task_idx]["task_id"]
             if (tid, model_name) in existing:
                 return task_idx, model_name, existing[(tid, model_name)]
 
             judgments = await asyncio.gather(
-                *(judge_one(client, system_prompt, user_msg, semaphore) for _ in range(k))
+                *(
+                    judge_one(client, system_prompt, user_msg, semaphore)
+                    for _ in range(k)
+                )
             )
             result = aggregate_votes(judgments)
             done.append(1)
-            print(f"  [{len(done)}/{len(pairs)}] {tid} / {model_name}: "
-                  f"{result['primary_factor']} (agreement={result['agreement']:.0%}, votes={result['votes']})")
+            print(
+                f"  [{len(done)}/{len(pairs)}] {tid} / {model_name}: "
+                f"{result['primary_factor']} (agreement={result['agreement']:.0%}, votes={result['votes']})"
+            )
             return task_idx, model_name, result
 
         results = await asyncio.gather(
@@ -183,12 +209,14 @@ async def process_benchmark(bench: str, api_key: str, max_concurrent: int, k: in
 
     output = []
     for task_idx, entry in enumerate(tasks):
-        output.append({
-            "task_id": entry["task_id"],
-            "metadata": entry["metadata"],
-            "n_models_aware": entry["n_models_aware"],
-            "models": model_results.get(task_idx, {}),
-        })
+        output.append(
+            {
+                "task_id": entry["task_id"],
+                "metadata": entry["metadata"],
+                "n_models_aware": entry["n_models_aware"],
+                "models": model_results.get(task_idx, {}),
+            }
+        )
 
     with open(out_path, "w") as f:
         json.dump(output, f, indent=2, ensure_ascii=False)

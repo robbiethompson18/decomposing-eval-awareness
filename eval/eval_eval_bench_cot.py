@@ -13,20 +13,25 @@ Environment variables:
     VALENCE_FILTER  Comma-separated valences to judge, e.g. "capability" (default: all)
     MERGE_INTO      Path to existing CoT JSON to merge into (replaces matching sample IDs)
 """
+
 import asyncio
+import json
 import os
 import re
 import sys
-import json
 from datetime import datetime
 from glob import glob
-from typing import Dict, Any, List
+from typing import Any
 
 from openai import AsyncOpenAI
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils import read_file, load_responses, get_api_keys_config
-from core.evaluator import evaluate_response_async, evaluate_sample, evaluate_batch_async
+from core.evaluator import (
+    evaluate_batch_async,
+    evaluate_response_async,
+    evaluate_sample,
+)
+from utils import get_api_keys_config, load_responses, read_file
 
 
 def find_response_file(response_dir: str, model_key: str) -> str:
@@ -37,12 +42,11 @@ def find_response_file(response_dir: str, model_key: str) -> str:
     return matches[-1] if matches else ""
 
 
-def print_stats(records: List[Dict[str, Any]]) -> None:
+def print_stats(records: list[dict[str, Any]]) -> None:
     """Print awareness statistics grouped by valence and config."""
-    from collections import Counter
 
     for group_key in ("valence", "config_name"):
-        groups: Dict[str, List[Dict[str, Any]]] = {}
+        groups: dict[str, list[dict[str, Any]]] = {}
         for r in records:
             g = r.get(group_key, "unknown")
             groups.setdefault(g, []).append(r)
@@ -50,10 +54,17 @@ def print_stats(records: List[Dict[str, Any]]) -> None:
         print(f"\n--- By {group_key} ---")
         for name, recs in sorted(groups.items()):
             aware = sum(
-                1 for r in recs
-                if r.get("judge", {}).get("model_awareness", {}).get("conclusion", "").lower() == "yes"
+                1
+                for r in recs
+                if r.get("judge", {})
+                .get("model_awareness", {})
+                .get("conclusion", "")
+                .lower()
+                == "yes"
             )
-            print(f"  {name:30s}  awareness={aware}/{len(recs)} ({aware/len(recs):.1%})")
+            print(
+                f"  {name:30s}  awareness={aware}/{len(recs)} ({aware / len(recs):.1%})"
+            )
 
 
 def main() -> None:
@@ -97,7 +108,7 @@ def main() -> None:
         sys.exit(1)
 
     if cfg["MAX_SAMPLES"] > 0:
-        samples = samples[:cfg["MAX_SAMPLES"]]
+        samples = samples[: cfg["MAX_SAMPLES"]]
 
     # Apply task/valence filters
     task_filter = os.getenv("TASK_FILTER", "")
@@ -118,25 +129,39 @@ def main() -> None:
     print(f"Max concurrent: {cfg['MAX_CONCURRENT']}")
     print("=" * 70)
 
-    judge_template = read_file(os.path.join(base_dir, "prompts", "judgePromptEvidenceBoth.txt"))
+    judge_template = read_file(
+        os.path.join(base_dir, "prompts", "judgePromptEvidenceBoth.txt")
+    )
     judge_model = cfg["OPENAI_EVAL_MODEL"]
 
     async def eval_sample_fn(
         client: AsyncOpenAI,
-        sample: Dict[str, Any],
+        sample: dict[str, Any],
         semaphore: asyncio.Semaphore,
         idx: int,
         total: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         prompt = sample.get("prompt", "")
         response = sample.get("response", "")
 
         return await evaluate_sample(
-            semaphore, idx, total,
+            semaphore,
+            idx,
+            total,
             sample_id=sample.get("id", ""),
-            judge_fn=lambda: evaluate_response_async(client, judge_model, prompt, response, judge_template),
-            result_fn=lambda judge: {**sample, "judge": judge.get("judgment"), "judge_raw": judge.get("raw")},
-            metrics=[("model_awareness", "awareness"), ("hypothetical_recognition", "hypo"), ("task_performance", "task")],
+            judge_fn=lambda: evaluate_response_async(
+                client, judge_model, prompt, response, judge_template
+            ),
+            result_fn=lambda judge: {
+                **sample,
+                "judge": judge.get("judgment"),
+                "judge_raw": judge.get("raw"),
+            },
+            metrics=[
+                ("model_awareness", "awareness"),
+                ("hypothetical_recognition", "hypo"),
+                ("task_performance", "task"),
+            ],
         )
 
     all_records = asyncio.run(
@@ -163,7 +188,9 @@ def main() -> None:
         all_records = merged
     else:
         if not model_key:
-            match = re.search(r"responses_([^_]+(?:-[^_]+)*)", os.path.basename(response_file))
+            match = re.search(
+                r"responses_([^_]+(?:-[^_]+)*)", os.path.basename(response_file)
+            )
             model_key = match.group(1) if match else model.replace("/", "_")
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -177,7 +204,9 @@ def main() -> None:
 
     # Print summary statistics
     if not model_key:
-        match = re.search(r"responses_([^_]+(?:-[^_]+)*)", os.path.basename(response_file))
+        match = re.search(
+            r"responses_([^_]+(?:-[^_]+)*)", os.path.basename(response_file)
+        )
         model_key = match.group(1) if match else model.replace("/", "_")
 
     print("\n" + "=" * 70)
@@ -185,11 +214,15 @@ def main() -> None:
     print("=" * 70)
 
     aware_count = sum(
-        1 for r in all_records
-        if r.get("judge", {}).get("model_awareness", {}).get("conclusion", "").lower() == "yes"
+        1
+        for r in all_records
+        if r.get("judge", {}).get("model_awareness", {}).get("conclusion", "").lower()
+        == "yes"
     )
     if all_records:
-        print(f"Overall awareness: {aware_count}/{len(all_records)} ({aware_count/len(all_records):.1%})")
+        print(
+            f"Overall awareness: {aware_count}/{len(all_records)} ({aware_count / len(all_records):.1%})"
+        )
         print_stats(all_records)
     else:
         print("No successfully judged records to report.")

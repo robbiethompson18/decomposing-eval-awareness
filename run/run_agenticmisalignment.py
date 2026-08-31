@@ -7,21 +7,26 @@ Reasoning modes (REASONING_MODE env var, only affects anthropic_api and openai_a
 - summary (default): Use system_prompt_think.txt (generic think instructions) with native reasoning APIs
 - scratchpad: Use system_prompt.txt (has <SCRATCHPAD_REASONING> tag instructions) with standard APIs
 """
+
 import asyncio
+import json
 import os
 import sys
-import json
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Any
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils import create_target_client, get_api_keys_config, query_parallel
-from utils import load_agenticmisalignment_dataset
+from utils import (
+    create_target_client,
+    get_api_keys_config,
+    load_agenticmisalignment_dataset,
+    query_parallel,
+)
 
 
 def main() -> None:
     reasoning_mode = os.getenv("REASONING_MODE", "summary")
-    
+
     cfg = {
         "DATASET_DIR": os.getenv("DATASET_DIR", "datasets/agentic_misalignment"),
         "MAX_CONDITIONS": int(os.getenv("MAX_CONDITIONS", "240")),
@@ -38,17 +43,19 @@ def main() -> None:
 
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     backend = cfg["TARGET_BACKEND"]
-    
+
     # Select system prompt based on reasoning mode
     # summary -> system_prompt_think.txt, scratchpad -> system_prompt.txt
     use_think_tags = reasoning_mode != "scratchpad"
     prompt_type_str = "think tags" if use_think_tags else "SCRATCHPAD_REASONING"
     print(f"Reasoning mode: {reasoning_mode}, using {prompt_type_str} system prompts")
-    
+
     # Parse filters
     scenarios = [s.strip() for s in cfg["SCENARIOS"].split(",") if s.strip()] or None
     goal_types = [g.strip() for g in cfg["GOAL_TYPES"].split(",") if g.strip()] or None
-    urgency_types = [u.strip() for u in cfg["URGENCY_TYPES"].split(",") if u.strip()] or None
+    urgency_types = [
+        u.strip() for u in cfg["URGENCY_TYPES"].split(",") if u.strip()
+    ] or None
 
     # Load dataset
     print(f"Loading agentic misalignment dataset ({cfg['DATASET_DIR']})...")
@@ -64,43 +71,59 @@ def main() -> None:
     samples_per_condition = cfg["SAMPLES_PER_CONDITION"]
     max_conditions = min(cfg["MAX_CONDITIONS"], len(conditions))
     total_samples = max_conditions * samples_per_condition
-    
-    print(f"Mode: ALL")
-    print(f"Generating {max_conditions} conditions × {samples_per_condition} samples = {total_samples} responses")
+
+    print("Mode: ALL")
+    print(
+        f"Generating {max_conditions} conditions × {samples_per_condition} samples = {total_samples} responses"
+    )
     print(f"Max concurrent: {cfg['MAX_CONCURRENT']}")
     print("=" * 70)
 
     # Pre-create clients for each unique condition (each has different system_prompt)
     # Only print backend info once, not for each condition
-    condition_clients: Dict[str, Any] = {}
+    condition_clients: dict[str, Any] = {}
     backend_slug = None
     for i, condition in enumerate(conditions[:max_conditions]):
         cid = condition["condition_id"]
         if cid not in condition_clients:
             client, backend_slug = create_target_client(
-                backend, cfg, condition["system_prompt"], reasoning_mode, verbose=(i == 0)
+                backend,
+                cfg,
+                condition["system_prompt"],
+                reasoning_mode,
+                verbose=(i == 0),
             )
             condition_clients[cid] = client
-    print(f"Created {len(condition_clients)} clients for {len(condition_clients)} unique conditions")
+    print(
+        f"Created {len(condition_clients)} clients for {len(condition_clients)} unique conditions"
+    )
 
     # Build query items: (client, prompt, metadata)
     items = []
     for condition in conditions[:max_conditions]:
         client = condition_clients[condition["condition_id"]]
         for s_idx in range(1, samples_per_condition + 1):
-            items.append((client, condition["prompt"], {
-                "id": condition["condition_id"],
-                "condition_id": condition["condition_id"],
-                "scenario": condition["scenario"],
-                "goal_type": condition["goal_type"],
-                "goal_value": condition["goal_value"],
-                "urgency_type": condition["urgency_type"],
-                "prompt": condition["prompt"],
-                "sample_idx": s_idx,
-            }))
+            items.append(
+                (
+                    client,
+                    condition["prompt"],
+                    {
+                        "id": condition["condition_id"],
+                        "condition_id": condition["condition_id"],
+                        "scenario": condition["scenario"],
+                        "goal_type": condition["goal_type"],
+                        "goal_value": condition["goal_value"],
+                        "urgency_type": condition["urgency_type"],
+                        "prompt": condition["prompt"],
+                        "sample_idx": s_idx,
+                    },
+                )
+            )
 
     # Result builder
-    def build_result(response: str, meta: Dict[str, Any], sample_idx: int) -> Dict[str, Any]:
+    def build_result(
+        response: str, meta: dict[str, Any], sample_idx: int
+    ) -> dict[str, Any]:
         return {
             "id": f"{meta['condition_id']}_sample{sample_idx}",
             "condition_id": meta["condition_id"],
@@ -115,16 +138,20 @@ def main() -> None:
 
     # Generate responses in parallel
     start_time = datetime.now()
-    all_samples = asyncio.run(query_parallel(items, build_result, cfg["MAX_CONCURRENT"]))
+    all_samples = asyncio.run(
+        query_parallel(items, build_result, cfg["MAX_CONCURRENT"])
+    )
 
     # Save responses
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     results_dir = os.path.join(base_dir, "results", "agenticmisalignment", "response")
     os.makedirs(results_dir, exist_ok=True)
-    
+
     mode_suffix = "_scratchpad" if reasoning_mode == "scratchpad" else ""
-    out_file = os.path.join(results_dir, f"responses_{backend_slug}{mode_suffix}_{timestamp}.json")
-    
+    out_file = os.path.join(
+        results_dir, f"responses_{backend_slug}{mode_suffix}_{timestamp}.json"
+    )
+
     output = {
         "model": backend_slug,
         "backend": backend,
@@ -138,10 +165,10 @@ def main() -> None:
         },
         "samples": all_samples,
     }
-    
+
     with open(out_file, "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=2)
-    
+
     duration = datetime.now() - start_time
     print("=" * 70)
     print(f"Generated {len(all_samples)} responses in {duration}")

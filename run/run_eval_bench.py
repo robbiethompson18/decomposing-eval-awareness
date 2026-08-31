@@ -37,37 +37,50 @@ Environment variables:
   VALENCE_FILTER        Comma-separated valences to run, e.g. "capability" (default: all)
   CONFIG_FILTER         Comma-separated config names to run, e.g. "F6" or "baseline,F1" (default: all)
 """
+
 import asyncio
 import glob
+import json
 import os
 import sys
-import json
-import yaml
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, List, Set
+from typing import Any
+
+import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils import read_file, create_target_client, get_api_keys_config, query_parallel
 from eval_bench.render import render
+from utils import create_target_client, get_api_keys_config, query_parallel, read_file
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 TASKS_DIR = BASE_DIR / "eval_bench" / "tasks"
 RESULTS_DIR = BASE_DIR / "results" / "eval_bench" / "response"
 
 BASELINE_CONFIG = {
-    "F1": "realistic", "F2": "realistic", "F3": "casual",
-    "F4": "realistic", "F5": "realistic", "F6": "realistic",
-    "F7": "prose", "F8": "realistic",
+    "F1": "realistic",
+    "F2": "realistic",
+    "F3": "casual",
+    "F4": "realistic",
+    "F5": "realistic",
+    "F6": "realistic",
+    "F7": "prose",
+    "F8": "realistic",
 }
 
 FACTOR_VARIED_LEVELS = {
-    "F1": "varied", "F2": "varied", "F3": "formal", "F4": "varied",
-    "F5": "varied", "F6": "varied", "F7": "template", "F8": "varied",
+    "F1": "varied",
+    "F2": "varied",
+    "F3": "formal",
+    "F4": "varied",
+    "F5": "varied",
+    "F6": "varied",
+    "F7": "template",
+    "F8": "varied",
 }
 
 
-def build_configs() -> List[tuple]:
+def build_configs() -> list[tuple]:
     """Build 9 configs: 1 baseline + 8 single-factor ablations."""
     configs = [("baseline", dict(BASELINE_CONFIG))]
     for factor, varied_level in FACTOR_VARIED_LEVELS.items():
@@ -77,7 +90,7 @@ def build_configs() -> List[tuple]:
     return configs
 
 
-def load_all_tasks() -> List[Dict[str, Any]]:
+def load_all_tasks() -> list[dict[str, Any]]:
     """Load all task YAML files from eval_bench/tasks/."""
     tasks = []
     for task_dir in sorted(TASKS_DIR.iterdir()):
@@ -86,12 +99,16 @@ def load_all_tasks() -> List[Dict[str, Any]]:
         for yaml_file in sorted(task_dir.glob("*.yaml")):
             with open(yaml_file) as f:
                 template = yaml.safe_load(f)
-            tasks.append({
-                "task_name": task_dir.name,
-                "valence": yaml_file.stem,
-                "template": template,
-                "task_id": template.get("task_id", f"{task_dir.name}_{yaml_file.stem}"),
-            })
+            tasks.append(
+                {
+                    "task_name": task_dir.name,
+                    "valence": yaml_file.stem,
+                    "template": template,
+                    "task_id": template.get(
+                        "task_id", f"{task_dir.name}_{yaml_file.stem}"
+                    ),
+                }
+            )
     return tasks
 
 
@@ -107,7 +124,7 @@ def get_output_path(model_slug: str, reasoning_mode: str) -> Path:
     return RESULTS_DIR / f"responses_{model_slug}{mode_suffix}_{timestamp}.json"
 
 
-def load_existing_results(out_file: Path) -> tuple[Dict[str, Any], Set[str]]:
+def load_existing_results(out_file: Path) -> tuple[dict[str, Any], set[str]]:
     """Load existing results file and return (data_dict, set_of_completed_ids)."""
     if out_file.exists():
         with open(out_file, "r", encoding="utf-8") as f:
@@ -117,7 +134,7 @@ def load_existing_results(out_file: Path) -> tuple[Dict[str, Any], Set[str]]:
     return None, set()
 
 
-def save_results(out_file: Path, output_data: Dict[str, Any]) -> None:
+def save_results(out_file: Path, output_data: dict[str, Any]) -> None:
     """Atomically save results (write to temp then rename)."""
     tmp = out_file.with_suffix(".tmp")
     with open(tmp, "w", encoding="utf-8") as f:
@@ -137,13 +154,19 @@ def main() -> None:
     }
 
     backend = cfg["TARGET_BACKEND"]
-    prompt_file = "chat_prompt_realistic_scratchpad.txt" if reasoning_mode == "scratchpad" else "chat_prompt_realistic.txt"
+    prompt_file = (
+        "chat_prompt_realistic_scratchpad.txt"
+        if reasoning_mode == "scratchpad"
+        else "chat_prompt_realistic.txt"
+    )
     system_prompt = read_file(str(BASE_DIR / "prompts" / prompt_file)).strip()
 
     print(f"Reasoning mode: {reasoning_mode}")
     print(f"System prompt: {prompt_file}")
 
-    client, model_slug = create_target_client(backend, cfg, system_prompt, reasoning_mode)
+    client, model_slug = create_target_client(
+        backend, cfg, system_prompt, reasoning_mode
+    )
 
     tasks = load_all_tasks()
     configs = build_configs()
@@ -186,7 +209,7 @@ def main() -> None:
 
     total_calls = len(tasks) * len(configs) * samples_per_config
     print(f"\nTasks loaded: {len(tasks)} ({len(task_names)} task sets x 2 valences)")
-    print(f"Configs: {len(configs)} (baseline + {len(configs)-1} single-factor)")
+    print(f"Configs: {len(configs)} (baseline + {len(configs) - 1} single-factor)")
     print(f"Samples per config: {samples_per_config}")
     print(f"Model: {model_slug} (backend: {backend})")
     print(f"Total API calls needed: {total_calls}")
@@ -194,7 +217,9 @@ def main() -> None:
     print(f"Output file: {out_file}")
     print("=" * 70)
 
-    def build_result(response: str, meta: Dict[str, Any], sample_idx: int) -> Dict[str, Any]:
+    def build_result(
+        response: str, meta: dict[str, Any], sample_idx: int
+    ) -> dict[str, Any]:
         return {
             "id": meta["id"],
             "task_id": meta["task_id"],
@@ -223,25 +248,37 @@ def main() -> None:
                     sample_id = f"{task['task_id']}_{config_name}_sample{s_idx}"
                     if sample_id in completed_ids:
                         continue
-                    items.append((client, prompt_text, {
-                        "id": sample_id,
-                        "task_id": task["task_id"],
-                        "task_name": task["task_name"],
-                        "valence": task["valence"],
-                        "config_name": config_name,
-                        "factor_config": factor_config,
-                        "prompt": prompt_text,
-                        "sample_idx": s_idx,
-                    }))
+                    items.append(
+                        (
+                            client,
+                            prompt_text,
+                            {
+                                "id": sample_id,
+                                "task_id": task["task_id"],
+                                "task_name": task["task_name"],
+                                "valence": task["valence"],
+                                "config_name": config_name,
+                                "factor_config": factor_config,
+                                "prompt": prompt_text,
+                                "sample_idx": s_idx,
+                            },
+                        )
+                    )
 
         if not items:
-            print(f"[{t_idx}/{len(task_names)}] {task_name}: already complete, skipping")
+            print(
+                f"[{t_idx}/{len(task_names)}] {task_name}: already complete, skipping"
+            )
             continue
 
         expected = len(task_group) * len(configs) * samples_per_config
-        print(f"[{t_idx}/{len(task_names)}] {task_name}: {len(items)} calls ({expected - len(items)} cached)")
+        print(
+            f"[{t_idx}/{len(task_names)}] {task_name}: {len(items)} calls ({expected - len(items)} cached)"
+        )
 
-        batch_results = asyncio.run(query_parallel(items, build_result, cfg["MAX_CONCURRENT"]))
+        batch_results = asyncio.run(
+            query_parallel(items, build_result, cfg["MAX_CONCURRENT"])
+        )
 
         output_data["samples"].extend(batch_results)
         completed_ids.update(r["id"] for r in batch_results)
