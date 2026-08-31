@@ -16,6 +16,7 @@ instructions. Do not replace it with a separate file.
   - exception: changes to .claude directory
 - We are churning this sucker hard. Their codebase is a mess and I want to understand, so I'm
   deleting dead code and organizing packages more nicely
+- Massive parellelism on all grader runs and eval runs. At least parallelism 100
 
 ## Notes
 
