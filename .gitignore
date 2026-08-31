@@ -30,6 +30,10 @@ logs/
 # Datasets (download separately per README instructions)
 datasets/
 
+# Local Claude config — machine/personal-specific, not shared
+CLAUDE.local.md
+.claude/notes/local/
+
 # Misc
 *.tar.gz
 *.zip
