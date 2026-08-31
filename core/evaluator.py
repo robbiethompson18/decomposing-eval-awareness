@@ -233,7 +233,7 @@ async def evaluate_batch_async(
         Coroutine[Any, Any, dict[str, Any] | None],
     ],
     api_key: str,
-    max_concurrent: int = 20,
+    max_concurrent: int = 100,
     judge_model: str = "",
     anthropic_api_key: str = "",
 ) -> list[dict[str, Any]]:

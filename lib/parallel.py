@@ -8,7 +8,7 @@ from typing import Any
 async def query_parallel(
     items: list[tuple[Any, str, dict[str, Any]]],
     result_fn: Callable[[str, dict[str, Any], int], dict[str, Any]],
-    max_concurrent: int = 10,
+    max_concurrent: int = 100,
     prefill: str = None,
 ) -> list[dict[str, Any]]:
     """

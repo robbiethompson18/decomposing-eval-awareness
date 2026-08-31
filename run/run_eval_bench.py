@@ -31,7 +31,7 @@ Environment variables:
   OPENAI_MODEL_KEY      Model key for OpenAI (default: gpt-5)
   REASONING_MODE        "summary" (default, native reasoning) or "scratchpad"
   SAMPLES_PER_CONFIG    Samples per (task, config) pair (default: 3)
-  MAX_CONCURRENT        Max parallel API requests (default: 10)
+  MAX_CONCURRENT        Max parallel API requests (default: 100)
   MAX_TOKENS            Max tokens for model response (default: 4096)
   TASK_FILTER           Comma-separated task names to run (default: all tasks)
   VALENCE_FILTER        Comma-separated valences to run, e.g. "capability" (default: all)
@@ -152,7 +152,7 @@ def main() -> None:
     cfg = {
         "MAX_TOKENS": int(os.getenv("MAX_TOKENS", "4096")),
         "TARGET_BACKEND": os.getenv("TARGET_BACKEND", "openrouter"),
-        "MAX_CONCURRENT": int(os.getenv("MAX_CONCURRENT", "10")),
+        "MAX_CONCURRENT": int(os.getenv("MAX_CONCURRENT", "100")),
         **get_api_keys_config(),
     }
 
