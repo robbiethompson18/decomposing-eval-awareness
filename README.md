@@ -1,4 +1,6 @@
 > **Provenance note:** This repo is a mirror of [aisa-group/decomposing-eval-awareness](https://github.com/aisa-group/decomposing-eval-awareness) with my own experiments layered on top. All credit for the original code, benchmark, and paper — [Decomposing and Measuring Evaluation Awareness (arXiv:2605.23055, 2026)](https://arxiv.org/abs/2605.23055) — goes to the AISA group and coauthors. Licensed [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) per upstream. Original README follows below.
+>
+> **Scope note:** This mirror has been stripped to the **EvalAwareBench (eval_bench) pipeline only** — the HarmBench, AgentHarm, and agentic-misalignment pipelines and the self-report/purpose-guess/third-person probe methods were deleted (they were never wired to eval_bench here). The README sections below describing those benchmarks no longer apply to this mirror; see upstream for the full paper pipeline.
 
 <h1 align="center">Decomposing and Measuring Evaluation Awareness</h1>
 
