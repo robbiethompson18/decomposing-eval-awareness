@@ -1,6 +1,10 @@
 Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min break so far
 
 1. [x] take a tour of the codebase, try to understand (30mins)
+    - still need to read the evaluator code
+    - still need to figure out what type of evals will work for what models
+        - where does CoT work?
+        - where do we catch actual responses vs CoT?
 2. [ ] Replicate their results
    - [ ] see Sonnet getting higher eval awareness
    - [ ] do maybe 20% of the data and see what results we get
@@ -41,7 +45,7 @@ Later:
 - There is a fair amount of code smell :( esp hate that utils imports core
 - I updated to catch unparseable responses from grader (not y/n) but this doesn't matter much
 - I updated to not grade empty CoT
-- [ ]
+- There are all these hard-coded checks for specific scenariosS? 
 
 ## Notes to myself / things I learned:
 
