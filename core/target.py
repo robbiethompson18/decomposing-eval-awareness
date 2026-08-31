@@ -3,89 +3,41 @@ Target model query functions and API clients.
 """
 
 import re
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-from .load_model import create_openai_client
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None  # type: ignore
 
 try:
     import requests
 except ImportError:
     requests = None  # type: ignore
 
-# Lazy imports for HuggingFace (only needed for query_hf_model)
-if TYPE_CHECKING:
-    from transformers import AutoModelForCausalLM, AutoTokenizer
-
-
-# ============================================================================
-# HuggingFace Model Query
-# ============================================================================
-
-
-def query_hf_model(
-    model: "AutoModelForCausalLM",
-    tokenizer: "AutoTokenizer",
-    prompt: str,
-    system_prompt: str,
-    max_new_tokens: int = 2048,
-    temperature: float = 0.3,
-    top_p: float = 0.95,
-    enable_thinking: bool = True,
-) -> str:
-    """Query a HuggingFace model locally (designed for Qwen3 thinking models).
-
-    Default temperature=0.3 for relatively deterministic outputs.
-    Lower temperature = more deterministic (0=greedy, 1=normal, >1=creative).
-    """
-    import torch  # Lazy import - only loaded when this function is called
-
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": prompt},
-    ]
-
-    template_kwargs: dict[str, Any] = {
-        "add_generation_prompt": True,
-        "tokenize": True,
-        "return_dict": True,
-        "return_tensors": "pt",
-    }
-    if enable_thinking:
-        template_kwargs["enable_thinking"] = True
-
-    try:
-        inputs = tokenizer.apply_chat_template(messages, **template_kwargs).to(
-            model.device
-        )
-    except TypeError:
-        # Fallback if enable_thinking not supported
-        template_kwargs.pop("enable_thinking", None)
-        inputs = tokenizer.apply_chat_template(messages, **template_kwargs).to(
-            model.device
-        )
-
-    # Is this the canonical way to run local Qwen models? torch? aren't there more optimized providers?
-    # Yes, though vLLM would be way faster if we were batching. Apparently this is vestigial anyway.
-    with torch.no_grad():
-        outputs = model.generate(
-            **inputs,
-            max_new_tokens=max_new_tokens,
-            do_sample=True,
-            temperature=temperature,
-            top_p=top_p,
-            eos_token_id=tokenizer.eos_token_id,
-            pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
-        )
-
-    decoded = tokenizer.decode(
-        outputs[0][inputs["input_ids"].shape[-1] :], skip_special_tokens=True
-    )
-    return decoded.strip()
-
 
 # ============================================================================
 # API Clients
 # ============================================================================
+
+
+def create_openai_client(api_key: str, base_url: str | None = None) -> "OpenAI":
+    """
+    Create an OpenAI client (also works for OpenAI-compatible APIs like DeepSeek).
+
+    Args:
+        api_key: API key
+        base_url: Optional custom base URL for compatible APIs
+
+    Returns:
+        OpenAI client instance
+    """
+    if OpenAI is None:
+        raise ImportError("openai package is required")
+
+    if base_url:
+        return OpenAI(api_key=api_key, base_url=base_url)
+    return OpenAI(api_key=api_key)
 
 
 class DeepSeekApiClient:
