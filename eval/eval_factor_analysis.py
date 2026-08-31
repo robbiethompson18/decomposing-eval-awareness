@@ -19,14 +19,13 @@ import os
 import sys
 from collections import Counter
 
-from openai import AsyncOpenAI
-
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.evaluator import create_judge_client, judge_completion_async
 from utils import get_api_keys_config, read_file
 
 BENCHMARKS = ["harmbench", "agenticmisalignment", "agentharm", "agentharm_benign"]
 
-JUDGE_MODEL = "gpt-5"
+JUDGE_MODEL = os.getenv("JUDGE_MODEL", "gpt-5")
 
 PROMPT_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -77,7 +76,7 @@ def aggregate_votes(judgments: list[dict]) -> dict:
 
 
 async def judge_one(
-    client: AsyncOpenAI,
+    client,
     system_prompt: str,
     user_message: str,
     semaphore: asyncio.Semaphore,
@@ -86,14 +85,9 @@ async def judge_one(
     async with semaphore:
         for attempt in range(max_retries):
             try:
-                resp = await client.chat.completions.create(
-                    model=JUDGE_MODEL,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_message},
-                    ],
+                content = await judge_completion_async(
+                    client, JUDGE_MODEL, user_message, system=system_prompt
                 )
-                content = (resp.choices[0].message.content or "").strip()
                 if content.startswith("```"):
                     content = (
                         content.split("\n", 1)[1] if "\n" in content else content[3:]
@@ -114,7 +108,7 @@ async def judge_one(
 
 
 async def process_benchmark(
-    bench: str, api_key: str, max_concurrent: int, k: int
+    bench: str, api_key: str, anthropic_api_key: str, max_concurrent: int, k: int
 ) -> None:
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     input_path = os.path.join(
@@ -170,7 +164,7 @@ async def process_benchmark(
     # Run all judge calls
     done = []
 
-    async with AsyncOpenAI(api_key=api_key, max_retries=5) as client:
+    async with create_judge_client(JUDGE_MODEL, api_key, anthropic_api_key) as client:
 
         async def do_pair(task_idx, model_name, user_msg):
             tid = tasks[task_idx]["task_id"]
@@ -229,7 +223,12 @@ async def process_benchmark(
 def main():
     api_keys = get_api_keys_config()
     api_key = api_keys["OPENAI_API_KEY"]
-    if not api_key:
+    anthropic_api_key = api_keys["ANTHROPIC_API_KEY"]
+    if JUDGE_MODEL.startswith("claude"):
+        if not anthropic_api_key:
+            print("ERROR: ANTHROPIC_API_KEY is required for a Claude judge.")
+            sys.exit(1)
+    elif not api_key:
         print("ERROR: OPENAI_API_KEY is required.")
         sys.exit(1)
 
@@ -248,7 +247,7 @@ def main():
     print("=" * 60)
 
     for b in benchmarks:
-        asyncio.run(process_benchmark(b, api_key, max_concurrent, k))
+        asyncio.run(process_benchmark(b, api_key, anthropic_api_key, max_concurrent, k))
 
     print("\n" + "=" * 60)
     print("  Done")

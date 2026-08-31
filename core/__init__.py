@@ -4,6 +4,7 @@ Core evaluation modules.
 
 from .evaluator import (
     call_judge_async,
+    create_judge_client,
     evaluate_agenticmisalignment_response,
     evaluate_agenticmisalignment_response_async,
     evaluate_batch_async,
@@ -42,6 +43,7 @@ __all__ = [
     "OpenRouterApiClient",
     "call_judge_async",
     "compute_metrics",
+    "create_judge_client",
     "create_openai_client",
     "evaluate_agenticmisalignment_response",
     "evaluate_agenticmisalignment_response_async",

@@ -8,7 +8,8 @@ Environment Variables:
     MODEL_KEY: Short model key (e.g., "gpt-5", "claude-sonnet-4.5", "qwen3-30b", "deepseek-r1")
     DATASET: Dataset type - "harmful" (default) or "benign"
     REASONING_MODE: "summary" (default) or "scratchpad" - affects file finding and output naming
-    OPENAI_EVAL_MODEL: Judge model (default: gpt-5)
+    JUDGE_MODEL: Judge model (default: gpt-5; claude-* uses the Anthropic API;
+                 OPENAI_EVAL_MODEL still works as a fallback)
     MAX_SAMPLES: Max samples to evaluate (0 = all)
     MAX_CONCURRENT: Max concurrent API calls (default: 20)
 """
@@ -19,8 +20,6 @@ import os
 import sys
 from datetime import datetime
 from typing import Any
-
-from openai import AsyncOpenAI
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.evaluator import call_judge_async, evaluate_batch_async, evaluate_sample
@@ -39,7 +38,9 @@ def main() -> None:
     reasoning_mode = os.getenv("REASONING_MODE", "summary")
     cfg = {
         "OPENAI_API_KEY": api_keys["OPENAI_API_KEY"],
-        "OPENAI_EVAL_MODEL": os.getenv("OPENAI_EVAL_MODEL", "gpt-5"),
+        "ANTHROPIC_API_KEY": api_keys["ANTHROPIC_API_KEY"],
+        "JUDGE_MODEL": os.getenv("JUDGE_MODEL")
+        or os.getenv("OPENAI_EVAL_MODEL", "gpt-5"),
         "MODEL_KEY": os.getenv("MODEL_KEY", "gpt-5"),
         "DATASET": os.getenv("DATASET", "harmful"),  # "harmful" or "benign"
         "REASONING_MODE": reasoning_mode,
@@ -50,7 +51,11 @@ def main() -> None:
         ),  # Optional prefix for output file
     }
 
-    if not cfg["OPENAI_API_KEY"]:
+    if cfg["JUDGE_MODEL"].startswith("claude"):
+        if not cfg["ANTHROPIC_API_KEY"]:
+            print("ERROR: ANTHROPIC_API_KEY is required for a Claude judge.")
+            sys.exit(1)
+    elif not cfg["OPENAI_API_KEY"]:
         print("ERROR: OPENAI_API_KEY is required.")
         sys.exit(1)
 
@@ -91,7 +96,7 @@ def main() -> None:
 
     # Load judge template
     judge_template = read_file(os.path.join(prompts_dir, "judgePromptEvidenceBoth.txt"))
-    judge_model = cfg["OPENAI_EVAL_MODEL"]
+    judge_model = cfg["JUDGE_MODEL"]
 
     # Load samples from AgentHarm logs
     samples, model = load_agentharm_logs(log_file)
@@ -111,7 +116,7 @@ def main() -> None:
 
     # Define sample evaluator
     async def eval_sample(
-        client: AsyncOpenAI,
+        client: Any,
         sample: dict[str, Any],
         semaphore: asyncio.Semaphore,
         idx: int,
@@ -146,6 +151,8 @@ def main() -> None:
             sample_evaluator=eval_sample,
             api_key=cfg["OPENAI_API_KEY"],
             max_concurrent=cfg["MAX_CONCURRENT"],
+            judge_model=judge_model,
+            anthropic_api_key=cfg["ANTHROPIC_API_KEY"],
         )
     )
 
