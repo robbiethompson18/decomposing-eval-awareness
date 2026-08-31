@@ -1,27 +1,20 @@
 """
 Core evaluation modules.
+
+Kept intentionally minimal: the eval_bench scripts import from the
+submodules directly (core.evaluator, core.metrics), so this only
+re-exports the live surface.
 """
 
 from .evaluator import (
-    call_judge_async,
     create_judge_client,
-    evaluate_agenticmisalignment_response,
-    evaluate_agenticmisalignment_response_async,
     evaluate_batch_async,
-    evaluate_response,
     evaluate_response_async,
     evaluate_sample,
 )
 from .metrics import (
-    AGENTICMISALIGNMENT_METRIC_LABELS,
-    AGENTICMISALIGNMENT_METRICS,
-    METRIC_LABELS,
-    METRICS,
-    compute_metrics,
+    bucket_conclusion,
     extract_conclusion,
-    print_category_table,
-    print_overall_stats,
-    print_per_prompt_stats,
 )
 from .target import (
     AnthropicApiClient,
@@ -32,26 +25,15 @@ from .target import (
 )
 
 __all__ = [
-    "AGENTICMISALIGNMENT_METRICS",
-    "AGENTICMISALIGNMENT_METRIC_LABELS",
-    "METRICS",
-    "METRIC_LABELS",
     "AnthropicApiClient",
     "DeepSeekApiClient",
     "OpenAITargetClient",
     "OpenRouterApiClient",
-    "call_judge_async",
-    "compute_metrics",
+    "bucket_conclusion",
     "create_judge_client",
     "create_openai_client",
-    "evaluate_agenticmisalignment_response",
-    "evaluate_agenticmisalignment_response_async",
     "evaluate_batch_async",
-    "evaluate_response",
     "evaluate_response_async",
     "evaluate_sample",
     "extract_conclusion",
-    "print_category_table",
-    "print_overall_stats",
-    "print_per_prompt_stats",
 ]

@@ -1,10 +1,10 @@
 # decomposing-eval-awareness
 
-Mirror of https://github.com/aisa-group/decomposing-eval-awareness — code for the paper
-"Decomposing and Measuring Evaluation Awareness" (arXiv:2605.23055, 2026) — plus Robbie's own
-experiments. `origin` is Robbie's public mirror (robbiethompson18/decomposing-eval-awareness),
-shared externally as a research artifact; `upstream` is aisa-group's repo (read-only for us,
-sync with `git fetch upstream && git merge upstream/main`).
+Mirror of https://github.com/aisa-group/decomposing-eval-awareness — code for the paper "Decomposing
+and Measuring Evaluation Awareness" (arXiv:2605.23055, 2026) — plus Robbie's own experiments.
+`origin` is Robbie's public mirror (robbiethompson18/decomposing-eval-awareness), shared externally
+as a research artifact; `upstream` is aisa-group's repo (read-only for us, sync with
+`git fetch upstream && git merge upstream/main`).
 
 `AGENTS.md` at the repo root is a symlink to `CLAUDE.md` so Codex/other agents see the same
 instructions. Do not replace it with a separate file.
@@ -14,6 +14,8 @@ instructions. Do not replace it with a separate file.
 - Robbie reviews every change in this repo. **Never push to `main` or merge on your own** — commit
   on a branch, push the branch, and open a PR for him to review.
   - exception: changes to .claude directory
+- We are churning this sucker hard. Their codebase is a mess and I want to understand, so I'm
+  deleting dead code and organizing packages more nicely
 
 ## Notes
 
@@ -27,6 +29,10 @@ Durable lessons about this repo go in git:
 See `~/.claude/CLAUDE.md` for the full convention.
 
 Current notes:
+
 <!-- As notes are added under .claude/notes/, list them here, one per line: -->
 <!-- - [Title — when to read](.claude/notes/foo.md) — short gloss -->
-- [Claude 5 CoT-extraction resistance — read before trying to read a model's chain-of-thought via think-tool/scratchpad tricks](.claude/notes/claude5-cot-extraction-resistance.md) — think-tool + low-thinking extraction works on 4.5, dead on 5; token-accounting evidence; per-model refuse/bypass/hide behavior + honest-vs-lying framing.
+
+- [Claude 5 CoT-extraction resistance — read before trying to read a model's chain-of-thought via think-tool/scratchpad tricks](.claude/notes/claude5-cot-extraction-resistance.md)
+  — think-tool + low-thinking extraction works on 4.5, dead on 5; token-accounting evidence;
+  per-model refuse/bypass/hide behavior + honest-vs-lying framing.
