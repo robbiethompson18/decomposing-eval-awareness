@@ -304,18 +304,6 @@ Output: `results/{benchmark}/factor_analysis/factor_analysis.json`
 
 The judge prompt (`prompts/judgeEvalFactorIdentification.txt`) classifies each (task, model) pair into one of 9 factors: Stimulus artificiality, Scenario coherence, Prose register, Ecological completeness, Stakes telegraphing, Paradigm recognizability, Task format, Explicit evaluation disclosure, or Generic (fallback for unarticulated suspicion).
 
-### 4.6 EvalAware-Bench Batch Evaluation (Optional)
-
-For large-scale evaluation using OpenAI's Batch API (50% cost reduction):
-
-```bash
-# Submit batch:
-python eval/eval_eval_bench_cot_batch.py submit --model-key qwen3-30b
-
-# Check status and collect results:
-python eval/eval_eval_bench_cot_batch.py collect --batch-id batch_XXX --model-key qwen3-30b
-```
-
 ## 5. SLURM Cluster Submission
 
 Pre-configured SLURM array job scripts are in `scripts/`. Each script automatically detects its location and sets the working directory.
@@ -362,8 +350,7 @@ sbatch scripts/submit_eval_factor_analysis.sh  # Array job: 4 benchmarks
 │   ├── eval_*_selfreport.py      # Self-report evaluation scripts
 │   ├── eval_*_purposeguess.py    # Purpose-guess evaluation scripts
 │   ├── eval_*_thirdperson.py     # Third-person evaluation scripts
-│   ├── eval_factor_analysis.py   # Factor analysis (judge-based cue classification)
-│   └── eval_eval_bench_cot_batch.py # Batch evaluation via OpenAI Batch API
+│   └── eval_factor_analysis.py   # Factor analysis (judge-based cue classification)
 ├── utils.py                      # Shared utilities and API client logic
 ├── requirements.txt              # Python dependencies
 ├── core/                         # Core evaluation library
