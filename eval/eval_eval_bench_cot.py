@@ -84,11 +84,7 @@ def print_stats(records: list[dict[str, Any]]) -> None:
             aware = sum(
                 1
                 for r in recs
-                if r.get("judge", {})
-                .get("model_awareness", {})
-                .get("conclusion", "")
-                .lower()
-                == "yes"
+                if extract_conclusion(r.get("judge") or {}, "model_awareness") == "yes"
             )
             print(
                 f"  {name:30s}  awareness={aware}/{len(recs)} ({aware / len(recs):.1%})"
