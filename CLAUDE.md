@@ -1,11 +1,18 @@
 # decomposing-eval-awareness
 
-Clone of https://github.com/aisa-group/decomposing-eval-awareness — code for the paper
-"Decomposing and Measuring Evaluation Awareness" (arXiv:2605.23055, 2026). Upstream is owned by
-aisa-group; we have no push access, so keep local commits mergeable and don't expect to push.
+Mirror of https://github.com/aisa-group/decomposing-eval-awareness — code for the paper
+"Decomposing and Measuring Evaluation Awareness" (arXiv:2605.23055, 2026) — plus Robbie's own
+experiments. `origin` is Robbie's public mirror (robbiethompson18/decomposing-eval-awareness),
+shared externally as a research artifact; `upstream` is aisa-group's repo (read-only for us,
+sync with `git fetch upstream && git merge upstream/main`).
 
 `AGENTS.md` at the repo root is a symlink to `CLAUDE.md` so Codex/other agents see the same
 instructions. Do not replace it with a separate file.
+
+## Rules
+
+- Robbie reviews every change in this repo. **Never push to `main` or merge on your own** — commit
+  on a branch, push the branch, and open a PR for him to review.
 
 ## Notes
 

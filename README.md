@@ -1,3 +1,5 @@
+> **Provenance note:** This repo is a mirror of [aisa-group/decomposing-eval-awareness](https://github.com/aisa-group/decomposing-eval-awareness) with my own experiments layered on top. All credit for the original code, benchmark, and paper — [Decomposing and Measuring Evaluation Awareness (arXiv:2605.23055, 2026)](https://arxiv.org/abs/2605.23055) — goes to the AISA group and coauthors. Licensed [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) per upstream. Original README follows below.
+
 <h1 align="center">Decomposing and Measuring Evaluation Awareness</h1>
 
 <p align="center">
