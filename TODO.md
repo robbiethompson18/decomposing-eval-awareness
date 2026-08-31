@@ -9,9 +9,10 @@ Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min
    - [ ] see Sonnet getting higher eval awareness
    - [ ] do maybe 20% of the data and see what results we get
    - [ ] learn how parellelism works so we can do this real fast
-3. [ ] replace grader with GPT 5.6, Fable, Opus5. Check agreement.
+3. [x] replace grader with GPT 5.6, Fable, Opus5. Check agreement.
+   - they largely agree. Shoudl write this up.
 4. [ ] Extend their results to new models
-   - [ ] plot eval awareness over time by model
+   - [ ] plot eval awareness over time by model. I think this is just a done thing in other places?
 5. [ ] Start NLA work
 6. [ ] Dig into all the refusals from Opus and Fable... are they reasonable?
 
