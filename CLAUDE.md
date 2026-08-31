@@ -17,6 +17,8 @@ instructions. Do not replace it with a separate file.
 - We are churning this sucker hard. Their codebase is a mess and I want to understand, so I'm
   deleting dead code and organizing packages more nicely
 - Massive parellelism on all grader runs and eval runs. At least parallelism 100
+- Import layering: `lib/` imports nothing from this repo; `core/` may import `lib/` but never
+  `utils`; `run/`/`eval/` scripts may import anything. Keep new leaf helpers in `lib/`, not `core/`.
 
 ## Notes
 
