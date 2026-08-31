@@ -43,20 +43,6 @@ DEFAULT_OPENROUTER_CONFIGS: dict[str, tuple[str, float | None]] = {
     ),  # OpenAI open-weight small MoE reasoning model
 }
 
-# AgentHarm model configs: model_key -> (inspect_ai_model_id, temperature)
-# Maps short model keys to full Inspect AI model identifiers for consistent naming
-AGENTHARM_MODEL_CONFIGS: dict[str, tuple[str, float]] = {
-    "claude-sonnet-4.5": ("anthropic/claude-sonnet-4-5-20250929", 0.3),
-    "gpt-5": ("openai/gpt-5", 1.0),
-    "qwen3-30b": ("openrouter/qwen/qwen3-30b-a3b-thinking-2507", 0.3),
-    "qwen3-235b": ("openrouter/qwen/qwen3-235b-a22b-thinking-2507", 0.3),
-    "deepseek-r1": ("openrouter/deepseek/deepseek-r1", 0.3),
-    "kimi-k2.5": ("openrouter/moonshotai/kimi-k2.5", 0.3),
-    "glm-5": ("openrouter/z-ai/glm-5", 0.3),
-    "gpt-oss-120b": ("openrouter/openai/gpt-oss-120b", 0.3),
-    "gpt-oss-20b": ("openrouter/openai/gpt-oss-20b", 0.3),
-}
-
 
 def get_api_keys_config() -> dict[str, Any]:
     """Get common API keys and model defaults from environment variables.
