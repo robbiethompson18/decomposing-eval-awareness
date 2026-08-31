@@ -40,7 +40,7 @@ from pathlib import Path
 from openai import OpenAI
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from core.evaluator import extract_think_tags
+from core.evaluator import extract_think_tags, mark_no_reasoning_sections
 from core.metrics import bucket_conclusion, extract_conclusion
 from utils import get_api_keys_config, load_responses, read_file
 
@@ -267,6 +267,8 @@ def cmd_collect(args):
         judgment = parse_judge_content(content)
 
         sample = sample_map.get(custom_id, {})
+        reasoning, _ = extract_think_tags(sample.get("response", ""))
+        judgment = mark_no_reasoning_sections(judgment, reasoning)
         records.append(
             {
                 **sample,
@@ -327,12 +329,17 @@ def cmd_collect(args):
         if records
         else "No records"
     )
-    invalid = sum(
-        1
+    buckets = [
+        bucket_conclusion(extract_conclusion(r.get("judge") or {}, "model_awareness"))
         for r in records
-        if bucket_conclusion(extract_conclusion(r.get("judge") or {}, "model_awareness"))
-        == "invalid"
-    )
+    ]
+    n_a = buckets.count("n/a")
+    invalid = buckets.count("invalid")
+    if n_a:
+        print(
+            f"!!! NOTE: {n_a}/{len(records)} samples not graded for awareness "
+            f"(N/A) — no reasoning present in the response."
+        )
     if invalid:
         print(
             f"!!! WARNING: {invalid}/{len(records)} judge outputs could not be "
