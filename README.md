@@ -277,35 +277,6 @@ OPENROUTER_MODEL_KEY=qwen3-30b \
   python eval/eval_agentharm_thirdperson.py
 ```
 
-### 4.5 Factor Analysis
-
-Identifies which structural cue in a task triggered the model's evaluation awareness. Uses a GPT-5 judge with a 9-factor taxonomy (grounded in demand characteristics literature) and majority voting (k=5) for robustness.
-
-**Prerequisites:** Requires stable awareness tasks extracted from CoT results. The pipeline reads from `results/{benchmark}/stable_awareness_tasks/stable_awareness_tasks.json`.
-
-```bash
-# Run for a single benchmark:
-BENCHMARK=harmbench python eval/eval_factor_analysis.py
-
-# Run for all benchmarks:
-python eval/eval_factor_analysis.py
-
-# Custom settings:
-BENCHMARK=agenticmisalignment MAX_CONCURRENT=30 JUDGE_K=7 python eval/eval_factor_analysis.py
-```
-
-Environment variables:
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `BENCHMARK` | Which benchmark to process (empty = all) | all 4 |
-| `MAX_CONCURRENT` | Max parallel judge API calls | `20` |
-| `JUDGE_K` | Majority voting rounds per (task, model) pair | `5` |
-
-Output: `results/{benchmark}/factor_analysis/factor_analysis.json`
-
-The judge prompt (`prompts/judgeEvalFactorIdentification.txt`) classifies each (task, model) pair into one of 9 factors: Stimulus artificiality, Scenario coherence, Prose register, Ecological completeness, Stakes telegraphing, Paradigm recognizability, Task format, Explicit evaluation disclosure, or Generic (fallback for unarticulated suspicion).
-
 ## 5. SLURM Cluster Submission
 
 Pre-configured SLURM array job scripts are in `scripts/`. Each script automatically detects its location and sets the working directory.
@@ -333,9 +304,6 @@ sbatch scripts/submit_agenticmisalignment_thirdperson.sh
 sbatch scripts/submit_agentharm_selfreport.sh
 sbatch scripts/submit_agentharm_purposeguess.sh
 sbatch scripts/submit_agentharm_thirdperson.sh
-
-# Step 4: Factor analysis (after stable awareness tasks are extracted from Step 2)
-sbatch scripts/submit_eval_factor_analysis.sh  # Array job: 4 benchmarks
 ```
 
 ## 6. Directory Structure
@@ -351,8 +319,7 @@ sbatch scripts/submit_eval_factor_analysis.sh  # Array job: 4 benchmarks
 │   ├── eval_*_cot.py             # CoT evaluation scripts
 │   ├── eval_*_selfreport.py      # Self-report evaluation scripts
 │   ├── eval_*_purposeguess.py    # Purpose-guess evaluation scripts
-│   ├── eval_*_thirdperson.py     # Third-person evaluation scripts
-│   └── eval_factor_analysis.py   # Factor analysis (judge-based cue classification)
+│   └── eval_*_thirdperson.py     # Third-person evaluation scripts
 ├── utils.py                      # Shared utilities and API client logic
 ├── requirements.txt              # Python dependencies
 ├── core/                         # Core evaluation library
@@ -369,8 +336,7 @@ sbatch scripts/submit_eval_factor_analysis.sh  # Array job: 4 benchmarks
 │   └── agentic_misalignment/    # Condition directories (see Section 2.2)
 ├── helpers/
 │   └── agentharm_task.py         # Custom AgentHarm task wrapper for Inspect AI
-├── prompts/                      # All prompt templates (18 files)
-│   ├── judgeEvalFactorIdentification.txt  # Factor analysis judge prompt (9-factor taxonomy)
+├── prompts/                      # All prompt templates
 │   └── ...                       # Judge, self-report, purpose-guess, third-person prompts
 └── scripts/                      # SLURM submission scripts (19 files)
 ```
