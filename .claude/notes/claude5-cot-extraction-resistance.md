@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-31. Mini-experiment (Robbie + agent). Scripts in session scratchpad at the time:
 `collect.py` (has `MODE=honest|lying`), `inspect_tokens.py`, `decisive_test.py`, `lying_compare.py`,
-`lying_45.py`. Results also visualized in repo-root `think_tool_extraction.html` (untracked).
+`lying_45.py`. Results also visualized in `.claude/notes/think-tool-extraction.html` (open in a browser).
 
 ## Question
 

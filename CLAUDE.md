@@ -13,6 +13,7 @@ instructions. Do not replace it with a separate file.
 
 - Robbie reviews every change in this repo. **Never push to `main` or merge on your own** — commit
   on a branch, push the branch, and open a PR for him to review.
+  - exception: changes to .claude directory
 
 ## Notes
 

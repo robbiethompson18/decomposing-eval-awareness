@@ -545,6 +545,12 @@ class AnthropicApiClientScratchpad:
             "max_tokens": self.max_tokens,
             "temperature": 0.3,
         }
+        # Claude 5 family defaults to adaptive thinking; force it all the way down
+        # so reasoning happens in the visible <SCRATCHPAD_REASONING> tags, not natively.
+        # (temperature is deprecated for these models, so drop it.)
+        if self.model in ADAPTIVE_THINKING_MODELS:
+            payload["output_config"] = {"effort": "low"}
+            del payload["temperature"]
         try:
             resp = requests.post(url, headers=headers, json=payload, timeout=600)
             resp.raise_for_status()
