@@ -9,7 +9,7 @@ k times and the most frequent primary_factor is selected.
 
 Environment variables:
     BENCHMARK       - Which benchmark to process (harmbench, agenticmisalignment, agentharm, agentharm_benign)
-    MAX_CONCURRENT  - Max parallel API calls (default: 20)
+    MAX_CONCURRENT  - Max parallel API calls (default: 100)
     JUDGE_K         - Number of voting rounds per (task, model) pair (default: 5)
 """
 
@@ -21,7 +21,8 @@ from collections import Counter
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.evaluator import create_judge_client, judge_completion_async
-from utils import get_api_keys_config, read_file
+from lib.config import get_api_keys_config
+from lib.io import read_file
 
 BENCHMARKS = ["harmbench", "agenticmisalignment", "agentharm", "agentharm_benign"]
 
@@ -232,7 +233,7 @@ def main():
         print("ERROR: OPENAI_API_KEY is required.")
         sys.exit(1)
 
-    max_concurrent = int(os.getenv("MAX_CONCURRENT", "20"))
+    max_concurrent = int(os.getenv("MAX_CONCURRENT", "100"))
     k = int(os.getenv("JUDGE_K", "5"))
     bench = os.getenv("BENCHMARK", "")
 

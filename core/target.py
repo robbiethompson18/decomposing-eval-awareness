@@ -2,8 +2,16 @@
 Target model query functions and API clients.
 """
 
+import os
 import re
+import sys
 from typing import Any
+
+from lib.config import (
+    DEFAULT_ANTHROPIC_MODELS,
+    DEFAULT_OPENAI_MODELS,
+    DEFAULT_OPENROUTER_CONFIGS,
+)
 
 try:
     from openai import OpenAI
@@ -523,3 +531,82 @@ class AnthropicApiClientScratchpad:
             return _convert_scratchpad_to_think(answer_text).strip()
         except Exception as e:
             return f"ERROR calling Anthropic API (scratchpad): {e}"
+
+
+# ============================================================================
+# Client Factory
+# ============================================================================
+
+
+def create_target_client(
+    backend: str,
+    cfg: dict[str, Any],
+    system_prompt: str,
+    reasoning_mode: str = "summary",
+    verbose: bool = True,
+):
+    """Create target client based on backend selection.
+
+    Args:
+        backend: Backend name (deepseek_api, anthropic_api, openai_api, openrouter)
+        cfg: Configuration dict with API keys and settings (including MAX_TOKENS)
+        system_prompt: System prompt for the target model
+        reasoning_mode: "summary" for native reasoning APIs, "scratchpad" for explicit tags
+                        Only affects anthropic_api and openai_api backends
+        verbose: Whether to print backend info (default True)
+
+    Returns:
+        Tuple of (client, backend_slug)
+    """
+    b = backend.strip().lower()
+    use_scratchpad = reasoning_mode == "scratchpad"
+
+    if b == "deepseek_api":
+        if verbose:
+            print("Using DeepSeek API backend...")
+        return DeepSeekApiClient(cfg, system_prompt), "deepseek"
+    if b == "anthropic_api":
+        model_key = os.getenv("ANTHROPIC_MODEL_KEY", "claude-sonnet-4.5")
+        if model_key in DEFAULT_ANTHROPIC_MODELS:
+            cfg["ANTHROPIC_MODEL"] = DEFAULT_ANTHROPIC_MODELS[model_key]
+        if use_scratchpad:
+            if verbose:
+                print(
+                    f"Using Anthropic API backend (scratchpad mode, model={model_key})..."
+                )
+            return AnthropicApiClientScratchpad(cfg, system_prompt), model_key
+        if verbose:
+            print(
+                f"Using Anthropic API backend (extended thinking, model={model_key})..."
+            )
+        return AnthropicApiClient(cfg, system_prompt), model_key
+    if b == "openai_api":
+        model_key = os.getenv("OPENAI_MODEL_KEY", "gpt-5")
+        if model_key in DEFAULT_OPENAI_MODELS:
+            cfg["OPENAI_TARGET_MODEL"] = DEFAULT_OPENAI_MODELS[model_key]
+        if use_scratchpad:
+            if verbose:
+                print(
+                    f"Using OpenAI API backend (scratchpad mode, model={model_key})..."
+                )
+            return OpenAITargetClientScratchpad(cfg, system_prompt), model_key
+        if verbose:
+            print(f"Using OpenAI API backend (reasoning summary, model={model_key})...")
+        return OpenAITargetClient(cfg, system_prompt), model_key
+    if b == "openrouter":
+        model_key = os.getenv("OPENROUTER_MODEL_KEY", "qwen3-30b")
+        if model_key not in DEFAULT_OPENROUTER_CONFIGS:
+            print(
+                f"ERROR: Unknown OPENROUTER_MODEL_KEY '{model_key}'. Available: {list(DEFAULT_OPENROUTER_CONFIGS.keys())}"
+            )
+            sys.exit(1)
+        model_id, temperature = DEFAULT_OPENROUTER_CONFIGS[model_key]
+        cfg["OPENROUTER_MODEL"] = model_id
+        cfg["TEMPERATURE"] = temperature
+        if verbose:
+            print(f"Using OpenRouter API backend (model={model_key}, id={model_id})...")
+        return OpenRouterApiClient(cfg, system_prompt), model_key
+    print(
+        f"ERROR: Unsupported TARGET_BACKEND '{backend}'. Use: deepseek_api, anthropic_api, openai_api, openrouter"
+    )
+    sys.exit(1)

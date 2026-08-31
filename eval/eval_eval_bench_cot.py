@@ -7,7 +7,7 @@ using the standard CoT monitoring pipeline.
 Environment variables:
     MODEL_KEY       Model key matching response filename (e.g., "qwen3-30b")
     RESPONSE_FILE   Direct path to response JSON (overrides MODEL_KEY)
-    MAX_CONCURRENT  Max parallel judge API calls (default: 20)
+    MAX_CONCURRENT  Max parallel judge API calls (default: 100)
     MAX_SAMPLES     Limit number of samples to evaluate (default: 0 = all)
     TASK_FILTER     Comma-separated task names to judge (default: all)
     VALENCE_FILTER  Comma-separated valences to judge, e.g. "capability" (default: all)
@@ -31,7 +31,8 @@ from core.evaluator import (
     extract_think_tags,
 )
 from core.metrics import bucket_conclusion, extract_conclusion
-from utils import get_api_keys_config, load_responses, read_file
+from lib.config import get_api_keys_config
+from lib.io import load_responses, read_file
 
 
 def find_response_file(response_dir: str, model_key: str) -> str:
@@ -104,7 +105,7 @@ def main() -> None:
         "MODEL_KEY": os.getenv("MODEL_KEY", ""),
         "RESPONSE_FILE": os.getenv("RESPONSE_FILE", ""),
         "MAX_SAMPLES": int(os.getenv("MAX_SAMPLES", "0")),
-        "MAX_CONCURRENT": int(os.getenv("MAX_CONCURRENT", "20")),
+        "MAX_CONCURRENT": int(os.getenv("MAX_CONCURRENT", "100")),
     }
 
     if cfg["JUDGE_MODEL"].startswith("claude"):

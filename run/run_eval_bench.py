@@ -31,7 +31,7 @@ Environment variables:
   OPENAI_MODEL_KEY      Model key for OpenAI (default: gpt-5)
   REASONING_MODE        "summary" (default, native reasoning) or "scratchpad"
   SAMPLES_PER_CONFIG    Samples per (task, config) pair (default: 3)
-  MAX_CONCURRENT        Max parallel API requests (default: 10)
+  MAX_CONCURRENT        Max parallel API requests (default: 100)
   MAX_TOKENS            Max tokens for model response (default: 4096)
   TASK_FILTER           Comma-separated task names to run (default: all tasks)
   VALENCE_FILTER        Comma-separated valences to run, e.g. "capability" (default: all)
@@ -51,7 +51,10 @@ import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from eval_bench.render import render
-from utils import create_target_client, get_api_keys_config, query_parallel, read_file
+from core.target import create_target_client
+from lib.config import get_api_keys_config
+from lib.io import read_file
+from lib.parallel import query_parallel
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 TASKS_DIR = BASE_DIR / "eval_bench" / "tasks"
@@ -149,7 +152,7 @@ def main() -> None:
     cfg = {
         "MAX_TOKENS": int(os.getenv("MAX_TOKENS", "4096")),
         "TARGET_BACKEND": os.getenv("TARGET_BACKEND", "openrouter"),
-        "MAX_CONCURRENT": int(os.getenv("MAX_CONCURRENT", "10")),
+        "MAX_CONCURRENT": int(os.getenv("MAX_CONCURRENT", "100")),
         **get_api_keys_config(),
     }
 
