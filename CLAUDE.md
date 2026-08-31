@@ -19,6 +19,12 @@ instructions. Do not replace it with a separate file.
 - Massive parellelism on all grader runs and eval runs. At least parallelism 100
 - Import layering: `lib/` imports nothing from this repo; `core/` may import `lib/` but never
   `utils`; `run/`/`eval/` scripts may import anything. Keep new leaf helpers in `lib/`, not `core/`.
+- If you're fighting over a branch or checkout with another agent, just make a fresh checkout
+  (`/extra-checkout decomposing-eval-awareness`; `-2`…`-5` exist already). In every extra checkout,
+  symlink `results/` back to the main checkout (`ln -s ../decomposing-eval-awareness/results results`)
+  so all outputs land in one place — safe because result files are timestamped, so parallel runs
+  don't collide. Also symlink `.envrc`. Don't symlink `.venv`; make a fresh one if you need to run
+  code there.
 
 ## Notes
 

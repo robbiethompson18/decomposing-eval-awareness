@@ -63,5 +63,5 @@ Later:
   - models are extra happy to refuse if the think tool is a 'secret scratchpad' that we claim no one
     can see. Fable and Opus will outright refuse this. Sonnet 5 will complete the request but ignore
     the tool
-- One drops the <think> blocks from previosu tuirns
+- One drops the <think> blocks from previous turns
 - This codebase is uglier than expected
