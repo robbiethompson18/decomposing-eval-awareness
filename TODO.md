@@ -33,8 +33,10 @@ Later:
 - [ ] maybe they wanted to use the vercel SDK?
 - [x] delete dead HF client code
 - [x] judge parser doesn't silently turn 'couldn't parse y/n result' into 'no'
-- [ ] import direction being backwards... hate that utils depends on core
-- [ ] clean evaluator.py so that we only have CoT grader in the generic one, other graders split by benchmark
+- [x] import direction being backwards... hate that utils depends on core
+      (resolved harder than planned: utils.py deleted entirely, #13; live helpers now in leaf lib/)
+- [x] clean evaluator.py so that we only have CoT grader in the generic one, other graders split by benchmark
+      (resolved by deletion: repo stripped to eval_bench, evaluator.py is CoT-only now, #9/#10)
 
 ## Potpourri
 
