@@ -41,6 +41,7 @@ from openai import OpenAI
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.evaluator import extract_think_tags
+from core.metrics import bucket_conclusion, extract_conclusion
 from utils import get_api_keys_config, load_responses, read_file
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -326,6 +327,18 @@ def cmd_collect(args):
         if records
         else "No records"
     )
+    invalid = sum(
+        1
+        for r in records
+        if bucket_conclusion(extract_conclusion(r.get("judge") or {}, "model_awareness"))
+        == "invalid"
+    )
+    if invalid:
+        print(
+            f"!!! WARNING: {invalid}/{len(records)} judge outputs could not be "
+            f"parsed as Yes/No for model_awareness — they count in denominators "
+            f"but not as aware. Inspect the raw judge responses."
+        )
 
     for group_key in ("valence", "config_name"):
         groups = {}
