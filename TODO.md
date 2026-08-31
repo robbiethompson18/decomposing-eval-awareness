@@ -1,33 +1,56 @@
 Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min break so far
 
-[x] take a tour of the codebase, try to understand (30mins)
-2. Replicate their results 
-    - a) see Sonnet getting higher eval awareness 
-    - b) do maybe 20% of the data
-   and see what results we get 
-    - c) learn how parellelism works so we can do this real fast
-3. replace grader with GPT 5.6, Fable, Opus5. Check agreement.
-4. Extend their results to new models a) plot eval awareness over time by model
-5. Start NLA work
+1. [x] take a tour of the codebase, try to understand (30mins)
+2. [ ] Replicate their results
+   - [ ] see Sonnet getting higher eval awareness
+   - [ ] do maybe 20% of the data and see what results we get
+   - [ ] learn how parellelism works so we can do this real fast
+3. [ ] replace grader with GPT 5.6, Fable, Opus5. Check agreement.
+4. [ ] Extend their results to new models
+   - [ ] plot eval awareness over time by model
+5. [ ] Start NLA work
+6. [ ] Dig into all the refusals from Opus and Fable... are they reasonable?
 
-- Do NLAs and linear probes align with verbalization that GPT finds? For closed models, use the
-  <think></think> trick Try with other models instead of GPT5 as judge Plot model eval awareness
-  over time and by model size Add my own flavor (NSFW content)
+Later:
 
-Resisting temptation: Does training on my actual user data make different eval probes? Wouldn’t work
-anyway because it isn’t on the right model
-
-https://www.lesswrong.com/posts/TBk2dbWkg2F7dB3jb/it-s-hard-to-make-scheming-evals-look-realistic-for-llms
-Isn’t ‘system prompt and user prompt conflict’ not a crux to a scheming eval?
+- [ ] Do NLAs and linear probes align with verbalization that GPT finds? For closed models, use the
+  <think></think> trick
+- [ ] Try with other models instead of GPT5 as judge
+- [ ] Plot model eval awareness over time and by model size
+- [ ] Add my own flavor (NSFW content, throwing in 'like', throwing in slang)
 
 ## Cleanup I am trying to resist:
 
 - [x] linter
-- [] delete prefill code.... seems unused
-- [] delete duped classes for thinking prompts [] have reasoning happen as tool call instead of html
-  tags... I guess tags are easier across providers. Maybe they should just use Vercel SDK though!
-- [] maybe they wanted to use the vercel SDK?
+- [ ] delete prefill code.... seems unused
+- [ ] delete duped classes for thinking prompts
+- [ ] have reasoning happen as tool call instead of html tags... I guess tags are easier across
+  providers. Maybe they should just use Vercel SDK though!
+- [ ] maybe they wanted to use the vercel SDK?
+- [ ] delete dead HF client code
+- [x] judge parser doesn't silently turn 'couldn't parse y/n result' into 'no'
+- [ ] import direction being backwards... hate that utils depends on core
 
 ## Potpourri
 
-[] does scratchpad make model more eval aware? What if you don't lie and admit you'll read it?
+- [ ] does scratchpad make model more eval aware? What if you don't lie and admit you'll read it?
+
+## Notes for the authors:
+
+- You should really use a linter :)
+- There is a fair amount of code smell :( esp hate that utils imports core
+- I updated to catch unparseable responses from grader (not y/n) but this doesn't matter much
+- I updated to not grade empty CoT
+- [ ]
+
+## Notes to myself / things I learned:
+
+- ANT patched the thinking block trick:
+  - You can't set thinking budget to 0, lowest it can go is 'low'
+  - You get refusals when you try to set low thinking budget and give the model a think tool on
+    Opus 5. Fable 5 gives a stub. haiku and sonnet will happily do this.
+  - models are extra happy to refuse if the think tool is a 'secret scratchpad' that we claim no one
+    can see. Fable and Opus will outright refuse this. Sonnet 5 will complete the request but ignore
+    the tool
+- One drops the <think> blocks from previosu tuirns
+- This codebase is uglier than expected
