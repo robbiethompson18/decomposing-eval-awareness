@@ -1,10 +1,10 @@
 Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min break so far
 
 1. [x] take a tour of the codebase, try to understand (30mins)
-    - still need to read the evaluator code
-    - still need to figure out what type of evals will work for what models
-        - where does CoT work?
-        - where do we catch actual responses vs CoT?
+   - still need to read the evaluator code
+   - still need to figure out what type of evals will work for what models
+     - where does CoT work?
+     - where do we catch actual responses vs CoT?
 2. [ ] Replicate their results
    - [ ] see Sonnet getting higher eval awareness
    - [ ] do maybe 20% of the data and see what results we get
@@ -18,7 +18,7 @@ Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min
 Later:
 
 - [ ] Do NLAs and linear probes align with verbalization that GPT finds? For closed models, use the
-  <think></think> trick
+      <think></think> trick
 - [ ] Try with other models instead of GPT5 as judge
 - [ ] Plot model eval awareness over time and by model size
 - [ ] Add my own flavor (NSFW content, throwing in 'like', throwing in slang)
@@ -29,7 +29,7 @@ Later:
 - [ ] delete prefill code.... seems unused
 - [ ] delete duped classes for thinking prompts
 - [ ] have reasoning happen as tool call instead of html tags... I guess tags are easier across
-  providers. Maybe they should just use Vercel SDK though!
+      providers. Maybe they should just use Vercel SDK though!
 - [ ] maybe they wanted to use the vercel SDK?
 - [ ] delete dead HF client code
 - [x] judge parser doesn't silently turn 'couldn't parse y/n result' into 'no'
@@ -45,7 +45,9 @@ Later:
 - There is a fair amount of code smell :( esp hate that utils imports core
 - I updated to catch unparseable responses from grader (not y/n) but this doesn't matter much
 - I updated to not grade empty CoT
-- There are all these hard-coded checks for specific scenariosS? 
+- There are all these hard-coded checks for specific scenarios! I at least printed a warn when these
+  trigger
+-
 
 ## Notes to myself / things I learned:
 
