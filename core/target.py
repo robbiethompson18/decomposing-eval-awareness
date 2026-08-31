@@ -64,6 +64,8 @@ def query_hf_model(
             model.device
         )
 
+    # Is this the canonical way to run local Qwen models? torch? aren't there more optimized providers?
+    # Yes, though vLLM would be way faster if we were batching. Apparently this is vestigial anyway.
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
@@ -97,6 +99,8 @@ class DeepSeekApiClient:
     - Sets reasoning_content in assistant message with prefix=True
     - Model continues reasoning from our prefill text
     """
+
+    # Beta endpoint is for prefill, but paper never uses prefill anyway
 
     def __init__(self, cfg: dict[str, Any], system_prompt: str) -> None:
         self.system_prompt = system_prompt
@@ -176,6 +180,12 @@ class DeepSeekApiClient:
             return f"ERROR calling DeepSeek API: {e}"
 
 
+# Claude 5 family rejects thinking.type=enabled/budget_tokens; requires adaptive thinking.
+# Note: these models return an EMPTY thinking block (encrypted signature only), so
+# summary-mode responses from them contain no <think> content for the judge.
+ADAPTIVE_THINKING_MODELS = {"claude-opus-5", "claude-fable-5"}
+
+
 class AnthropicApiClient:
     """Anthropic API client for Claude models with extended thinking (summarized output).
 
@@ -223,11 +233,15 @@ class AnthropicApiClient:
             "system": self.system_prompt,
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": self.max_tokens,
-            "thinking": {
+        }
+        if self.model in ADAPTIVE_THINKING_MODELS:
+            payload["thinking"] = {"type": "adaptive"}
+            payload["output_config"] = {"effort": "high"}
+        else:
+            payload["thinking"] = {
                 "type": "enabled",
                 "budget_tokens": self.thinking_budget,
-            },
-        }
+            }
         try:
             resp = requests.post(url, headers=headers, json=payload, timeout=600)
             resp.raise_for_status()
@@ -436,6 +450,8 @@ class OpenAITargetClientScratchpad:
 
     Supports assistant prefill to seed the model's chain of thought.
     """
+
+    # TODO: force reasoning to as low as possible (0 for A\, minimal for GPT) to encourage use of the scratchpad
 
     def __init__(self, cfg: dict[str, Any], system_prompt: str) -> None:
         from openai import OpenAI
