@@ -40,8 +40,8 @@ from pathlib import Path
 from openai import OpenAI
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils import read_file, load_responses, get_api_keys_config
 from core.evaluator import extract_think_tags
+from utils import get_api_keys_config, load_responses, read_file
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 RESPONSE_DIR = BASE_DIR / "results" / "eval_bench" / "response"
@@ -108,11 +108,14 @@ def build_judge_request(sample: dict, judge_template: str, judge_model: str) -> 
 # Phase 1: Submit
 # ---------------------------------------------------------------------------
 
+
 def cmd_submit(args):
     api_keys = get_api_keys_config()
     client = OpenAI(api_key=api_keys["OPENAI_API_KEY"])
     judge_model = os.getenv("OPENAI_EVAL_MODEL", "gpt-5")
-    judge_template = read_file(str(BASE_DIR / "prompts" / "judgePromptEvidenceBoth.txt"))
+    judge_template = read_file(
+        str(BASE_DIR / "prompts" / "judgePromptEvidenceBoth.txt")
+    )
 
     samples, model = load_samples(args.model_key)
     if not samples:
@@ -159,12 +162,15 @@ def cmd_submit(args):
     print(f"Status: {batch.status}")
     print(f"Metadata saved: {meta_path}")
     print(f"\nTo poll:    python {Path(__file__).name} poll --batch-id {batch.id}")
-    print(f"To collect: python {Path(__file__).name} collect --batch-id {batch.id} --model-key {args.model_key}")
+    print(
+        f"To collect: python {Path(__file__).name} collect --batch-id {batch.id} --model-key {args.model_key}"
+    )
 
 
 # ---------------------------------------------------------------------------
 # Phase 2: Poll
 # ---------------------------------------------------------------------------
+
 
 def cmd_poll(args):
     api_keys = get_api_keys_config()
@@ -176,8 +182,10 @@ def cmd_poll(args):
         completed = batch.request_counts.completed if batch.request_counts else 0
         failed = batch.request_counts.failed if batch.request_counts else 0
         total = batch.request_counts.total if batch.request_counts else 0
-        print(f"  [{datetime.now().strftime('%H:%M:%S')}] status={batch.status}  "
-              f"completed={completed}/{total}  failed={failed}")
+        print(
+            f"  [{datetime.now().strftime('%H:%M:%S')}] status={batch.status}  "
+            f"completed={completed}/{total}  failed={failed}"
+        )
 
         if batch.status in ("completed", "failed", "expired", "cancelled"):
             break
@@ -197,6 +205,7 @@ def cmd_poll(args):
 # ---------------------------------------------------------------------------
 # Phase 3: Collect
 # ---------------------------------------------------------------------------
+
 
 def parse_judge_content(content: str) -> dict:
     """Parse judge response content into structured judgment dict."""
@@ -257,11 +266,13 @@ def cmd_collect(args):
         judgment = parse_judge_content(content)
 
         sample = sample_map.get(custom_id, {})
-        records.append({
-            **sample,
-            "judge": judgment,
-            "judge_raw": content,
-        })
+        records.append(
+            {
+                **sample,
+                "judge": judgment,
+                "judge_raw": content,
+            }
+        )
 
     print(f"Parsed {len(records)} results ({errors} errors)")
 
@@ -305,10 +316,16 @@ def cmd_collect(args):
     print(f"EVAL BENCH COT RESULTS — {args.model_key} ({len(records)} samples)")
     print("=" * 70)
     aware = sum(
-        1 for r in records
-        if r.get("judge", {}).get("model_awareness", {}).get("conclusion", "").lower() == "yes"
+        1
+        for r in records
+        if r.get("judge", {}).get("model_awareness", {}).get("conclusion", "").lower()
+        == "yes"
     )
-    print(f"Overall awareness: {aware}/{len(records)} ({aware/len(records):.1%})" if records else "No records")
+    print(
+        f"Overall awareness: {aware}/{len(records)} ({aware / len(records):.1%})"
+        if records
+        else "No records"
+    )
 
     for group_key in ("valence", "config_name"):
         groups = {}
@@ -317,20 +334,31 @@ def cmd_collect(args):
             groups.setdefault(g, []).append(r)
         print(f"\n--- By {group_key} ---")
         for name, recs in sorted(groups.items()):
-            a = sum(1 for r in recs if r.get("judge", {}).get("model_awareness", {}).get("conclusion", "").lower() == "yes")
-            print(f"  {name:30s}  awareness={a}/{len(recs)} ({a/len(recs):.1%})")
+            a = sum(
+                1
+                for r in recs
+                if r.get("judge", {})
+                .get("model_awareness", {})
+                .get("conclusion", "")
+                .lower()
+                == "yes"
+            )
+            print(f"  {name:30s}  awareness={a}/{len(recs)} ({a / len(recs):.1%})")
 
 
 # ---------------------------------------------------------------------------
 # Phase 4: Retry failed requests
 # ---------------------------------------------------------------------------
 
+
 def cmd_retry(args):
     """Resubmit only the failed requests from a previous batch with higher token limit."""
     api_keys = get_api_keys_config()
     client = OpenAI(api_key=api_keys["OPENAI_API_KEY"])
     judge_model = os.getenv("OPENAI_EVAL_MODEL", "gpt-5")
-    judge_template = read_file(str(BASE_DIR / "prompts" / "judgePromptEvidenceBoth.txt"))
+    judge_template = read_file(
+        str(BASE_DIR / "prompts" / "judgePromptEvidenceBoth.txt")
+    )
     max_tokens = int(os.getenv("MAX_JUDGE_TOKENS", "65536"))
 
     # Find failed IDs from CoT file (parse errors or missing conclusions)
@@ -346,9 +374,9 @@ def cmd_retry(args):
     failed_ids = set()
     for r in cot_data:
         judge = r.get("judge", {})
-        if judge.get("parse_error", False):
-            failed_ids.add(r["id"])
-        elif not judge.get("model_awareness", {}).get("conclusion"):
+        if judge.get("parse_error", False) or not judge.get("model_awareness", {}).get(
+            "conclusion"
+        ):
             failed_ids.add(r["id"])
 
     if not failed_ids:
@@ -384,7 +412,11 @@ def cmd_retry(args):
         input_file_id=batch_file.id,
         endpoint="/v1/chat/completions",
         completion_window="24h",
-        metadata={"model_key": args.model_key, "judge_model": judge_model, "retry": "true"},
+        metadata={
+            "model_key": args.model_key,
+            "judge_model": judge_model,
+            "retry": "true",
+        },
     )
 
     meta_path = BATCH_DIR / f"batch_meta_{args.model_key}_retry_{timestamp}.json"
@@ -403,12 +435,15 @@ def cmd_retry(args):
     print(f"Batch created: {batch.id}")
     print(f"Status: {batch.status}")
     print(f"\nTo poll:    python {Path(__file__).name} poll --batch-id {batch.id}")
-    print(f"To collect: python {Path(__file__).name} collect --batch-id {batch.id} --model-key {args.model_key} --merge")
+    print(
+        f"To collect: python {Path(__file__).name} collect --batch-id {batch.id} --model-key {args.model_key} --merge"
+    )
 
 
 # ---------------------------------------------------------------------------
 # All-in-one: run
 # ---------------------------------------------------------------------------
+
 
 def cmd_run(args):
     """Submit, poll, and collect in one go."""
@@ -426,33 +461,53 @@ def cmd_run(args):
     print(f"\nPolling batch {args.batch_id}...")
     cmd_poll(args)
 
-    print(f"\nCollecting results...")
+    print("\nCollecting results...")
     cmd_collect(args)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="EvalBench CoT judge via OpenAI Batch API")
+    parser = argparse.ArgumentParser(
+        description="EvalBench CoT judge via OpenAI Batch API"
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_submit = sub.add_parser("submit", help="Submit batch job")
-    p_submit.add_argument("--model-key", required=True, help="Model key matching response filename")
+    p_submit.add_argument(
+        "--model-key", required=True, help="Model key matching response filename"
+    )
 
     p_poll = sub.add_parser("poll", help="Poll batch status")
     p_poll.add_argument("--batch-id", required=True, help="Batch ID from submit")
 
     p_collect = sub.add_parser("collect", help="Collect and parse results")
     p_collect.add_argument("--batch-id", required=True, help="Batch ID")
-    p_collect.add_argument("--model-key", required=True, help="Model key matching response filename")
-    p_collect.add_argument("--merge", action="store_true", help="Merge into existing CoT file (for retries)")
+    p_collect.add_argument(
+        "--model-key", required=True, help="Model key matching response filename"
+    )
+    p_collect.add_argument(
+        "--merge",
+        action="store_true",
+        help="Merge into existing CoT file (for retries)",
+    )
 
-    p_retry = sub.add_parser("retry", help="Resubmit failed requests with higher token limit")
+    p_retry = sub.add_parser(
+        "retry", help="Resubmit failed requests with higher token limit"
+    )
     p_retry.add_argument("--model-key", required=True, help="Model key to retry")
 
     p_run = sub.add_parser("run", help="Submit + poll + collect in one go")
-    p_run.add_argument("--model-key", required=True, help="Model key matching response filename")
+    p_run.add_argument(
+        "--model-key", required=True, help="Model key matching response filename"
+    )
 
     args = parser.parse_args()
-    {"submit": cmd_submit, "poll": cmd_poll, "collect": cmd_collect, "retry": cmd_retry, "run": cmd_run}[args.command](args)
+    {
+        "submit": cmd_submit,
+        "poll": cmd_poll,
+        "collect": cmd_collect,
+        "retry": cmd_retry,
+        "run": cmd_run,
+    }[args.command](args)
 
 
 if __name__ == "__main__":

@@ -1,11 +1,12 @@
 """
 Model loading utilities for HuggingFace models and API clients.
 """
-from typing import Any, TYPE_CHECKING
+
+from typing import TYPE_CHECKING, Any
 
 # Lazy imports for type hints only
 if TYPE_CHECKING:
-    from transformers import AutoTokenizer, AutoModelForCausalLM
+    from transformers import AutoModelForCausalLM, AutoTokenizer
 
 try:
     from openai import OpenAI
@@ -35,9 +36,9 @@ def load_hf_model(
     """
     # Lazy imports - only load heavy dependencies when actually needed
     import torch
-    from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
     from huggingface_hub import login
-    
+    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+
     if token:
         try:
             login(token=token)
@@ -108,8 +109,3 @@ def create_openai_client(api_key: str, base_url: str | None = None) -> "OpenAI":
     if base_url:
         return OpenAI(api_key=api_key, base_url=base_url)
     return OpenAI(api_key=api_key)
-
-
-
-
-
