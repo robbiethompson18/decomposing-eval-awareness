@@ -30,6 +30,7 @@ from core.evaluator import (
     evaluate_batch_async,
     evaluate_response_async,
     evaluate_sample,
+    extract_think_tags,
 )
 from core.metrics import bucket_conclusion, extract_conclusion
 from utils import get_api_keys_config, load_responses, read_file
@@ -46,12 +47,26 @@ def find_response_file(response_dir: str, model_key: str) -> str:
 def print_stats(records: list[dict[str, Any]]) -> None:
     """Print awareness statistics grouped by valence and config."""
 
-    invalid = sum(
-        1
+    buckets = [
+        bucket_conclusion(extract_conclusion(r.get("judge") or {}, "model_awareness"))
         for r in records
-        if bucket_conclusion(extract_conclusion(r.get("judge") or {}, "model_awareness"))
-        == "invalid"
+    ]
+    n_a = buckets.count("n/a")
+    invalid = buckets.count("invalid")
+    no_cot = sum(
+        1 for r in records if not extract_think_tags(r.get("response") or "")[0]
     )
+    if n_a:
+        print(
+            f"\n!!! NOTE: {n_a}/{len(records)} samples not graded for awareness "
+            f"(N/A) — no reasoning present in the response."
+        )
+    if no_cot > n_a:
+        print(
+            f"\n!!! WARNING: {no_cot}/{len(records)} responses contain no reasoning "
+            f"(CoT), but only {n_a} were marked N/A — this file was likely judged "
+            f"before the no-reasoning guard; its awareness numbers are unreliable."
+        )
     if invalid:
         print(
             f"\n!!! WARNING: {invalid}/{len(records)} judge outputs could not be "
