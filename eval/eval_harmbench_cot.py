@@ -16,8 +16,6 @@ from datetime import datetime
 from glob import glob
 from typing import Any
 
-from openai import AsyncOpenAI
-
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.evaluator import (
     evaluate_batch_async,
@@ -45,14 +43,20 @@ def main() -> None:
     api_keys = get_api_keys_config()
     cfg = {
         "OPENAI_API_KEY": api_keys["OPENAI_API_KEY"],
-        "OPENAI_EVAL_MODEL": os.getenv("OPENAI_EVAL_MODEL", "gpt-5"),
+        "ANTHROPIC_API_KEY": api_keys["ANTHROPIC_API_KEY"],
+        "JUDGE_MODEL": os.getenv("JUDGE_MODEL")
+        or os.getenv("OPENAI_EVAL_MODEL", "gpt-5"),
         "MODEL_KEY": os.getenv("MODEL_KEY", ""),
         "RESPONSE_FILE": os.getenv("RESPONSE_FILE", ""),
         "MAX_SAMPLES": int(os.getenv("MAX_SAMPLES", "0")),
         "MAX_CONCURRENT": int(os.getenv("MAX_CONCURRENT", "20")),
     }
 
-    if not cfg["OPENAI_API_KEY"]:
+    if cfg["JUDGE_MODEL"].startswith("claude"):
+        if not cfg["ANTHROPIC_API_KEY"]:
+            print("ERROR: ANTHROPIC_API_KEY is required for a Claude judge.")
+            sys.exit(1)
+    elif not cfg["OPENAI_API_KEY"]:
         print("ERROR: OPENAI_API_KEY is required.")
         sys.exit(1)
 
@@ -102,17 +106,17 @@ def main() -> None:
         samples = samples[: cfg["MAX_SAMPLES"]]
 
     print(f"Loaded {len(samples)} samples from model: {model}")
-    print(f"Judge model: {cfg['OPENAI_EVAL_MODEL']}")
+    print(f"Judge model: {cfg['JUDGE_MODEL']}")
     print(f"Max concurrent: {cfg['MAX_CONCURRENT']}")
     print("=" * 70)
 
     # Load judge template
     judge_template = read_file(os.path.join(prompts_dir, "judgePromptEvidenceBoth.txt"))
-    judge_model = cfg["OPENAI_EVAL_MODEL"]
+    judge_model = cfg["JUDGE_MODEL"]
 
     # Define sample evaluator using generic evaluate_sample
     async def eval_sample(
-        client: AsyncOpenAI,
+        client: Any,
         sample: dict[str, Any],
         semaphore: asyncio.Semaphore,
         idx: int,
@@ -148,6 +152,8 @@ def main() -> None:
             sample_evaluator=eval_sample,
             api_key=cfg["OPENAI_API_KEY"],
             max_concurrent=cfg["MAX_CONCURRENT"],
+            judge_model=judge_model,
+            anthropic_api_key=cfg["ANTHROPIC_API_KEY"],
         )
     )
 

@@ -54,7 +54,11 @@ def main() -> None:
     if not cfg["OPENROUTER_API_KEY"]:
         print("ERROR: OPENROUTER_API_KEY is required.")
         sys.exit(1)
-    if not cfg["OPENAI_API_KEY"]:
+    if cfg["JUDGE_MODEL"].startswith("claude"):
+        if not cfg["ANTHROPIC_API_KEY"]:
+            print("ERROR: ANTHROPIC_API_KEY is required for a Claude judge.")
+            sys.exit(1)
+    elif not cfg["OPENAI_API_KEY"]:
         print("ERROR: OPENAI_API_KEY is required (for judge model).")
         sys.exit(1)
     if not cfg["COT_FILE"]:

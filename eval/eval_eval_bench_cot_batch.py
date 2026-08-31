@@ -105,6 +105,17 @@ def build_judge_request(sample: dict, judge_template: str, judge_model: str) -> 
     }
 
 
+def get_judge_model() -> str:
+    judge_model = os.getenv("JUDGE_MODEL") or os.getenv("OPENAI_EVAL_MODEL", "gpt-5")
+    if judge_model.startswith("claude"):
+        print(
+            "ERROR: this script uses the OpenAI Batch API and cannot use Claude "
+            "judges. Use eval_eval_bench_cot.py instead."
+        )
+        sys.exit(1)
+    return judge_model
+
+
 # ---------------------------------------------------------------------------
 # Phase 1: Submit
 # ---------------------------------------------------------------------------
@@ -113,7 +124,7 @@ def build_judge_request(sample: dict, judge_template: str, judge_model: str) -> 
 def cmd_submit(args):
     api_keys = get_api_keys_config()
     client = OpenAI(api_key=api_keys["OPENAI_API_KEY"])
-    judge_model = os.getenv("OPENAI_EVAL_MODEL", "gpt-5")
+    judge_model = get_judge_model()
     judge_template = read_file(
         str(BASE_DIR / "prompts" / "judgePromptEvidenceBoth.txt")
     )
@@ -375,7 +386,7 @@ def cmd_retry(args):
     """Resubmit only the failed requests from a previous batch with higher token limit."""
     api_keys = get_api_keys_config()
     client = OpenAI(api_key=api_keys["OPENAI_API_KEY"])
-    judge_model = os.getenv("OPENAI_EVAL_MODEL", "gpt-5")
+    judge_model = get_judge_model()
     judge_template = read_file(
         str(BASE_DIR / "prompts" / "judgePromptEvidenceBoth.txt")
     )
