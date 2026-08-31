@@ -18,7 +18,6 @@ from .metrics import (
 )
 from .target import (
     AnthropicApiClient,
-    DeepSeekApiClient,
     OpenAITargetClient,
     OpenRouterApiClient,
     create_openai_client,
@@ -26,7 +25,6 @@ from .target import (
 
 __all__ = [
     "AnthropicApiClient",
-    "DeepSeekApiClient",
     "OpenAITargetClient",
     "OpenRouterApiClient",
     "bucket_conclusion",

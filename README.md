@@ -59,9 +59,6 @@ export OPENAI_API_KEY="your-openai-api-key"
 # Required for corresponding target model backends
 export ANTHROPIC_API_KEY="your-anthropic-api-key"    # For Claude models
 export OPENROUTER_API_KEY="your-openrouter-api-key"  # For most models (Qwen, DeepSeek, Kimi, GLM, GPT-oss)
-
-# Optional: only needed if using this specific backend
-export DEEPSEEK_API_KEY="your-deepseek-api-key"      # For DeepSeek native API
 ```
 
 To persist across sessions, add these lines to your shell profile (`~/.bashrc` or `~/.zshrc`).
@@ -143,9 +140,6 @@ TARGET_BACKEND=anthropic_api ANTHROPIC_MODEL_KEY=claude-sonnet-4.5 SAMPLES_PER_B
 
 # Using native OpenAI API (supports: gpt-5)
 TARGET_BACKEND=openai_api OPENAI_MODEL_KEY=gpt-5 SAMPLES_PER_BEHAVIOR=10 python run/run_harmbench.py
-
-# Using DeepSeek native API
-TARGET_BACKEND=deepseek_api SAMPLES_PER_BEHAVIOR=10 python run/run_harmbench.py
 ```
 
 Output: `results/harmbench/response/responses_{model}_{timestamp}.json`
@@ -345,7 +339,7 @@ sbatch scripts/submit_agentharm_thirdperson.sh
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `TARGET_BACKEND` | API backend: `openrouter`, `anthropic_api`, `openai_api`, `deepseek_api` | varies by script |
+| `TARGET_BACKEND` | API backend: `openrouter`, `anthropic_api`, `openai_api` | varies by script |
 | `OPENROUTER_MODEL_KEY` | Model key for OpenRouter | `qwen3-30b` |
 | `ANTHROPIC_MODEL_KEY` | Model key for Anthropic API | `claude-sonnet-4.5` |
 | `OPENAI_MODEL_KEY` | Model key for OpenAI API | `gpt-5` |
