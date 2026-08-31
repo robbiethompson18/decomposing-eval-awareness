@@ -263,6 +263,9 @@ def _check_leak_heuristic(response: str) -> bool:
 # -----------------------------------------------------------------------------
 
 
+# Is this on evalbench? - Robbie
+# @robbie no — agentic-misalignment only (eval_bench uses evaluate_response_async).
+# Also this sync variant has no callers; see CODE_SMELL.md. - Claude
 def evaluate_agenticmisalignment_response(
     client,
     model: str,
