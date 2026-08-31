@@ -1,5 +1,13 @@
 # Code smells
 
+- **2026-08-31** `core/evaluator.py` (~2k lines) is organized by detection method with
+  per-benchmark quirks (agentic-misalignment heuristics, AgentHarm message conversion,
+  scratchpad tags) interleaved — you can't tell which benchmark owns which function without
+  grepping `eval/`. Desired shape: `core/graders/<benchmark>.py` for task-performance judging
+  per benchmark, shared method pipelines parameterized by a per-benchmark config dataclass
+  instead of the current 15-kwarg signatures. Deliberately NOT done yet: refactoring `core/`
+  creates permanent merge conflicts with `upstream` (aisa-group) syncs; decide based on whether
+  upstream is still active.
 - **2026-08-31** `core/evaluator.py::apply_heuristic_check` silently overrides judge
   `harmful_behavior=yes` → `no` when the murder/leaking string heuristic doesn't fire. No runtime
   warning and no aggregate disagreement count — only `heuristic_override: True` buried in the

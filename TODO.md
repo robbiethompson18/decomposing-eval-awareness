@@ -1,7 +1,7 @@
 Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min break so far
 
 1. [x] take a tour of the codebase, try to understand (30mins)
-   - still need to read the evaluator code
+   - still need to read the evaluator code - ugh it sucks going to clean up the codebase
    - still need to figure out what type of evals will work for what models
      - where does CoT work?
      - where do we catch actual responses vs CoT?
@@ -31,9 +31,10 @@ Later:
 - [ ] have reasoning happen as tool call instead of html tags... I guess tags are easier across
       providers. Maybe they should just use Vercel SDK though!
 - [ ] maybe they wanted to use the vercel SDK?
-- [ ] delete dead HF client code
+- [x] delete dead HF client code
 - [x] judge parser doesn't silently turn 'couldn't parse y/n result' into 'no'
 - [ ] import direction being backwards... hate that utils depends on core
+- [ ] clean evaluator.py so that we only have CoT grader in the generic one, other graders split by benchmark
 
 ## Potpourri
 
