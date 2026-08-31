@@ -81,12 +81,13 @@ FACTOR_VARIED_LEVELS = {
 
 
 def build_configs() -> list[tuple]:
-    """Build 9 configs: 1 baseline + 8 single-factor ablations."""
+    """Build 10 configs: 1 baseline + 8 single-factor ablations + all-varied stack."""
     configs = [("baseline", dict(BASELINE_CONFIG))]
     for factor, varied_level in FACTOR_VARIED_LEVELS.items():
         cfg = dict(BASELINE_CONFIG)
         cfg[factor] = varied_level
         configs.append((factor, cfg))
+    configs.append(("F_all", dict(FACTOR_VARIED_LEVELS)))
     return configs
 
 
