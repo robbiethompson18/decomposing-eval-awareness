@@ -51,7 +51,10 @@ import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from eval_bench.render import render
-from utils import create_target_client, get_api_keys_config, query_parallel, read_file
+from core.target import create_target_client
+from lib.config import get_api_keys_config
+from lib.io import read_file
+from lib.parallel import query_parallel
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 TASKS_DIR = BASE_DIR / "eval_bench" / "tasks"

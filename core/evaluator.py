@@ -22,20 +22,11 @@ from typing import Any
 from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI
 
-
-def _get_model_configs():
-    """Lazy import of model configs from utils.py to avoid circular imports.
-
-    Import chain: utils → core/__init__ → core/evaluator → utils would be circular
-    if done at module level. This function defers the import to call time.
-    """
-    from utils import (
-        DEFAULT_ANTHROPIC_MODELS,
-        DEFAULT_OPENAI_MODELS,
-        DEFAULT_OPENROUTER_CONFIGS,
-    )
-
-    return DEFAULT_OPENROUTER_CONFIGS, DEFAULT_OPENAI_MODELS, DEFAULT_ANTHROPIC_MODELS
+from lib.config import (
+    DEFAULT_ANTHROPIC_MODELS,
+    DEFAULT_OPENAI_MODELS,
+    DEFAULT_OPENROUTER_CONFIGS,
+)
 
 
 def create_followup_client(
@@ -47,7 +38,7 @@ def create_followup_client(
     """
     Create API client and derive model config from model_key.
 
-    Model configs are imported from utils.py (single source of truth).
+    Model configs are imported from lib.config (single source of truth).
     Routes based on model_key:
     - Keys in DEFAULT_OPENAI_MODELS → OpenAI native API
     - claude-* → Anthropic native API
@@ -56,21 +47,19 @@ def create_followup_client(
     Returns:
         (client, model_id, temperature, backend)
     """
-    openrouter_configs, openai_models, anthropic_models = _get_model_configs()
-
-    if model_key in openai_models:
+    if model_key in DEFAULT_OPENAI_MODELS:
         client = AsyncOpenAI(api_key=openai_api_key)
-        model_id = openai_models[model_key]
+        model_id = DEFAULT_OPENAI_MODELS[model_key]
         return client, model_id, None, "openai"
     elif model_key.startswith("claude"):
         client = AsyncAnthropic(api_key=anthropic_api_key)
-        model_id = anthropic_models.get(model_key, model_key)
+        model_id = DEFAULT_ANTHROPIC_MODELS.get(model_key, model_key)
         return client, model_id, None, "anthropic"
     else:
         client = AsyncOpenAI(
             api_key=openrouter_api_key, base_url="https://openrouter.ai/api/v1"
         )
-        model_id, temperature = openrouter_configs.get(model_key, (model_key, 0.3))
+        model_id, temperature = DEFAULT_OPENROUTER_CONFIGS.get(model_key, (model_key, 0.3))
         return client, model_id, temperature, "openrouter"
 
 
@@ -113,8 +102,6 @@ async def judge_completion_async(
     markdown fences Claude tends to wrap around JSON output.
     """
     if isinstance(client, AsyncAnthropic):
-        from utils import DEFAULT_ANTHROPIC_MODELS
-
         kwargs: dict[str, Any] = {"system": system} if system else {}
         resp = await client.messages.create(
             model=DEFAULT_ANTHROPIC_MODELS.get(model, model),

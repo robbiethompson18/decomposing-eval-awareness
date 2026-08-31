@@ -21,7 +21,8 @@ from collections import Counter
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.evaluator import create_judge_client, judge_completion_async
-from utils import get_api_keys_config, read_file
+from lib.config import get_api_keys_config
+from lib.io import read_file
 
 BENCHMARKS = ["harmbench", "agenticmisalignment", "agentharm", "agentharm_benign"]
 

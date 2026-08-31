@@ -42,7 +42,8 @@ from openai import OpenAI
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.evaluator import extract_think_tags, mark_no_reasoning_sections
 from core.metrics import bucket_conclusion, extract_conclusion
-from utils import get_api_keys_config, load_responses, read_file
+from lib.config import get_api_keys_config
+from lib.io import load_responses, read_file
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 RESPONSE_DIR = BASE_DIR / "results" / "eval_bench" / "response"

@@ -31,7 +31,8 @@ from core.evaluator import (
     extract_think_tags,
 )
 from core.metrics import bucket_conclusion, extract_conclusion
-from utils import get_api_keys_config, load_responses, read_file
+from lib.config import get_api_keys_config
+from lib.io import load_responses, read_file
 
 
 def find_response_file(response_dir: str, model_key: str) -> str:
