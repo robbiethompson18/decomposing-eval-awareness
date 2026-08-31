@@ -247,7 +247,7 @@ async def evaluate_batch_async(
         samples: List of samples to evaluate
         sample_evaluator: Async function(client, sample, semaphore, idx, total) -> result dict or None
         api_key: OpenAI API key
-        max_concurrent: Maximum concurrent evaluations (default: 20)
+        max_concurrent: Maximum concurrent evaluations (default: 100)
         judge_model: Judge model key; claude-* routes to the Anthropic API
         anthropic_api_key: Anthropic API key (used for claude-* judges)
 
