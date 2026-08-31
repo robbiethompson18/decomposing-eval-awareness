@@ -28,3 +28,4 @@ See `~/.claude/CLAUDE.md` for the full convention.
 Current notes:
 <!-- As notes are added under .claude/notes/, list them here, one per line: -->
 <!-- - [Title — when to read](.claude/notes/foo.md) — short gloss -->
+- [Claude 5 CoT-extraction resistance — read before trying to read a model's chain-of-thought via think-tool/scratchpad tricks](.claude/notes/claude5-cot-extraction-resistance.md) — think-tool + low-thinking extraction works on 4.5, dead on 5; token-accounting evidence; per-model refuse/bypass/hide behavior + honest-vs-lying framing.
