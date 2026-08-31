@@ -27,8 +27,9 @@ Later:
 ## Cleanup I am trying to resist:
 
 - [x] linter
-- [ ] delete prefill code.... seems unused
-- [ ] delete duped classes for thinking prompts
+- [x] delete prefill code.... seems unused
+- [x] delete duped classes for thinking prompts (folded into scratchpad=True flag; also deleted
+      DeepSeekApiClient — deepseek-r1 is served via OpenRouter)
 - [ ] have reasoning happen as tool call instead of html tags... I guess tags are easier across
       providers. Maybe they should just use Vercel SDK though!
 - [ ] maybe they wanted to use the vercel SDK?

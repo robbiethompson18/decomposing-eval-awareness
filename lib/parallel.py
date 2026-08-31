@@ -10,7 +10,6 @@ async def query_parallel(
     items: list[tuple[Any, str, dict[str, Any]]],
     result_fn: Callable[[str, dict[str, Any], int], dict[str, Any]],
     max_concurrent: int = 100,
-    prefill: str = None,
 ) -> list[dict[str, Any]]:
     """
     Run parallel queries to target models.
@@ -19,7 +18,6 @@ async def query_parallel(
         items: List of (client, prompt, metadata) tuples
         result_fn: Function (response, metadata, sample_idx) -> result dict
         max_concurrent: Max concurrent requests
-        prefill: Optional text to prefill the assistant response (seeds chain of thought)
 
     Returns:
         List of results in original order
@@ -36,9 +34,7 @@ async def query_parallel(
         idx: int, client: Any, prompt: str, metadata: dict[str, Any]
     ) -> tuple[int, dict[str, Any]]:
         async with semaphore:
-            response = await loop.run_in_executor(
-                executor, client.query, prompt, prefill
-            )
+            response = await loop.run_in_executor(executor, client.query, prompt)
             current[0] += 1
             sample_idx = metadata.get("sample_idx", 1)
             item_id = metadata.get("id", f"item_{idx}")

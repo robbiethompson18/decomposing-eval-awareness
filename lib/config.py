@@ -61,14 +61,10 @@ AGENTHARM_MODEL_CONFIGS: dict[str, tuple[str, float]] = {
 def get_api_keys_config() -> dict[str, Any]:
     """Get common API keys and model defaults from environment variables.
 
-    Returns dict with keys for DeepSeek, Anthropic, OpenAI, and OpenRouter.
+    Returns dict with keys for Anthropic, OpenAI, and OpenRouter.
     Each key uses os.getenv with no default — users must set environment variables.
     """
     return {
-        # DeepSeek
-        "DEEPSEEK_API_KEY": os.getenv("DEEPSEEK_API_KEY", ""),
-        "DEEPSEEK_MODEL": os.getenv("DEEPSEEK_MODEL", "deepseek-reasoner"),
-        "DEEPSEEK_API_BASE": os.getenv("DEEPSEEK_API_BASE", "https://api.deepseek.com"),
         # Anthropic
         "ANTHROPIC_API_KEY": os.getenv("ANTHROPIC_API_KEY", ""),
         "ANTHROPIC_MODEL": os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929"),

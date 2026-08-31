@@ -31,7 +31,7 @@ except ImportError:
 
 def create_openai_client(api_key: str, base_url: str | None = None) -> "OpenAI":
     """
-    Create an OpenAI client (also works for OpenAI-compatible APIs like DeepSeek).
+    Create an OpenAI client (also works for OpenAI-compatible APIs like OpenRouter).
 
     Args:
         api_key: API key
@@ -48,96 +48,19 @@ def create_openai_client(api_key: str, base_url: str | None = None) -> "OpenAI":
     return OpenAI(api_key=api_key)
 
 
-class DeepSeekApiClient:
-    """DeepSeek API client for reasoning models.
+def _convert_scratchpad_to_think(content: str) -> str:
+    """Convert <SCRATCHPAD_REASONING> tags to <think> tags for consistency."""
+    pattern = r"<SCRATCHPAD_REASONING>(.*?)</SCRATCHPAD_REASONING>"
+    match = re.search(pattern, content, re.DOTALL | re.IGNORECASE)
 
-    Supports TRUE reasoning prefill via DeepSeek's Chat Prefix Completion (Beta) feature.
-    This allows injecting content directly into the model's Chain of Thought.
+    if match:
+        reasoning = match.group(1).strip()
+        # Get everything after the closing tag as the answer
+        answer = content[match.end() :].strip()
+        return f"<think>{reasoning}</think>{answer}"
 
-    When prefill is provided:
-    - Uses beta endpoint (api.deepseek.com/beta)
-    - Sets reasoning_content in assistant message with prefix=True
-    - Model continues reasoning from our prefill text
-    """
-
-    # Beta endpoint is for prefill, but paper never uses prefill anyway
-
-    def __init__(self, cfg: dict[str, Any], system_prompt: str) -> None:
-        self.system_prompt = system_prompt
-        self.model = cfg["DEEPSEEK_MODEL"]
-        self.max_tokens = cfg.get("MAX_TOKENS", 2048)
-        self.api_key = cfg["DEEPSEEK_API_KEY"]
-        # Regular client for non-prefill queries
-        self.client = create_openai_client(
-            cfg["DEEPSEEK_API_KEY"], cfg["DEEPSEEK_API_BASE"]
-        )
-        # Beta client for prefill queries (uses different endpoint)
-        self.beta_client = create_openai_client(
-            cfg["DEEPSEEK_API_KEY"], "https://api.deepseek.com/beta"
-        )
-
-    def query(self, prompt: str, prefill: str = None) -> str:
-        """Query the model with optional reasoning prefill.
-
-        Args:
-            prompt: The user prompt to send
-            prefill: Optional text to prefill the model's reasoning with.
-                     This is injected into the reasoning_content (CoT) of the model,
-                     not the final answer content. The model continues reasoning from here.
-        """
-        try:
-            if prefill:
-                # Use beta endpoint with Chat Prefix Completion feature
-                # This injects our prefill into the model's reasoning (CoT)
-                messages = [
-                    {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": prompt},
-                    {
-                        "role": "assistant",
-                        "content": "",  # Empty content - we're prefilling reasoning, not answer
-                        "prefix": True,  # Enable prefix completion mode
-                        "reasoning_content": prefill,  # Inject into CoT
-                    },
-                ]
-
-                resp = self.beta_client.chat.completions.create(
-                    model=self.model,
-                    messages=messages,
-                    max_tokens=self.max_tokens,
-                    stream=False,
-                )
-                choice = resp.choices[0] if resp.choices else None
-                content = (choice.message.content or "") if choice else ""
-                reasoning = (
-                    getattr(choice.message, "reasoning_content", "") if choice else ""
-                )
-
-                # Combine our prefill with the model's continued reasoning
-                full_reasoning = prefill + reasoning
-                return f"<think>{full_reasoning}</think>{content}".strip()
-            else:
-                # Standard query without prefill
-                messages = [
-                    {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": prompt},
-                ]
-
-                resp = self.client.chat.completions.create(
-                    model=self.model,
-                    messages=messages,
-                    temperature=0.3,
-                    max_tokens=self.max_tokens,
-                    stream=False,
-                )
-                choice = resp.choices[0] if resp.choices else None
-                content = (choice.message.content or "") if choice else ""
-                reasoning = (
-                    getattr(choice.message, "reasoning_content", "") if choice else ""
-                )
-
-                return f"<think>{reasoning}</think>{content}".strip()
-        except Exception as e:
-            return f"ERROR calling DeepSeek API: {e}"
+    # No scratchpad tags found - return as-is (model may not have used them)
+    return content
 
 
 # Claude 5 family rejects thinking.type=enabled/budget_tokens; requires adaptive thinking.
@@ -147,19 +70,24 @@ ADAPTIVE_THINKING_MODELS = {"claude-opus-5", "claude-fable-5"}
 
 
 class AnthropicApiClient:
-    """Anthropic API client for Claude models with extended thinking (summarized output).
+    """Anthropic API client for Claude models.
 
-    Note: This client uses Extended Thinking API which does NOT support assistant prefill.
-    Use AnthropicApiClientScratchpad for prefill experiments.
+    Two modes:
+    - default: Extended Thinking API, returns summarized thinking as <think> content
+    - scratchpad=True: standard Messages API; the system prompt instructs the model
+      to reason in <SCRATCHPAD_REASONING> tags, which are converted to <think>
     """
 
-    def __init__(self, cfg: dict[str, Any], system_prompt: str) -> None:
+    def __init__(
+        self, cfg: dict[str, Any], system_prompt: str, scratchpad: bool = False
+    ) -> None:
         if requests is None:
             raise ImportError("requests package required for Anthropic API")
         self.system_prompt = system_prompt
         self.api_key = cfg["ANTHROPIC_API_KEY"]
         self.model = cfg["ANTHROPIC_MODEL"]
         self.api_base = cfg["ANTHROPIC_API_BASE"]
+        self.scratchpad = scratchpad
         # Extended thinking requires budget_tokens < max_tokens
         # Default to 16000 max_tokens with 10000 thinking budget
         self.max_tokens = cfg.get("MAX_TOKENS", 16000)
@@ -169,32 +97,30 @@ class AnthropicApiClient:
             # Allocate ~60% of max_tokens to thinking, rest to output
             self.thinking_budget = max(1024, int(self.max_tokens * 0.6))
 
-    def query(self, prompt: str, prefill: str = None) -> str:
-        """Query the model.
-
-        Args:
-            prompt: The user prompt to send
-            prefill: NOT SUPPORTED with Extended Thinking API. Will be ignored with a warning.
-        """
-        if prefill:
-            print(
-                "WARNING: prefill is not supported with Extended Thinking API. Use scratchpad mode instead."
-            )
+    def query(self, prompt: str) -> str:
         url = self.api_base.rstrip("/") + "/v1/messages"
         headers = {
             "x-api-key": self.api_key,
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
         }
-        # Extended thinking API - returns summarized thinking for Claude 4 models
-        # Note: thinking is not compatible with temperature, so we omit it
         payload = {
             "model": self.model,
             "system": self.system_prompt,
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": self.max_tokens,
         }
-        if self.model in ADAPTIVE_THINKING_MODELS:
+        if self.scratchpad:
+            # No extended thinking - model reasons in visible <SCRATCHPAD_REASONING> tags
+            payload["temperature"] = 0.3
+            # Claude 5 family defaults to adaptive thinking; force it all the way down
+            # so reasoning happens in the visible <SCRATCHPAD_REASONING> tags, not natively.
+            # (temperature is deprecated for these models, so drop it.)
+            if self.model in ADAPTIVE_THINKING_MODELS:
+                payload["output_config"] = {"effort": "low"}
+                del payload["temperature"]
+        # Extended thinking is not compatible with temperature, so we omit it
+        elif self.model in ADAPTIVE_THINKING_MODELS:
             payload["thinking"] = {"type": "adaptive"}
             payload["output_config"] = {"effort": "high"}
         else:
@@ -220,6 +146,10 @@ class AnthropicApiClient:
                     elif c.get("type") == "text":
                         answer_text += c.get("text", "")
 
+            if self.scratchpad:
+                # Convert <SCRATCHPAD_REASONING> to <think> for consistency
+                return _convert_scratchpad_to_think(answer_text).strip()
+
             # Format in same <think> structure as other models
             if thinking_text:
                 return f"<think>{thinking_text}</think>{answer_text}".strip()
@@ -229,32 +159,46 @@ class AnthropicApiClient:
 
 
 class OpenAITargetClient:
-    """OpenAI API client for GPT-5 models using Responses API with reasoning summary.
+    """OpenAI API client for GPT-5 models.
 
-    Note: This client uses Responses API which does NOT support assistant prefill.
-    Use OpenAITargetClientScratchpad for prefill experiments.
+    Two modes:
+    - default: Responses API with human-readable reasoning summaries as <think> content
+    - scratchpad=True: standard Chat Completions API; GPT-5 may use internal reasoning
+      instead of the explicit <SCRATCHPAD_REASONING> tags the system prompt asks for
     """
 
-    def __init__(self, cfg: dict[str, Any], system_prompt: str) -> None:
+    # TODO: force reasoning to as low as possible (0 for A\, minimal for GPT) to encourage use of the scratchpad
+
+    def __init__(
+        self, cfg: dict[str, Any], system_prompt: str, scratchpad: bool = False
+    ) -> None:
         from openai import OpenAI
 
         self.system_prompt = system_prompt
         self.model = cfg["OPENAI_TARGET_MODEL"]
         self.max_tokens = cfg.get("MAX_TOKENS", 7000)
+        self.scratchpad = scratchpad
         self.client = OpenAI(api_key=cfg["OPENAI_API_KEY"])
 
-    def query(self, prompt: str, prefill: str = None) -> str:
-        """Query the model.
-
-        Args:
-            prompt: The user prompt to send
-            prefill: NOT SUPPORTED with Responses API. Will be ignored with a warning.
-        """
-        if prefill:
-            print(
-                "WARNING: prefill is not supported with OpenAI Responses API. Use scratchpad mode instead."
-            )
+    def query(self, prompt: str) -> str:
         try:
+            if self.scratchpad:
+                # Standard Chat Completions API (not Responses API)
+                # GPT-5 requires: max_completion_tokens (not max_tokens), no temperature param
+                resp = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": self.system_prompt},
+                        {"role": "user", "content": prompt},
+                    ],
+                    max_completion_tokens=self.max_tokens,
+                )
+                choice = resp.choices[0] if resp.choices else None
+                content = (choice.message.content or "") if choice else ""
+
+                # Convert <SCRATCHPAD_REASONING> to <think> for consistency (if present)
+                return _convert_scratchpad_to_think(content).strip()
+
             # Use Responses API with reasoning summary for GPT-5
             # This provides human-readable reasoning summaries instead of encrypted reasoning
             resp = self.client.responses.create(
@@ -300,16 +244,7 @@ class OpenRouterApiClient:
 
     Supports multiple models via cfg["OPENROUTER_MODEL"].
     Temperature is optional - set cfg["TEMPERATURE"] = None for reasoning models that don't support it.
-
-    Supports assistant prefill to seed the model's chain of thought (use <think> prefix).
-
-    When prefill is used:
-    - Native reasoning mode is disabled (no "reasoning" in extra_body)
-    - The model continues from the prefill text naturally
-    - Works because models like DeepSeek R1 output <think> tags in their regular response
-
-    Without prefill:
-    - Native reasoning mode is enabled for better reasoning extraction
+    Native reasoning mode is always enabled for better reasoning extraction.
     """
 
     def __init__(self, cfg: dict[str, Any], system_prompt: str) -> None:
@@ -323,37 +258,19 @@ class OpenRouterApiClient:
             cfg["OPENROUTER_API_KEY"], base_url="https://openrouter.ai/api/v1"
         )
 
-    def query(self, prompt: str, prefill: str = None) -> str:
-        """Query the model with optional assistant prefill.
-
-        Args:
-            prompt: The user prompt to send
-            prefill: Optional text to prefill the assistant response with.
-                     Should use <think> tags for OpenRouter models.
-                     When provided, native reasoning mode is disabled so the model
-                     continues from the prefill naturally.
-        """
+    def query(self, prompt: str) -> str:
         try:
-            # Build messages - add prefill as assistant message if provided
-            messages = [
-                {"role": "system", "content": self.system_prompt},
-                {"role": "user", "content": prompt},
-            ]
-            if prefill:
-                messages.append({"role": "assistant", "content": prefill})
-
             # Build request kwargs - temperature is optional for reasoning models
             kwargs = {
                 "model": self.model,
-                "messages": messages,
+                "messages": [
+                    {"role": "system", "content": self.system_prompt},
+                    {"role": "user", "content": prompt},
+                ],
                 "max_tokens": self.max_tokens,
                 "stream": False,
+                "extra_body": {"reasoning": {"effort": "high"}},
             }
-
-            # Only use native reasoning when NOT using prefill
-            # With prefill, we want the model to continue from our text, not compute separate reasoning
-            if not prefill:
-                kwargs["extra_body"] = {"reasoning": {"effort": "high"}}
 
             if self.temperature is not None:
                 kwargs["temperature"] = self.temperature
@@ -362,175 +279,14 @@ class OpenRouterApiClient:
             choice = resp.choices[0] if resp.choices else None
             content = (choice.message.content or "") if choice else ""
 
-            if prefill:
-                # Prefill mode: model continued from our prefill, response is continuation
-                # Prepend our prefill to get the complete output
-                print(
-                    f"    [OpenRouter] API call successful (model={self.model}, prefill=yes, content_len={len(content)})"
-                )
-                return (prefill + content).strip()
-            else:
-                # Non-prefill mode: extract native reasoning
-                reasoning = getattr(choice.message, "reasoning", "") if choice else ""
-                has_reasoning = "yes" if reasoning else "no"
-                print(
-                    f"    [OpenRouter] API call successful (model={self.model}, reasoning={has_reasoning}, content_len={len(content)})"
-                )
-                return f"<think>{reasoning}</think>{content}".strip()
+            reasoning = getattr(choice.message, "reasoning", "") if choice else ""
+            has_reasoning = "yes" if reasoning else "no"
+            print(
+                f"    [OpenRouter] API call successful (model={self.model}, reasoning={has_reasoning}, content_len={len(content)})"
+            )
+            return f"<think>{reasoning}</think>{content}".strip()
         except Exception as e:
             return f"ERROR calling OpenRouter API: {e}"
-
-
-# ============================================================================
-# Scratchpad API Clients (explicit reasoning in <SCRATCHPAD_REASONING> tags)
-# ============================================================================
-
-
-def _convert_scratchpad_to_think(content: str) -> str:
-    """Convert <SCRATCHPAD_REASONING> tags to <think> tags for consistency."""
-    pattern = r"<SCRATCHPAD_REASONING>(.*?)</SCRATCHPAD_REASONING>"
-    match = re.search(pattern, content, re.DOTALL | re.IGNORECASE)
-
-    if match:
-        reasoning = match.group(1).strip()
-        # Get everything after the closing tag as the answer
-        answer = content[match.end() :].strip()
-        return f"<think>{reasoning}</think>{answer}"
-
-    # No scratchpad tags found - return as-is (model may not have used them)
-    return content
-
-
-class OpenAITargetClientScratchpad:
-    """OpenAI API client for GPT-5 using standard Chat Completions API with scratchpad prompts.
-
-    Unlike OpenAITargetClient which uses Responses API with reasoning summary,
-    this client uses standard chat completions. GPT-5 may use internal reasoning
-    instead of explicit <SCRATCHPAD_REASONING> tags.
-
-    Supports assistant prefill to seed the model's chain of thought.
-    """
-
-    # TODO: force reasoning to as low as possible (0 for A\, minimal for GPT) to encourage use of the scratchpad
-
-    def __init__(self, cfg: dict[str, Any], system_prompt: str) -> None:
-        from openai import OpenAI
-
-        self.system_prompt = system_prompt
-        self.model = cfg["OPENAI_TARGET_MODEL"]
-        self.max_tokens = cfg.get("MAX_TOKENS", 7000)
-        self.client = OpenAI(api_key=cfg["OPENAI_API_KEY"])
-
-    def query(self, prompt: str, prefill: str = None) -> str:
-        """Query the model with optional assistant prefill.
-
-        Args:
-            prompt: The user prompt to send
-            prefill: Optional text to prefill the assistant response with.
-                     Model will continue from this text.
-        """
-        try:
-            # Build messages - add prefill as assistant message if provided
-            messages = [
-                {"role": "system", "content": self.system_prompt},
-                {"role": "user", "content": prompt},
-            ]
-            if prefill:
-                messages.append({"role": "assistant", "content": prefill})
-
-            # Use standard Chat Completions API (not Responses API)
-            # GPT-5 requires: max_completion_tokens (not max_tokens), no temperature param
-            resp = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                max_completion_tokens=self.max_tokens,
-            )
-            choice = resp.choices[0] if resp.choices else None
-            content = (choice.message.content or "") if choice else ""
-
-            # Prepend the prefill to the response (it's not included in API response)
-            if prefill:
-                content = prefill + content
-
-            # Convert <SCRATCHPAD_REASONING> to <think> for consistency (if present)
-            return _convert_scratchpad_to_think(content).strip()
-        except Exception as e:
-            return f"ERROR calling OpenAI API (scratchpad): {e}"
-
-
-class AnthropicApiClientScratchpad:
-    """Anthropic API client for Claude using standard Messages API with scratchpad prompts.
-
-    Unlike AnthropicApiClient which uses Extended Thinking API,
-    this client uses standard messages API and expects the model to output
-    reasoning in <SCRATCHPAD_REASONING> tags as instructed by the system prompt.
-
-    Supports assistant prefill to seed the model's chain of thought.
-    """
-
-    def __init__(self, cfg: dict[str, Any], system_prompt: str) -> None:
-        if requests is None:
-            raise ImportError("requests package required for Anthropic API")
-        self.system_prompt = system_prompt
-        self.api_key = cfg["ANTHROPIC_API_KEY"]
-        self.model = cfg["ANTHROPIC_MODEL"]
-        self.api_base = cfg["ANTHROPIC_API_BASE"]
-        self.max_tokens = cfg.get("MAX_TOKENS", 16000)
-
-    def query(self, prompt: str, prefill: str = None) -> str:
-        """Query the model with optional assistant prefill.
-
-        Args:
-            prompt: The user prompt to send
-            prefill: Optional text to prefill the assistant response with.
-                     Model will continue from this text.
-        """
-        url = self.api_base.rstrip("/") + "/v1/messages"
-        headers = {
-            "x-api-key": self.api_key,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
-        }
-        # Build messages - add prefill as assistant message if provided
-        messages = [{"role": "user", "content": prompt}]
-        if prefill:
-            messages.append({"role": "assistant", "content": prefill})
-
-        # Standard Messages API without extended thinking
-        # Model is expected to output <SCRATCHPAD_REASONING> tags based on system prompt
-        payload = {
-            "model": self.model,
-            "system": self.system_prompt,
-            "messages": messages,
-            "max_tokens": self.max_tokens,
-            "temperature": 0.3,
-        }
-        # Claude 5 family defaults to adaptive thinking; force it all the way down
-        # so reasoning happens in the visible <SCRATCHPAD_REASONING> tags, not natively.
-        # (temperature is deprecated for these models, so drop it.)
-        if self.model in ADAPTIVE_THINKING_MODELS:
-            payload["output_config"] = {"effort": "low"}
-            del payload["temperature"]
-        try:
-            resp = requests.post(url, headers=headers, json=payload, timeout=600)
-            resp.raise_for_status()
-            data = resp.json()
-            content_blocks = data.get("content") or []
-
-            # Extract text content
-            answer_text = ""
-            for c in content_blocks:
-                if isinstance(c, dict) and c.get("type") == "text":
-                    answer_text += c.get("text", "")
-
-            # Prepend the prefill to the response (it's not included in API response)
-            if prefill:
-                answer_text = prefill + answer_text
-
-            # Convert <SCRATCHPAD_REASONING> to <think> for consistency
-            return _convert_scratchpad_to_think(answer_text).strip()
-        except Exception as e:
-            return f"ERROR calling Anthropic API (scratchpad): {e}"
 
 
 # ============================================================================
@@ -548,7 +304,7 @@ def create_target_client(
     """Create target client based on backend selection.
 
     Args:
-        backend: Backend name (deepseek_api, anthropic_api, openai_api, openrouter)
+        backend: Backend name (anthropic_api, openai_api, openrouter)
         cfg: Configuration dict with API keys and settings (including MAX_TOKENS)
         system_prompt: System prompt for the target model
         reasoning_mode: "summary" for native reasoning APIs, "scratchpad" for explicit tags
@@ -561,38 +317,24 @@ def create_target_client(
     b = backend.strip().lower()
     use_scratchpad = reasoning_mode == "scratchpad"
 
-    if b == "deepseek_api":
-        if verbose:
-            print("Using DeepSeek API backend...")
-        return DeepSeekApiClient(cfg, system_prompt), "deepseek"
     if b == "anthropic_api":
         model_key = os.getenv("ANTHROPIC_MODEL_KEY", "claude-sonnet-4.5")
         if model_key in DEFAULT_ANTHROPIC_MODELS:
             cfg["ANTHROPIC_MODEL"] = DEFAULT_ANTHROPIC_MODELS[model_key]
-        if use_scratchpad:
-            if verbose:
-                print(
-                    f"Using Anthropic API backend (scratchpad mode, model={model_key})..."
-                )
-            return AnthropicApiClientScratchpad(cfg, system_prompt), model_key
         if verbose:
-            print(
-                f"Using Anthropic API backend (extended thinking, model={model_key})..."
-            )
-        return AnthropicApiClient(cfg, system_prompt), model_key
+            mode = "scratchpad mode" if use_scratchpad else "extended thinking"
+            print(f"Using Anthropic API backend ({mode}, model={model_key})...")
+        client = AnthropicApiClient(cfg, system_prompt, scratchpad=use_scratchpad)
+        return client, model_key
     if b == "openai_api":
         model_key = os.getenv("OPENAI_MODEL_KEY", "gpt-5")
         if model_key in DEFAULT_OPENAI_MODELS:
             cfg["OPENAI_TARGET_MODEL"] = DEFAULT_OPENAI_MODELS[model_key]
-        if use_scratchpad:
-            if verbose:
-                print(
-                    f"Using OpenAI API backend (scratchpad mode, model={model_key})..."
-                )
-            return OpenAITargetClientScratchpad(cfg, system_prompt), model_key
         if verbose:
-            print(f"Using OpenAI API backend (reasoning summary, model={model_key})...")
-        return OpenAITargetClient(cfg, system_prompt), model_key
+            mode = "scratchpad mode" if use_scratchpad else "reasoning summary"
+            print(f"Using OpenAI API backend ({mode}, model={model_key})...")
+        client = OpenAITargetClient(cfg, system_prompt, scratchpad=use_scratchpad)
+        return client, model_key
     if b == "openrouter":
         model_key = os.getenv("OPENROUTER_MODEL_KEY", "qwen3-30b")
         if model_key not in DEFAULT_OPENROUTER_CONFIGS:
@@ -607,6 +349,6 @@ def create_target_client(
             print(f"Using OpenRouter API backend (model={model_key}, id={model_id})...")
         return OpenRouterApiClient(cfg, system_prompt), model_key
     print(
-        f"ERROR: Unsupported TARGET_BACKEND '{backend}'. Use: deepseek_api, anthropic_api, openai_api, openrouter"
+        f"ERROR: Unsupported TARGET_BACKEND '{backend}'. Use: anthropic_api, openai_api, openrouter"
     )
     sys.exit(1)
