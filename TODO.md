@@ -5,16 +5,17 @@ Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min
    - [ ] see Sonnet getting higher eval awareness
    - [ ] do maybe 20% of the data and see what results we get
    - [ ] learn how parellelism works so we can do this real fast
-3. [ ] replace grader with GPT 5.6, Fable, Opus5. Check agreement.
+3. [x] replace grader with GPT 5.6, Fable, Opus5. Check agreement.
+   - they largely agree. Shoudl write this up.
 4. [ ] Extend their results to new models
-   - [ ] plot eval awareness over time by model
+   - [ ] plot eval awareness over time by model. I think this is just a done thing in other places?
 5. [ ] Start NLA work
 6. [ ] Dig into all the refusals from Opus and Fable... are they reasonable?
 
 Later:
 
 - [ ] Do NLAs and linear probes align with verbalization that GPT finds? For closed models, use the
-  <think></think> trick
+      <think></think> trick
 - [ ] Try with other models instead of GPT5 as judge
 - [ ] Plot model eval awareness over time and by model size
 - [ ] Add my own flavor (NSFW content, throwing in 'like', throwing in slang)
@@ -25,7 +26,7 @@ Later:
 - [ ] delete prefill code.... seems unused
 - [ ] delete duped classes for thinking prompts
 - [ ] have reasoning happen as tool call instead of html tags... I guess tags are easier across
-  providers. Maybe they should just use Vercel SDK though!
+      providers. Maybe they should just use Vercel SDK though!
 - [ ] maybe they wanted to use the vercel SDK?
 - [ ] delete dead HF client code
 - [x] judge parser doesn't silently turn 'couldn't parse y/n result' into 'no'

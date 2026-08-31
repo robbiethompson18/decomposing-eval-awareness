@@ -19,6 +19,7 @@ import os
 import re
 import sys
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from glob import glob
 from typing import Any
 
@@ -309,12 +310,18 @@ async def query_parallel(
     semaphore = asyncio.Semaphore(max_concurrent)
     total = len(items)
     current = [0]
+    loop = asyncio.get_running_loop()
+    # asyncio.to_thread uses the default executor, capped at min(32, cpus + 4)
+    # threads — a dedicated executor lets max_concurrent actually be reached.
+    executor = ThreadPoolExecutor(max_workers=max_concurrent)
 
     async def query_one(
         idx: int, client: Any, prompt: str, metadata: dict[str, Any]
     ) -> tuple[int, dict[str, Any]]:
         async with semaphore:
-            response = await asyncio.to_thread(client.query, prompt, prefill)
+            response = await loop.run_in_executor(
+                executor, client.query, prompt, prefill
+            )
             current[0] += 1
             sample_idx = metadata.get("sample_idx", 1)
             item_id = metadata.get("id", f"item_{idx}")
@@ -326,6 +333,7 @@ async def query_parallel(
         for i, (client, prompt, meta) in enumerate(items)
     ]
     results = await asyncio.gather(*tasks, return_exceptions=True)
+    executor.shutdown(wait=False)
 
     # Collect valid results and sort by original index
     valid = []
