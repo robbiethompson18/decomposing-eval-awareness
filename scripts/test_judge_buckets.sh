@@ -1,45 +1,59 @@
 #!/bin/bash
 # Test the judge-output bucketing: yes/no/N-A/invalid counting and the loud
-# warnings in core/metrics.py, core/evaluator.py, and the eval_bench printers.
+# warnings in core/metrics.py, core/evaluator.py, and the eval_bench printer.
 # Run from the repo root: bash scripts/test_judge_buckets.sh
 # Uses synthetic records; if local judged results exist under
-# results/eval_bench/cot/, also exercises the printers on those.
+# results/eval_bench/cot/, also exercises the printer on those.
 set -e
 
 .venv/bin/python - <<'EOF'
+import contextlib
 import copy
 import glob
 import importlib.util
+import io
 import json
 import sys
 
 sys.path.insert(0, ".")
 from core.evaluator import mark_no_reasoning_sections
-from core.metrics import (
-    METRIC_LABELS,
-    METRICS,
-    compute_metrics,
-    print_category_table,
-    print_overall_stats,
-)
+from core.metrics import bucket_conclusion, extract_conclusion
 
-def rec(aware, hypo, perf):
+spec = importlib.util.spec_from_file_location("ec", "eval/eval_eval_bench_cot.py")
+ec = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(ec)
+
+def rec(aware, hypo, perf, response="<think>thought hard</think>done"):
     def sec(v):
         return {"conclusion": v} if v is not None else "GARBAGE"
-    return {"prompt": "p", "judge": {
+    return {"prompt": "p", "valence": "positive", "config_name": "baseline",
+            "response": response, "judge": {
         "model_awareness": sec(aware),
         "hypothetical_recognition": sec(hypo),
         "task_performance": sec(perf),
     }}
 
+def buckets(records, key="model_awareness"):
+    return [bucket_conclusion(extract_conclusion(r.get("judge") or {}, key))
+            for r in records]
+
+def stats_output(records):
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        ec.print_stats(records)
+    out = buf.getvalue()
+    print(out)
+    return out
+
 print("=" * 70)
-print("1. CLEAN synthetic records -> no notes, no warnings, 2-tuple cells")
+print("1. CLEAN synthetic records -> clean buckets, no notes, no warnings")
 print("=" * 70)
 clean = [rec("Yes", "No", "Yes"), rec("No", "No", "No")]
-s = compute_metrics(clean, METRICS)
-assert s["model_awareness"]["n/a"] == 0 and s["model_awareness"]["invalid"] == 0
-print_overall_stats("clean", s, METRICS, METRIC_LABELS)
-print_category_table({"catA": s}, METRICS, METRIC_LABELS)
+assert buckets(clean) == ["yes", "no"]
+assert buckets(clean, "task_performance") == ["yes", "no"]
+out = stats_output(clean)
+assert "NOTE" not in out and "WARNING" not in out
+assert "awareness=1/2 (50.0%)" in out
 
 print()
 print("=" * 70)
@@ -55,19 +69,20 @@ print("guard assertions pass")
 
 print()
 print("=" * 70)
-print("3. MIXED records -> N/A NOTE + INVALID WARNING, 4-tuple cells")
+print("3. MIXED records -> N/A NOTE + pre-guard + INVALID WARNINGS")
 print("=" * 70)
 mixed = clean + [
-    {"prompt": "p", "judge": mark_no_reasoning_sections(rec("No", "No", "Yes")["judge"], "")},
-    rec(None, "Partially", "No"),          # malformed -> invalid
+    {**rec("No", "No", "Yes", response="no CoT here"), "judge": guarded},
+    rec(None, "Partially", "No"),          # malformed section -> invalid
     {"prompt": "p", "judge": None},        # judge missing entirely -> invalid
 ]
-s2 = compute_metrics(mixed, METRICS)
-assert s2["model_awareness"]["n/a"] == 1
-assert s2["model_awareness"]["invalid"] == 2
-assert s2["task_performance"]["n/a"] == 0
-print_overall_stats("mixed", s2, METRICS, METRIC_LABELS)
-print_category_table({"catA": s2}, METRICS, METRIC_LABELS)
+b = buckets(mixed)
+assert b.count("n/a") == 1 and b.count("invalid") == 2
+assert buckets(mixed, "task_performance").count("n/a") == 0
+out = stats_output(mixed)
+assert "1/5 samples not graded for awareness" in out
+assert "2/5 responses contain no reasoning" in out
+assert "2/5 judge outputs could not be parsed" in out
 
 files = sorted(glob.glob("results/eval_bench/cot/cot_*.json"))
 if files:
@@ -76,9 +91,6 @@ if files:
     print("4. REAL local files through the eval_bench printer")
     print("   (a pre-guard file with CoT-less responses triggers the reliability warning)")
     print("=" * 70)
-    spec = importlib.util.spec_from_file_location("ec", "eval/eval_eval_bench_cot.py")
-    ec = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(ec)
     for path in files:
         print(f"\n--- {path} ---")
         ec.print_stats(json.load(open(path)))
