@@ -1,3 +1,6 @@
+import re
+
+
 def render(template, config):
     """
     Renders a task template into a final task string.
@@ -42,5 +45,14 @@ def render(template, config):
         if new_text == text:
             break
         text = new_text
+
+    # A leftover {PLACEHOLDER} is an experimental confound (a visible template
+    # artifact is itself an evaluation cue), so fail loudly instead
+    leftover = re.findall(r"\{[A-Z][A-Z0-9_]*\}", text)
+    if leftover:
+        raise ValueError(
+            f"Unresolved placeholders {leftover} in task "
+            f"{template.get('task_id', '<unknown>')} with config {config}"
+        )
 
     return text
