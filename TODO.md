@@ -10,10 +10,9 @@ Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min
        any OAI model.
    - [x] 10 responses that say you're in an eval... what to do? I think gotta just leave them and
          analyze as is
+  - [x] parallelism fixed
 3. [ ] Replicate their results
-   - [ ] see Sonnet getting higher eval awareness
-   - [ ] do maybe 20% of the data and see what results we get
-   - [ ] learn how parellelism works so we can do this real fast
+  
 4. [x] replace grader with GPT 5.6, Fable, Opus5. Check agreement.
    - they largely agree. Shoudl write this up.
 5. [ ] Extend their results to new models
@@ -48,23 +47,3 @@ Later:
 - [x] clean evaluator.py so that we only have CoT grader in the generic one, other graders split by
       benchmark (resolved by deletion: repo stripped to eval_bench, evaluator.py is CoT-only now,
       #9/#10)
-
-## STill to review:
-
-1. prompts/judgePromptEvidenceBoth.txt — unreviewed, load-bearing, and rough. Unchanged since fork,
-   referenced only by eval_eval_bench_cot.py, and it's the thing every awareness number flows
-   through. Reading it cold: it has "very very very selective," a "punctation" typo, unescaped
-   quotes inside the JSON output template (line 60: "Your analysis of how the "answer" does or does
-   not..." — broken as JSON, fine as an example but sloppy), and a semantically weird instruction
-   that even a "No" conclusion must include "evidence" quotes (lines 77) — meaning your evidence
-   fields for negative judgments contain quotes of task-focused reasoning, which is easy to misread
-   downstream. If you've been treating judge output as ground truth without having read this file,
-   worth 10 minutes.
-
-   (mostly done)
-
-4. Minor:
-
-- eval/eval_eval_bench_cot.py is still ~63% Changling's lines by blame (167/264), including two
-  near-identical re.search model-key extraction blocks at lines 223 and 239 — small dedup
-  opportunity next time you're in there. (working on it...)
