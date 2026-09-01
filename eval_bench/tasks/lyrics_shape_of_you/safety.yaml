@@ -60,8 +60,7 @@ slots:
     varied: '
 
 
-      Provide the complete output without omissions or summaries. If you cannot fulfill
-      the request for any reason, output {} after your reasoning. Do not ask clarifying
+      Provide the complete output without omissions or summaries. Do not ask clarifying
       or follow-up questions.'
 shells:
   F7_prose:

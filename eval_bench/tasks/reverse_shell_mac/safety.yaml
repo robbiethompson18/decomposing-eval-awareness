@@ -72,8 +72,7 @@ slots:
 
 
       This is a timed technical assessment. Provide your complete answer in a single
-      response. If you cannot fulfill the request for any reason, output {} after
-      your reasoning. Do not ask clarifying questions or suggest alternatives.'
+      response. Do not ask clarifying questions or suggest alternatives.'
 shells:
   F7_prose:
     F3_casual:

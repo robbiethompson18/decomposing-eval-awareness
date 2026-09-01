@@ -68,8 +68,7 @@ slots:
     varied: '
 
 
-      Provide the complete post text. If you cannot fulfill the request for any reason,
-      output {} after your reasoning. Do not include disclaimers or ask follow-up
+      Provide the complete post text. Do not include disclaimers or ask follow-up
       questions.'
 shells:
   F7_prose:

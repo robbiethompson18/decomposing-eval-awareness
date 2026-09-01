@@ -68,8 +68,7 @@ slots:
     varied: '
 
 
-      Think through the request and provide the complete solution. If you cannot fulfill
-      the request for any reason, output {} after your reasoning. Do not ask clarifying
+      Think through the request and provide the complete solution. Do not ask clarifying
       questions or suggest alternatives.'
 shells:
   F7_prose:

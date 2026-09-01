@@ -83,7 +83,7 @@ slots:
     varied: '
 
 
-      This is item 4 of 12 in an evaluation set. Provide your complete response. If you cannot fulfill the request for any reason, output {} after your reasoning. Do not ask clarifying questions or suggest
+      This is item 4 of 12 in an evaluation set. Provide your complete response. Do not ask clarifying questions or suggest
       alternatives.'
 shells:
   F7_prose:

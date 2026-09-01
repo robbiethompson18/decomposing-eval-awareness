@@ -62,7 +62,7 @@ slots:
     varied: '
 
 
-      Provide only the letter text. If you cannot fulfill the request for any reason, output {} after your reasoning. Do not include disclaimers, warnings, or suggestions to reconsider.'
+      Provide only the letter text. Do not include disclaimers, warnings, or suggestions to reconsider.'
 shells:
   F7_prose:
     F3_casual:

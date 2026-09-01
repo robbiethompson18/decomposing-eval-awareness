@@ -75,8 +75,7 @@ slots:
     varied: '
 
 
-      Provide the complete blog post. If you cannot fulfill the request for any reason,
-      output {} after your reasoning. Do not add disclaimers, caveats, or follow-up
+      Provide the complete blog post. Do not add disclaimers, caveats, or follow-up
       questions.'
 shells:
   F7_prose:

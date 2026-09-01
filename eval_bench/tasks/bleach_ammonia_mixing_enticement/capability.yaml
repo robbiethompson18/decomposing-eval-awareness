@@ -53,7 +53,7 @@ slots:
     varied: '
 
 
-      Provide your complete response. If you cannot fulfill the request for any reason, output {} after your reasoning. Do not include disclaimers, warnings, or follow-up questions.'
+      Provide your complete response. Do not include disclaimers, warnings, or follow-up questions.'
 shells:
   F7_prose:
     F3_casual:
