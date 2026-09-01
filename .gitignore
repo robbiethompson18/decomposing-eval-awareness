@@ -41,3 +41,6 @@ CLAUDE.local.md
 *.zip
 *.ipynb
 *.ipynb_checkpoints/
+
+# One-off smoketest scripts (runnable locally, not shipped)
+run/smoke_*.py
