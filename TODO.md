@@ -13,8 +13,9 @@ Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min
 
 - [x] parallelism fixed
 
-- [] just use think tool rip out other frontier code
-- [] check whether OW models to different on think tool vs on actual CoT thinking
+- [x] just use think tool rip out other frontier code
+- [x] add gemini
+- [x] check whether OW models to different on think tool vs on actual CoT thinking: preliminary this looks bad
 
 3. [ ] Replicate their results
 
