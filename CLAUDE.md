@@ -28,6 +28,12 @@ OAI banned us for 'distilling' so further runs are on Robbie's credit card. Be v
   process (2026-09-01). Every API client retries 429/5xx with backoff via `lib/retry.py`
   (`MAX_RETRIES`), so bursts of rate limits slow a run down instead of leaving silent
   `ERROR calling ...` holes in the results file. Count those strings after a run anyway.
+  Observed 2026-09-01: at 500 concurrent, Anthropic and Gemini native APIs drop 8–34% of calls
+  with SSL EOF errors that survive all 8 retries (OpenRouter is fine). Repair by deleting the
+  ERROR records from the file and re-running the same command at `MAX_CONCURRENT=50`.
+- OpenRouter picks a *different serving provider* for requests with `tools` (and any other
+  request-shape change), so OW baseline-vs-ablation deltas are confounded until the provider is
+  pinned — see `.claude/notes/openrouter-provider-routing-confound.md` before trusting an OW delta.
 - Default grader (2026-09-01, Robbie): **`claude-sonnet-5`, no backup grader.** The CoT judge
   (`eval/eval_eval_bench_cot.py`) grades with sonnet-5 (κ=1.0 vs terra on model_awareness,
   280-transcript check). It refuses ~3% of the most harmful transcripts; those are marked **N/A on
@@ -103,6 +109,7 @@ Current notes:
 - [Anchor configs: harmbench_verbatim + all_varied — read before claiming any grid cell "is" HarmBench, or before sending verbatim behaviors to a closed API](.claude/notes/harmbench-anchor-configs.md)
   — why all-varied ≠ verbatim (both levels are constructions around the content), where verbatim
   sits on F1–F8 (~2/8, the weak ones), 100/100 task names are HarmBench BehaviorIDs, contextual
+<<<<<<< HEAD
   baselines reuse HarmBench's own entities, ban risk. **Results (5 OW models):** verbatim 82% vs
   baseline 47% self-report awareness — the naturalization pipeline removes ~half the eval signal
   that was in the source; all_varied saturates on safety but spreads 30–98% on the *benign* arm.
@@ -116,3 +123,10 @@ Current notes:
   sonnet-4.5 +7.0 and qwen3.8 -6.0 move in *opposite* directions, suggesting the factor measures
   distance from training cutoff rather than staleness; haiku/gemini instrument failures and the
   three run traps (resume-by-model glob, inherited MAX_CONCURRENT=100, per-task-set batching).
+=======
+  baselines reuse HarmBench's own entities, the additivity test the anchors enable, ban risk.
+- [OpenRouter provider routing confound — read before interpreting any OW baseline-vs-ablation delta, or adding a factor that changes request shape (tools, images, response_format)](.claude/notes/openrouter-provider-routing-confound.md)
+  — requests with `tools` route to a different provider subset (deepseek: StreamLake-only vs 12
+  providers), which alone moved self-reported awareness 74→22%; provider mix per model from the
+  F12 run; fix = pin providers via `extra_body["provider"]` and record `provider` per sample.
+>>>>>>> e171a5a (Note: OpenRouter provider-routing confound (found via F12); SSL-EOF repair recipe in CLAUDE.md)
