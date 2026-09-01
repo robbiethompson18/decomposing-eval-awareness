@@ -23,8 +23,8 @@ eval_eval_bench_cot.py). Output records nest per-tier verdicts under "judgments"
     record["judgments"]["output_cot"] = {...}
 
 Environment variables:
-    JUDGE_MODEL          Primary judge (default: claude-sonnet-5)
-    BACKUP_JUDGE_MODEL   Fallback for refused/unparseable verdicts (default: gpt-5.6-terra; "" disables)
+    JUDGE_MODEL          Primary judge (default: gpt-5.6-terra)
+    BACKUP_JUDGE_MODEL   Fallback for refused/unparseable verdicts (default: claude-sonnet-5; "" disables)
     RESPONSE_FILE        Direct path to a response JSON (overrides MODEL_KEY)
     MODEL_KEY            Model key matching a response filename
     MAX_CONCURRENT       Max parallel judge calls (default: 100)
@@ -260,8 +260,8 @@ def print_stats(records: list[dict[str, Any]], model: str) -> None:
 
 def main() -> None:
     keys = get_api_keys_config()
-    primary = os.getenv("JUDGE_MODEL") or "claude-sonnet-5"
-    backup = os.getenv("BACKUP_JUDGE_MODEL", "gpt-5.6-terra").strip()
+    primary = os.getenv("JUDGE_MODEL") or "gpt-5.6-terra"
+    backup = os.getenv("BACKUP_JUDGE_MODEL", "claude-sonnet-5").strip()
     if backup == primary:
         backup = ""
     max_concurrent = int(os.getenv("MAX_CONCURRENT", "100"))
