@@ -6,6 +6,11 @@ secret-scratchpad deception). Roster picked from the three-lab experiments — s
 [openai-cot-extraction.md](openai-cot-extraction.md),
 [gemini-cot-extraction.md](gemini-cot-extraction.md).
 
+**Pipeline support:** `REASONING_MODE=think_tool` on `run/run_eval_bench.py` runs this method
+(honest framing + per-model starvation) for the anthropic_api and openai_api backends; see
+`core/target.py`. Open-weight models don't need it — OpenRouter returns their raw CoT in summary
+mode.
+
 ## The roster
 
 | Lab | Models | Starvation config | Notes |

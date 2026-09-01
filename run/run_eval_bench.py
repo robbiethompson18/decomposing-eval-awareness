@@ -26,7 +26,9 @@ Environment variables:
   OPENROUTER_MODEL_KEY  Model key for OpenRouter (default: qwen3-30b)
   ANTHROPIC_MODEL_KEY   Model key for Anthropic (default: claude-sonnet-4.5)
   OPENAI_MODEL_KEY      Model key for OpenAI (default: gpt-5)
-  REASONING_MODE        "summary" (default, native reasoning) or "scratchpad"
+  REASONING_MODE        "summary" (default, native reasoning), "scratchpad", or
+                        "think_tool" (starved-reasoning think-tool CoT extraction;
+                        see .claude/notes/cot-extraction-model-roster.md)
   SAMPLES_PER_CONFIG    Samples per (task, config) pair (default: 3)
   MAX_CONCURRENT        Max parallel API requests (default: 100)
   MAX_TOKENS            Max tokens for model response (default: 50000)
@@ -115,9 +117,16 @@ def load_all_tasks() -> list[dict[str, Any]]:
 def get_output_path(model_slug: str, reasoning_mode: str) -> Path:
     """Get the output file path for a model, reusing existing file if present."""
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    mode_suffix = "_scratchpad" if reasoning_mode == "scratchpad" else ""
+    mode_suffix = "" if reasoning_mode == "summary" else f"_{reasoning_mode}"
     pattern = str(RESULTS_DIR / f"responses_{model_slug}{mode_suffix}_*.json")
-    existing = sorted(glob.glob(pattern))
+    # Summary mode's glob also matches the suffixed mode files; exclude them so a
+    # summary run never resumes into a scratchpad/think_tool results file.
+    existing = sorted(
+        p
+        for p in glob.glob(pattern)
+        if reasoning_mode != "summary"
+        or not any(f"_{m}_" in p for m in ("scratchpad", "think_tool"))
+    )
     if existing:
         return Path(existing[-1])
     timestamp = now_pacific().strftime("%Y%m%d_%H%M%S")
@@ -154,11 +163,16 @@ def main() -> None:
     }
 
     backend = cfg["TARGET_BACKEND"]
-    prompt_file = (
-        "chat_prompt_realistic_scratchpad.txt"
-        if reasoning_mode == "scratchpad"
-        else "chat_prompt_realistic.txt"
-    )
+    prompt_files = {
+        "summary": "chat_prompt_realistic.txt",
+        "scratchpad": "chat_prompt_realistic_scratchpad.txt",
+        "think_tool": "chat_prompt_realistic_think_tool.txt",
+    }
+    prompt_file = prompt_files.get(reasoning_mode)
+    if prompt_file is None:
+        sys.exit(
+            f"Unknown REASONING_MODE '{reasoning_mode}'. Use: {', '.join(prompt_files)}"
+        )
     system_prompt = read_file(str(BASE_DIR / "prompts" / prompt_file)).strip()
 
     print(f"Reasoning mode: {reasoning_mode}")
