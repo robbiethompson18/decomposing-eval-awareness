@@ -26,7 +26,6 @@ Environment variables:
   OPENROUTER_MODEL_KEY  Model key for OpenRouter (default: qwen3-30b)
   ANTHROPIC_MODEL_KEY   Model key for Anthropic (default: claude-sonnet-4.5)
   OPENAI_MODEL_KEY      Model key for OpenAI (default: gpt-5)
-  REASONING_MODE        "summary" (default, native reasoning) or "scratchpad"
   SAMPLES_PER_CONFIG    Samples per (task, config) pair (default: 3)
   MAX_CONCURRENT        Max parallel API requests (default: 100)
   MAX_TOKENS            Max tokens for model response (default: 50000)
@@ -112,12 +111,22 @@ def load_all_tasks() -> list[dict[str, Any]]:
     return tasks
 
 
-def get_output_path(model_slug: str, reasoning_mode: str) -> Path:
-    """Get the output file path for a model, reusing existing file if present."""
+def get_output_path(model_slug: str, mode_suffix: str) -> Path:
+    """Get the output file path for a model, reusing existing file if present.
+
+    Closed backends carry a _think_tool suffix so their files stay distinct
+    from pre-collapse summary/scratchpad results; OpenRouter (native CoT) keeps
+    the unsuffixed naming, so its existing result files remain resumable.
+    """
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    mode_suffix = "_scratchpad" if reasoning_mode == "scratchpad" else ""
     pattern = str(RESULTS_DIR / f"responses_{model_slug}{mode_suffix}_*.json")
-    existing = sorted(glob.glob(pattern))
+    # The unsuffixed glob also matches suffixed files; exclude them so a native
+    # run never resumes into a think_tool (or old scratchpad) results file.
+    existing = sorted(
+        p
+        for p in glob.glob(pattern)
+        if mode_suffix or not any(f"_{m}_" in p for m in ("scratchpad", "think_tool"))
+    )
     if existing:
         return Path(existing[-1])
     timestamp = now_pacific().strftime("%Y%m%d_%H%M%S")
@@ -143,7 +152,6 @@ def save_results(out_file: Path, output_data: dict[str, Any]) -> None:
 
 
 def main() -> None:
-    reasoning_mode = os.getenv("REASONING_MODE", "summary")
     samples_per_config = int(os.getenv("SAMPLES_PER_CONFIG", "3"))
 
     cfg = {
@@ -154,19 +162,18 @@ def main() -> None:
     }
 
     backend = cfg["TARGET_BACKEND"]
+    # Closed backends run think-tool extraction, so their system prompt mandates
+    # the tool; OpenRouter models reason natively and get the plain prompt.
     prompt_file = (
-        "chat_prompt_realistic_scratchpad.txt"
-        if reasoning_mode == "scratchpad"
-        else "chat_prompt_realistic.txt"
+        "chat_prompt_realistic.txt"
+        if backend == "openrouter"
+        else "chat_prompt_realistic_think_tool.txt"
     )
     system_prompt = read_file(str(BASE_DIR / "prompts" / prompt_file)).strip()
 
-    print(f"Reasoning mode: {reasoning_mode}")
     print(f"System prompt: {prompt_file}")
 
-    client, model_slug = create_target_client(
-        backend, cfg, system_prompt, reasoning_mode
-    )
+    client, model_slug = create_target_client(backend, cfg, system_prompt)
 
     tasks = load_all_tasks()
     configs = build_configs()
@@ -191,13 +198,16 @@ def main() -> None:
     task_names = sorted(tasks_by_name.keys())
 
     # Determine output file and load existing progress
-    out_file = get_output_path(model_slug, reasoning_mode)
+    reasoning_method = "native" if backend == "openrouter" else "think_tool"
+    out_file = get_output_path(
+        model_slug, "" if backend == "openrouter" else "_think_tool"
+    )
     existing_data, completed_ids = load_existing_results(out_file)
 
     output_data = existing_data or {
         "model": model_slug,
         "backend": backend,
-        "reasoning_mode": reasoning_mode,
+        "reasoning_mode": reasoning_method,
         "system_prompt": prompt_file,
         "samples_per_config": samples_per_config,
         "n_tasks": len(tasks),

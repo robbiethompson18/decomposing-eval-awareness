@@ -64,9 +64,6 @@ def get_api_keys_config() -> dict[str, Any]:
         "ANTHROPIC_API_BASE": os.getenv(
             "ANTHROPIC_API_BASE", "https://api.anthropic.com"
         ),
-        # Must stay < MAX_TOKENS (50000): the budget carves thinking room out of
-        # the completion cap. 40000 leaves 10k for the visible answer.
-        "THINKING_BUDGET": int(os.getenv("THINKING_BUDGET", "40000")),
         # OpenAI
         "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", ""),
         "OPENAI_TARGET_MODEL": os.getenv("OPENAI_TARGET_MODEL", "gpt-5"),

@@ -6,6 +6,11 @@ secret-scratchpad deception). Roster picked from the three-lab experiments — s
 [openai-cot-extraction.md](openai-cot-extraction.md),
 [gemini-cot-extraction.md](gemini-cot-extraction.md).
 
+**Pipeline support:** this is the pipeline's only CoT-capture method for closed models — the
+anthropic_api and openai_api backends in `core/target.py` hardcode it (honest framing + per-model
+starvation; the old summary/scratchpad modes were deleted). Open-weight models don't need it —
+the openrouter backend returns their raw native CoT.
+
 ## The roster
 
 | Lab | Models | Starvation config | Notes |

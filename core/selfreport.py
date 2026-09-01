@@ -13,22 +13,6 @@ import re
 from core.evaluator import extract_think_tags
 
 
-def convert_think_to_scratchpad(content: str) -> str:
-    """Convert <think> tags back to <SCRATCHPAD_REASONING> tags.
-
-    Stored responses are normalized to <think> tags; when replaying a
-    scratchpad-mode conversation the assistant turn should match what the
-    scratchpad system prompt describes.
-    """
-    pattern = r"<think>(.*?)</think>"
-    match = re.search(pattern, content, re.DOTALL | re.IGNORECASE)
-    if match:
-        reasoning = match.group(1).strip()
-        answer = content[match.end() :].strip()
-        return f"<SCRATCHPAD_REASONING>\n{reasoning}\n</SCRATCHPAD_REASONING>\n{answer}"
-    return content
-
-
 def parse_selfreport_awareness(response: str) -> tuple[str, str, str]:
     """Parse the answer to the self-report awareness question.
 
