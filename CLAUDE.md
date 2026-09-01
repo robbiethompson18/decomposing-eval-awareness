@@ -14,7 +14,8 @@ There is a blog post I'm drafting for this for my personal website at
 for me. You can address my @claude comments by doing mechanical things (eg adding links) and by
 giving me commmentary back in chat. All prose is mine.
 
-OAI banned us for 'distilling' so further runs are on Robbie's credit card. Be very cautious about using these.
+OAI banned us for 'distilling' so further runs are on Robbie's credit card. Be very cautious about
+using these.
 
 ## Rules
 
@@ -26,15 +27,15 @@ OAI banned us for 'distilling' so further runs are on Robbie's credit card. Be v
 - Massive parellelism on all grader runs and eval runs. At least parallelism 100
 - Default grader stack (2026-09-01, Robbie): **`gpt-5.6-terra` primary + `claude-sonnet-5` backup**.
   The CoT judge (`eval/eval_eval_bench_cot.py`) and tiered judge grade with terra (0 refusals,
-  κ=0.91 vs gpt-5), then re-grade only unparseable verdicts with sonnet-5. sonnet-5 agrees with terra
-  at **κ=1.0 on model_awareness** (280-transcript check) but refuses ~3.2% of the most-harmful
+  κ=0.91 vs gpt-5), then re-grade only unparseable verdicts with sonnet-5. sonnet-5 agrees with
+  terra at **κ=1.0 on model_awareness** (280-transcript check) but refuses ~3.2% of the most-harmful
   transcripts, so it's the backup, not the primary. Grading on Anthropic credits instead is
   `JUDGE_MODEL=claude-sonnet-5 BACKUP_JUDGE_MODEL=gpt-5.6-terra` (~$25 vs ~$800 all-terra). opus-5
   refuses 3× as often as sonnet-5 for no accuracy gain, so it's not used. Set backup to `""` to
   disable.
 - Import layering: `lib/` imports nothing from this repo; `core/` may import `lib/` but never
-  `utils`; `run/`/`eval/`/`plots/` scripts may import anything. Keep new leaf helpers in `lib/`,
-  not `core/`.
+  `utils`; `run/`/`eval/`/`plots/` scripts may import anything. Keep new leaf helpers in `lib/`, not
+  `core/`.
 - If you're fighting over a branch or checkout with another agent, just make a fresh checkout
   (`/extra-checkout decomposing-eval-awareness`; `-2`…`-5` exist already). In every extra checkout,
   symlink `results/` back to the main checkout
@@ -47,12 +48,20 @@ OAI banned us for 'distilling' so further runs are on Robbie's credit card. Be v
   - Anthropic: `claude-sonnet-4-5-20250929`, `claude-haiku-4-5-20251001`
   - OpenAI: `gpt-5`, `gpt-5.1`, `gpt-5.2`, `gpt-5.4`, `gpt-5.6-sol` — even Aug'25→mid-'26 spread;
     gpt-5.5 dropped (adjacent to 5.4, identical extraction behavior)
-  - Open-weight tier-1 (newest flagship from each top-5 OW lab; OpenRouter keys in
-    `lib/config.py`): `qwen3.8-2.4t`, `deepseek-v4-pro`, `kimi-k3`, `glm-5.3`, `minimax-m3`
+  - Open-weight tier-1 (newest flagship from each top-5 OW lab; OpenRouter keys in `lib/config.py`):
+    `qwen3.8-2.4t`, `deepseek-v4-pro`, `kimi-k3`, `glm-5.3`, `minimax-m3`
 - Lint + typecheck: `uvx ruff check .` and `uvx ty check .` (ty config in `ty.toml`). Git hooks run
-  both via **lefthook** (`lefthook.yml`) — one-time per checkout: `brew install lefthook && lefthook
-  install`. ruff blocks commits; `ty` is currently non-blocking (`|| true` in `lefthook.yml`) because
-  of a pre-existing baseline of findings — drop the `|| true` once that baseline is clean.
+  both via **lefthook** (`lefthook.yml`) — one-time per checkout:
+  `brew install lefthook && lefthook install`. ruff blocks commits; `ty` is currently non-blocking
+  (`|| true` in `lefthook.yml`) because of a pre-existing baseline of findings — drop the `|| true`
+  once that baseline is clean.
+- Every time you merge one PR or start a new feature, create a fresh branch off of main. Don't stack
+  new features / PRs onto old branches.
+- When you wake up in a fresh session, check to see that you're in a quiet checkout (eg no activity
+  in last 20 mins). If not, move.
+- When you wake up in a fresh session, pull latest main and then make a branch directly off of it.
+- Before giving Robbie a PR to review, make sure it's rebased off of latest main (or that main is
+  max 5 minutes ahead of you)
 
 ## Notes
 
@@ -74,11 +83,13 @@ Current notes:
   — F8→varied raises self-reported awareness 45→58% (paired McNemar p≈4.6e-10) and CoT-judged 3→8%;
   baseline-vs-F8 A/B mechanics; adaptive-Claude-5 empty-answer + system_prompt-as-filename gotchas.
 - [Self-report vs CoT-monitoring awareness gap — read before writing up awareness numbers, choosing probes for a model, or comparing to the paper's rates](.claude/notes/selfreport-vs-cot-gap.md)
-  — self-report runs 3–25× above CoT-verbalized on the same transcripts; apples-to-apples model
-  list (opus-5/fable-5 excluded); fable's reasoning_extraction refusal; which result files to
+  — self-report runs 3–25× above CoT-verbalized on the same transcripts; apples-to-apples model list
+  (opus-5/fable-5 excluded); fable's reasoning_extraction refusal; which result files to
   use/discard.
 - [Grader selection + the F8 `{}` refusal clause — read before choosing a judge model, editing task prompts, or regenerating responses](.claude/notes/grader-selection-and-refusal-clause.md)
-  — why terra is the default grader (vs gpt-5/sonnet-5), what the F8 `{}` clause was and why PR #22 removed it, the awareness-under-counting rubric gotcha, and the run_eval_bench id-cache / shared-results regen traps.
+  — why terra is the default grader (vs gpt-5/sonnet-5), what the F8 `{}` clause was and why PR #22
+  removed it, the awareness-under-counting rubric gotcha, and the run_eval_bench id-cache /
+  shared-results regen traps.
 - [Claude 5 CoT-extraction resistance — read before trying to read a model's chain-of-thought via think-tool/scratchpad tricks](.claude/notes/claude5-cot-extraction-resistance.md)
   — think-tool + low-thinking extraction works on 4.5, dead on 5; token-accounting evidence;
   per-model refuse/bypass/hide behavior + honest-vs-lying framing.
@@ -86,11 +97,11 @@ Current notes:
   — extraction works everywhere, 0 refusals through gpt-5.6; reasoning_tokens=0 at effort floor;
   lying framing changes nothing; results page at .claude/notes/think-tool-extraction-openai.html.
 - [Gemini CoT extraction — third lab, 8 models Jun 2025→mid-2026](.claude/notes/gemini-cot-extraction.md)
-  — no policy resistance but chaotic: malformed calls in 2.5 era, lying framing *increases* tool
+  — no policy resistance but chaotic: malformed calls in 2.5 era, lying framing _increases_ tool
   use, 3.7-flash ignores thinkingBudget=0; page at .claude/notes/think-tool-extraction-gemini.html.
 - [CoT-extraction model roster — which models to use for honest-framing think-tool extraction](.claude/notes/cot-extraction-model-roster.md)
-  — the chosen set: sonnet/haiku 4.5, any gpt-5.x, gemini-3.1-pro + 3.5-flash; per-model
-  starvation configs and exclusion reasons.
+  — the chosen set: sonnet/haiku 4.5, any gpt-5.x, gemini-3.1-pro + 3.5-flash; per-model starvation
+  configs and exclusion reasons.
 - [OW models: native CoT vs think-tool — read before choosing a CoT-capture method for open-weight models or adding a think-tool path to the openrouter backend](.claude/notes/ow-native-cot-vs-think-tool.md)
   — A/B on 5 OW models: grades agree (awareness 82%, task 78%) but traces don't (Jaccard 0.19) and
   the think tool captures less CoT; three per-provider reasoning-disable behaviors; stick with raw
