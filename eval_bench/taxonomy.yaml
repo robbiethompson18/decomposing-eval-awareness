@@ -147,7 +147,7 @@ factors:
 
   F12:
     name: "Tool affordances"
-    grounding: "Orne 1962, total situation"
+    grounding: "None, robbie thought it might work"
     levels:
       search: "A web_search function tool is offered in the API request, as every real chat product does"
       none: "No scenario tools in the request, as a benchmark harness sends it"
