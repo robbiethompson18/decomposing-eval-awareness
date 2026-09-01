@@ -88,9 +88,10 @@ class AnthropicApiClient:
         self.model = cfg["ANTHROPIC_MODEL"]
         self.api_base = cfg["ANTHROPIC_API_BASE"]
         self.scratchpad = scratchpad
-        # Extended thinking requires budget_tokens < max_tokens
-        # Default to 16000 max_tokens with 10000 thinking budget
-        self.max_tokens = cfg.get("MAX_TOKENS", 16000)
+        # Extended thinking requires budget_tokens < max_tokens.
+        # 50000 default: high enough that thinking never truncates the answer,
+        # under the 64k output ceiling of current Claude models.
+        self.max_tokens = cfg.get("MAX_TOKENS", 50000)
         self.thinking_budget = cfg.get("THINKING_BUDGET", 10000)
         # Ensure thinking budget is valid (must be < max_tokens, minimum 1024)
         if self.thinking_budget >= self.max_tokens:
@@ -179,7 +180,7 @@ class OpenAITargetClient:
 
         self.system_prompt = system_prompt
         self.model = cfg["OPENAI_TARGET_MODEL"]
-        self.max_tokens = cfg.get("MAX_TOKENS", 7000)
+        self.max_tokens = cfg.get("MAX_TOKENS", 50000)
         self.scratchpad = scratchpad
         self.client = OpenAI(api_key=cfg["OPENAI_API_KEY"])
 
@@ -256,7 +257,9 @@ class OpenRouterApiClient:
     def __init__(self, cfg: dict[str, Any], system_prompt: str) -> None:
         self.system_prompt = system_prompt
         self.model = cfg["OPENROUTER_MODEL"]
-        self.max_tokens = cfg.get("MAX_TOKENS", 2048)
+        # Loop guard, not a length target: reasoning tokens count against this,
+        # so a low cap truncates the CoT before any visible answer is written
+        self.max_tokens = cfg.get("MAX_TOKENS", 50000)
         self.temperature = cfg.get(
             "TEMPERATURE", 0.3
         )  # None = don't set (for reasoning models)

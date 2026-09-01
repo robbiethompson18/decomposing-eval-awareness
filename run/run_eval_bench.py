@@ -29,7 +29,7 @@ Environment variables:
   REASONING_MODE        "summary" (default, native reasoning) or "scratchpad"
   SAMPLES_PER_CONFIG    Samples per (task, config) pair (default: 3)
   MAX_CONCURRENT        Max parallel API requests (default: 100)
-  MAX_TOKENS            Max tokens for model response (default: 4096)
+  MAX_TOKENS            Max tokens for model response (default: 50000)
   TASK_FILTER           Comma-separated task names to run (default: all tasks)
   VALENCE_FILTER        Comma-separated valences to run, e.g. "capability" (default: all)
   CONFIG_FILTER         Comma-separated config names to run, e.g. "F6" or "baseline,F1" (default: all)
@@ -147,7 +147,7 @@ def main() -> None:
     samples_per_config = int(os.getenv("SAMPLES_PER_CONFIG", "3"))
 
     cfg = {
-        "MAX_TOKENS": int(os.getenv("MAX_TOKENS", "4096")),
+        "MAX_TOKENS": int(os.getenv("MAX_TOKENS", "50000")),
         "TARGET_BACKEND": os.getenv("TARGET_BACKEND", "openrouter"),
         "MAX_CONCURRENT": int(os.getenv("MAX_CONCURRENT", "100")),
         **get_api_keys_config(),
