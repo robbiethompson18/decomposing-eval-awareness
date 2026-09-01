@@ -2,6 +2,13 @@
 
 <!-- Dated entries; delete when resolved. -->
 
+- **2026-09-01** No 429/backoff retry anywhere in `core/target.py` — a rate-limited call
+  returns the "ERROR calling ..." string, which downstream lands in result files as
+  invalid/skipped records (poisoned an entire 5-model gpt selfreport sweep at 5×100
+  concurrency; the `selfreport_gpt-*_1224xx/12274x` files are that wreckage). Any future
+  high-concurrency OpenAI sweep needs either a retry-with-backoff in the client or
+  babysat per-model sequential runs.
+
 - **2026-08-31** The semaphore/gather/exception-filter loop now exists in three places
   (`lib/parallel.py::query_parallel`, `core/evaluator.py::evaluate_batch_async`, and
   `eval/eval_eval_bench_selfreport.py::run_all`). If a fourth site appears (e.g. porting the
