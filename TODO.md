@@ -97,6 +97,8 @@ So I should do both of those _right now_
    downstream. If you've been treating judge output as ground truth without having read this file,
    worth 10 minutes.
 
+   (mostly done)
+
 2. eval_bench/render.py — only Ruff formatting since fork; substance never reviewed. The diff since
    fork is 100% quote-style/line-wrap changes. The actual logic has a real footgun: the substitution
    loop (render.py:38-44) runs to a fixed point capped at 10 iterations and silently returns
@@ -105,6 +107,8 @@ So I should do both of those _right now_
    taxonomy is "placeholder-looking entities trigger eval awareness," an accidental leftover
    {placeholder} would directly contaminate results. A post-loop assert '{' not in text-style check
    would be cheap.
+
+   (looksfine)
 
 3. Dead upstream artifacts, candidates for the ongoing strip:
 
