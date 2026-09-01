@@ -31,3 +31,10 @@
   confound (the same model key can be served by different providers across runs). Consider pinning
   via OpenRouter's `provider` extra_body, and storing the served provider in the response file
   (`OpenRouterApiClient.query_chat_meta` already returns it; the eval_bench runner drops it).
+
+- **2026-09-01** `plots/plot_awareness.py` hardcodes the factor grid twice: `EXPECTED_CONFIGS = 9`
+  (baseline + F1..F8) and a `FACTOR_LABELS` dict that stops at F8. Adding F9 (PR #37) and F10
+  (PR #54) did not update either, so plotting a run that includes them will drop or mislabel
+  columns. Both should be derived from `run.run_eval_bench.FACTOR_VARIED_LEVELS` /
+  `eval_bench/taxonomy.yaml` rather than restated — the label strings are the only thing that
+  genuinely needs hand-writing per factor.

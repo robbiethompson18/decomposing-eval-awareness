@@ -14,7 +14,7 @@ existing bucket/stats helpers work on them.
 Environment variables:
     MODEL_KEY       Model key matching response filename (e.g., "qwen3-30b")
     RESPONSE_FILE   Direct path to response JSON (overrides MODEL_KEY)
-    MAX_CONCURRENT  Max parallel target API calls (default: 100)
+    MAX_CONCURRENT  Max parallel target API calls (default: 500)
     MAX_SAMPLES     Limit number of samples to evaluate (default: 0 = all)
     TASK_FILTER     Comma-separated task names to include (default: all)
     VALENCE_FILTER  Comma-separated valences to include (default: all)
@@ -145,7 +145,9 @@ def main() -> None:
     legacy_system = data.get("system_prompt", "") or None
     if legacy_system and legacy_system.endswith(".txt"):
         prompt_path = os.path.join(base_dir, "prompts", os.path.basename(legacy_system))
-        legacy_system = read_file(prompt_path).strip() if os.path.exists(prompt_path) else None
+        legacy_system = (
+            read_file(prompt_path).strip() if os.path.exists(prompt_path) else None
+        )
     if not samples or backend not in BACKEND_MODEL_ENV:
         print(f"ERROR: No samples or unknown backend {backend!r} in response file.")
         sys.exit(1)
@@ -169,7 +171,7 @@ def main() -> None:
         print("ERROR: No samples match the given filters.")
         sys.exit(1)
 
-    max_concurrent = int(os.getenv("MAX_CONCURRENT", "100"))
+    max_concurrent = int(os.getenv("MAX_CONCURRENT", "500"))
 
     # Recreate the exact target client the responses came from (same model,
     # backend, and system prompt), so the continuation is a faithful replay of
@@ -213,9 +215,7 @@ def main() -> None:
                 sample.get("prompt", ""), legacy_system
             )
             system = chat.get("system")
-            base = list(chat["messages"]) + [
-                {"role": "assistant", "content": response}
-            ]
+            base = list(chat["messages"]) + [{"role": "assistant", "content": response}]
 
             def _followup(question: str) -> dict:
                 return {

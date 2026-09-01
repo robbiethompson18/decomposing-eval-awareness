@@ -9,7 +9,7 @@ from typing import Any
 async def query_parallel(
     items: list[tuple[Any, Any, dict[str, Any]]],
     result_fn: Callable[[str, dict[str, Any], int], dict[str, Any]],
-    max_concurrent: int = 100,
+    max_concurrent: int = 500,
 ) -> list[dict[str, Any]]:
     """
     Run parallel queries to target models.
@@ -43,8 +43,7 @@ async def query_parallel(
             return idx, result_fn(response, metadata, sample_idx)
 
     tasks = [
-        query_one(i, client, chat, meta)
-        for i, (client, chat, meta) in enumerate(items)
+        query_one(i, client, chat, meta) for i, (client, chat, meta) in enumerate(items)
     ]
     results = await asyncio.gather(*tasks, return_exceptions=True)
     executor.shutdown(wait=False)
