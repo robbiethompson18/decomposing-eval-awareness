@@ -81,6 +81,11 @@ def render(template: dict, config: dict) -> Chat:
     if "system" in template:
         system: str | None = _fill(template["system"], resolved, task_id, config)
     else:
+        # TODO(cleanup): no task defines `system` yet, so fall back to the
+        # baseline (keeps all 104 tasks rendering unchanged). Once every task
+        # YAML carries its own `system`, drop this default and require it —
+        # ideally behind a STRICT_SYSTEM flag so the switch is deliberate rather
+        # than a silent break. See PR #41 discussion.
         system = DEFAULT_SYSTEM_PROMPT
 
     messages: list[ChatMessage] = []
