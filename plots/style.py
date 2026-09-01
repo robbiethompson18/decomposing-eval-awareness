@@ -17,6 +17,9 @@ PROVIDER_COLOR = {
     "Google": "#1baf7a",
     "Open-weight": "#eda100",
 }
+# Safety/capability pair for valence splits; slots 8 and 7 of the same palette,
+# deliberately disjoint from the provider slots above.
+VALENCE_COLOR = {"safety": "#e34948", "capability": "#4a3aa7"}
 SURFACE, INK, INK2 = "#fcfcfb", "#0b0b0b", "#52514e"
 GRID = "#e5e4e0"
 
@@ -45,15 +48,12 @@ def save(fig, out_dir: str, name: str):
     print(f"wrote {path}")
 
 
-def provider_legend(ax, marker: bool = False, **kwargs):
-    """Legend with one entry per provider, matching the fixed color slots."""
+def color_legend(ax, colors: dict[str, str], marker: bool = False, **kwargs):
+    """Legend with one swatch (or marker) per entry of a fixed label->color map."""
     if marker:
         handles = [
-            plt.Line2D([], [], marker="o", ls="", color=c)
-            for c in PROVIDER_COLOR.values()
+            plt.Line2D([], [], marker="o", ls="", color=c) for c in colors.values()
         ]
     else:
-        handles = [
-            plt.Rectangle((0, 0), 1, 1, color=c) for c in PROVIDER_COLOR.values()
-        ]
-    ax.legend(handles, PROVIDER_COLOR.keys(), frameon=False, fontsize=8, **kwargs)
+        handles = [plt.Rectangle((0, 0), 1, 1, color=c) for c in colors.values()]
+    ax.legend(handles, colors.keys(), frameon=False, fontsize=8, **kwargs)

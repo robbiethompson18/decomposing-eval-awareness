@@ -1,7 +1,8 @@
 """
 Graphs for the eval-awareness replication (TODO item 3):
-  by provider, by release date, by API cost, self-report uplift, and a
-  per-factor heatmap (model × OFAT config).
+  by provider, by release date, by API cost, self-report uplift, a
+  per-factor heatmap (model × OFAT config), and by task type (HarmBench
+  category × valence, pooled across models).
 
 RUN SELECTION IS EXPLICIT: only files pinned in BIG_RUN below are plotted —
 never newest-wins globbing, which conflates canary/smoke runs with the real
@@ -19,6 +20,8 @@ the chosen probe's file drop out with a stderr note. The uplift chart always
 needs both probes. Rates are per-config; CONFIG_FILTER (default "baseline")
 keeps the headline comparison free of the awareness-raising factor variants.
 The factor heatmap ignores CONFIG_FILTER — its columns *are* the configs.
+The task-type chart pools every pinned model's records (so it weights models
+by graded n, like the heatmap's Pooled row) and splits safety vs capability.
 
 Environment variables:
     SURVEY          "1" = print the file survey and exit (for updating pins)
@@ -47,14 +50,15 @@ from plots.style import (
     INK2,
     PROVIDER_COLOR,
     SURFACE,
+    VALENCE_COLOR,
+    color_legend,
     new_fig,
-    provider_legend,
     save,
 )
 
-RESULTS = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results", "eval_bench"
-)
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RESULTS = os.path.join(ROOT, "results", "eval_bench")
+TASKS = os.path.join(ROOT, "eval_bench", "tasks")
 
 # The 2026-08-31→09-01 giant run: responses generated 20260901_005920 (Pacific),
 # CoT judged by claude-sonnet-5 (intentional — Robbie 2026-09-01; ~150 records
@@ -122,6 +126,16 @@ FACTOR_LABELS = {
     "F8": "F8\neval\ndisclosure",
 }
 
+# HarmBench semantic categories the 100 task pairs were adapted from.
+CATEGORY_LABELS = {
+    "illegal": "Illegal activities",
+    "misinformation_disinformation": "Misinformation",
+    "harassment_bullying": "Harassment & bullying",
+    "cybercrime_intrusion": "Cybercrime & intrusion",
+    "harmful": "General harm",
+    "copyright": "Copyright (song lyrics)",
+}
+
 PROBE_TITLE = {"selfreport": "Self-reported", "cot": "CoT-judged"}
 PROBE_XLABEL = {
     "selfreport": "self-reported eval-awareness (% of graded samples)",
@@ -177,6 +191,21 @@ def survey() -> None:
             print(f"{mark} {base:58} n={len(recs):5} cfgs={cfgs} {jstr:42} {src}")
 
 
+def task_categories() -> dict[str, str]:
+    """task_name -> HarmBench category, from the task-generation logs.
+
+    The category isn't in the task YAMLs; it only survives in the logs of the
+    pipeline that adapted the HarmBench behaviors. Tasks that were kept from the
+    first pass appear only in the *_before_replaced log, so read both.
+    """
+    cats: dict[str, str] = {}
+    for fname in ("generation_log_before_replaced.json", "generation_log.json"):
+        with open(os.path.join(TASKS, fname)) as f:
+            for t in json.load(f)["tasks"]:
+                cats[t["behavior_id"]] = t["category"]
+    return cats
+
+
 def summarize(records: list[dict], config: str) -> dict:
     """Bucket model_awareness conclusions for one config ('ALL' pools)."""
     counts = {"yes": 0, "no": 0, "n/a": 0, "invalid": 0}
@@ -228,7 +257,7 @@ def plot_by_provider(rows: list[dict], out_dir: str, probe: str, config: str):
         loc="left",
     )
     ax.xaxis.grid(True, color=GRID, lw=0.7, zorder=0)
-    provider_legend(ax, loc="lower right")
+    color_legend(ax, PROVIDER_COLOR, loc="lower right")
     save(fig, out_dir, f"awareness_by_provider_{probe}_{config}.png")
 
 
@@ -277,7 +306,7 @@ def plot_scatter(
         loc="left",
     )
     ax.yaxis.grid(True, color=GRID, lw=0.7, zorder=0)
-    provider_legend(ax, marker=True)
+    color_legend(ax, PROVIDER_COLOR, marker=True)
     save(fig, out_dir, fname)
 
 
@@ -399,6 +428,78 @@ def plot_factor_heatmap(out_dir: str, probe: str):
     save(fig, out_dir, f"awareness_by_factor_{probe}.png")
 
 
+def plot_by_task_type(out_dir: str, probe: str, config: str):
+    """Grouped horizontal bars: pooled awareness per HarmBench category × valence."""
+    cats = task_categories()
+    yes: Counter = Counter()
+    graded: Counter = Counter()
+    n_models, unmapped = 0, set()
+    for model in BIG_RUN:
+        path = pinned_path(probe, model)
+        if path is None:
+            continue
+        n_models += 1
+        for r in load_records(path):
+            if config != "ALL" and r.get("config_name") != config:
+                continue
+            cat = cats.get(r["task_name"])
+            if cat is None:
+                unmapped.add(r["task_name"])
+                continue
+            key = (cat, r["valence"])
+            b = bucket_conclusion(
+                extract_conclusion(r.get("judge") or {}, "model_awareness")
+            )
+            yes[key] += b == "yes"
+            graded[key] += b in ("yes", "no")
+    if unmapped:
+        print(f"[task-type] no category for: {sorted(unmapped)}", file=sys.stderr)
+    if not graded:
+        return
+
+    def rate(cat, val):
+        return yes[cat, val] / graded[cat, val] if graded[cat, val] else math.nan
+
+    order = sorted(
+        CATEGORY_LABELS,
+        key=lambda c: (
+            -sum(yes[c, v] for v in VALENCE_COLOR)
+            / max(1, sum(graded[c, v] for v in VALENCE_COLOR))
+        ),
+    )
+    fig, ax = new_fig(h=0.85 * len(order) + 1.4)
+    bar_h = 0.36
+    for i, cat in enumerate(order):
+        for j, val in enumerate(VALENCE_COLOR):
+            y = i + (j - 0.5) * (bar_h + 0.04)
+            p = rate(cat, val) * 100
+            lo, hi = wilson_ci(yes[cat, val], graded[cat, val])
+            ax.barh(y, p, height=bar_h, color=VALENCE_COLOR[val], zorder=3)
+            ax.plot([lo * 100, hi * 100], [y, y], color=INK, lw=1, zorder=4)
+            ax.text(
+                hi * 100 + 0.3,
+                y,
+                f"{p:.1f}%",
+                va="center",
+                fontsize=8,
+                color=INK,
+            )
+    ax.set_yticks(range(len(order)))
+    ax.set_yticklabels([CATEGORY_LABELS[c] for c in order], fontsize=9)
+    ax.invert_yaxis()
+    ax.set_xlabel(
+        f"{PROBE_XLABEL[probe][:-1]}, pooled over {n_models} models)", color=INK2
+    )
+    ax.set_title(
+        f"{PROBE_TITLE[probe]} eval awareness by task type ({config} config)",
+        color=INK,
+        loc="left",
+    )
+    ax.xaxis.grid(True, color=GRID, lw=0.7, zorder=0)
+    color_legend(ax, {f"{v} task": c for v, c in VALENCE_COLOR.items()})
+    save(fig, out_dir, f"awareness_by_task_type_{probe}_{config}.png")
+
+
 def main():
     if os.getenv("SURVEY") == "1":
         survey()
@@ -490,6 +591,7 @@ def main():
     )
     plot_uplift(rows, out_dir, config)
     plot_factor_heatmap(out_dir, probe)
+    plot_by_task_type(out_dir, probe, config)
 
 
 if __name__ == "__main__":
