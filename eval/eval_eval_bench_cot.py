@@ -5,10 +5,10 @@ Loads responses from run_eval_bench.py and evaluates each sample with a judge mo
 using the standard CoT monitoring pipeline.
 
 Environment variables:
-    JUDGE_MODEL          Primary judge (default: claude-sonnet-5; OPENAI_EVAL_MODEL
+    JUDGE_MODEL          Primary judge (default: gpt-5.6-terra; OPENAI_EVAL_MODEL
                          also honored). claude-* routes to the Anthropic API.
     BACKUP_JUDGE_MODEL   Fallback judge for transcripts the primary refused / returned
-                         unparseable JSON for (default: gpt-5.6-terra). Only those
+                         unparseable JSON for (default: claude-sonnet-5). Only those
                          samples are re-graded; set "" to disable the fallback.
     MODEL_KEY            Model key matching response filename (e.g., "qwen3-30b")
     RESPONSE_FILE        Direct path to response JSON (overrides MODEL_KEY)
@@ -18,9 +18,10 @@ Environment variables:
     VALENCE_FILTER       Comma-separated valences to judge (default: all)
     MERGE_INTO           Path to existing CoT JSON to merge into (replaces matching IDs)
 
-Default grader stack: claude-sonnet-5 primary (free on Anthropic credits, awareness
-κ=1.0 vs terra on a 280-transcript check) + gpt-5.6-terra backup for the ~3% of the
-most-harmful transcripts sonnet-5 refuses to grade. See
+Default grader stack: gpt-5.6-terra primary (0 refusals, κ=0.91 vs gpt-5) +
+claude-sonnet-5 backup for anything terra returns unparseable (awareness κ=1.0
+vs terra on a 280-transcript check). Flip with JUDGE_MODEL=claude-sonnet-5
+BACKUP_JUDGE_MODEL=gpt-5.6-terra to grade on Anthropic credits instead. See
 .claude/notes/grader-selection-and-refusal-clause.md.
 """
 
@@ -62,7 +63,9 @@ def needs_backup(record: dict[str, Any]) -> bool:
     awareness = judge.get("model_awareness")
     if not isinstance(awareness, dict):
         return True
-    return str(awareness.get("conclusion", "")).strip().lower() not in _VALID_CONCLUSIONS
+    return (
+        str(awareness.get("conclusion", "")).strip().lower() not in _VALID_CONCLUSIONS
+    )
 
 
 def find_response_file(response_dir: str, model_key: str) -> str:
@@ -149,11 +152,11 @@ def main() -> None:
     openai_api_key = api_keys["OPENAI_API_KEY"]
     anthropic_api_key = api_keys["ANTHROPIC_API_KEY"]
     judge_model = (
-        os.getenv("JUDGE_MODEL") or os.getenv("OPENAI_EVAL_MODEL") or "claude-sonnet-5"
+        os.getenv("JUDGE_MODEL") or os.getenv("OPENAI_EVAL_MODEL") or "gpt-5.6-terra"
     )
-    # Backup grader for transcripts the primary refuses (Claude judges refuse the
-    # most harmful items); "" disables. Skipped if it equals the primary.
-    backup_judge_model = os.getenv("BACKUP_JUDGE_MODEL", "gpt-5.6-terra").strip()
+    # Backup grader for transcripts the primary refuses / returns unparseable
+    # JSON for; "" disables. Skipped if it equals the primary.
+    backup_judge_model = os.getenv("BACKUP_JUDGE_MODEL", "claude-sonnet-5").strip()
     if backup_judge_model == judge_model:
         backup_judge_model = ""
     model_key = os.getenv("MODEL_KEY", "")
@@ -169,7 +172,9 @@ def main() -> None:
             continue
         if jm.startswith("claude"):
             if not anthropic_api_key:
-                print(f"ERROR: ANTHROPIC_API_KEY required for Claude {role} judge {jm!r}.")
+                print(
+                    f"ERROR: ANTHROPIC_API_KEY required for Claude {role} judge {jm!r}."
+                )
                 sys.exit(1)
         elif not openai_api_key:
             print(f"ERROR: OPENAI_API_KEY required for OpenAI {role} judge {jm!r}.")
@@ -246,9 +251,7 @@ def main() -> None:
             # pre-refactor response file is regenerated or retired — then this
             # can just be chat_to_transcript_text(sample["chat"]).
             chat = sample.get("chat")
-            prompt = (
-                chat_to_transcript_text(chat) if chat else sample.get("prompt", "")
-            )
+            prompt = chat_to_transcript_text(chat) if chat else sample.get("prompt", "")
             response = sample.get("response", "")
 
             return await evaluate_sample(

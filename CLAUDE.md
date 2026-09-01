@@ -24,15 +24,14 @@ OAI banned us for 'distilling' so further runs are on Robbie's credit card. Be v
 - We are churning this sucker hard. Their codebase is a mess and I want to understand, so I'm
   deleting dead code and organizing packages more nicely
 - Massive parellelism on all grader runs and eval runs. At least parallelism 100
-- Default grader stack (2026-09-01): **`claude-sonnet-5` primary + `gpt-5.6-terra` backup**. The CoT
-  judge (`eval/eval_eval_bench_cot.py`) grades with sonnet-5, then re-grades only the transcripts
-  sonnet-5 refuses (unparseable verdict) with terra. Rationale: sonnet-5 is free on our Anthropic
-  credits and agrees with terra at **κ=1.0 on model_awareness** (280-transcript check, terra vs luna
-  vs sonnet-5 vs opus-5 all identical on the headline metric), but refuses ~3.2% of the most-harmful
-  transcripts — terra (0 refusals) mops those up for ~$25 on the full run vs ~$800 all-terra. opus-5
-  refuses 3× as often as sonnet-5 for no accuracy gain, so it's not used. Override with
-  `JUDGE_MODEL=` / `BACKUP_JUDGE_MODEL=` (set backup to `""` to disable). terra alone is still valid
-  (κ=0.91 vs gpt-5, no refusals) if Anthropic credits aren't available.
+- Default grader stack (2026-09-01, Robbie): **`gpt-5.6-terra` primary + `claude-sonnet-5` backup**.
+  The CoT judge (`eval/eval_eval_bench_cot.py`) and tiered judge grade with terra (0 refusals,
+  κ=0.91 vs gpt-5), then re-grade only unparseable verdicts with sonnet-5. sonnet-5 agrees with terra
+  at **κ=1.0 on model_awareness** (280-transcript check) but refuses ~3.2% of the most-harmful
+  transcripts, so it's the backup, not the primary. Grading on Anthropic credits instead is
+  `JUDGE_MODEL=claude-sonnet-5 BACKUP_JUDGE_MODEL=gpt-5.6-terra` (~$25 vs ~$800 all-terra). opus-5
+  refuses 3× as often as sonnet-5 for no accuracy gain, so it's not used. Set backup to `""` to
+  disable.
 - Import layering: `lib/` imports nothing from this repo; `core/` may import `lib/` but never
   `utils`; `run/`/`eval/`/`plots/` scripts may import anything. Keep new leaf helpers in `lib/`,
   not `core/`.

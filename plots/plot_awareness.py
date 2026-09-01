@@ -61,23 +61,26 @@ RESULTS = os.path.join(ROOT, "results", "eval_bench")
 TASKS = os.path.join(ROOT, "eval_bench", "tasks")
 
 # The 2026-08-31→09-01 giant run: responses generated 20260901_005920 (Pacific),
-# CoT judged by claude-sonnet-5 (intentional — Robbie 2026-09-01; ~150 records
-# per file are gpt-5.6-terra via id-cache reuse), selfreport probes replayed
-# from the same response files. One row per roster model; None = that leg
-# hadn't finished when pins were last updated (rerun SURVEY=1 and fill in).
+# selfreport probes replayed from the same response files. CoT grader: prefer
+# the gpt-5.6-terra-judged file (the default grader, see CLAUDE.md); fall back
+# to the claude-sonnet-5-judged file where terra hasn't been run yet (~150
+# records per sonnet file are terra via id-cache reuse). One row per roster
+# model; None = that leg hadn't finished when pins were last updated (rerun
+# SURVEY=1 and fill in).
 BIG_RUN: dict[str, dict[str, str | None]] = {
     "claude-sonnet-4.5": {
-        "cot": "cot_claude-sonnet-4.5_20260901_095322.json",
-        # terra-judged alternate from the same responses: ..._20260901_025642.json
+        "cot": "cot_claude-sonnet-4.5_20260901_025642.json",  # terra
+        # sonnet-judged alternate from the same responses: ..._20260901_095322.json
         "selfreport": "selfreport_claude-sonnet-4.5_20260901_033516.json",
     },
     "claude-haiku-4.5": {
-        "cot": "cot_claude-haiku-4.5_20260901_095331.json",
-        # terra-judged alternate: ..._20260901_032213.json
+        "cot": "cot_claude-haiku-4.5_20260901_032213.json",  # terra
+        # sonnet-judged alternate: ..._20260901_095331.json
         "selfreport": "selfreport_claude-haiku-4.5_20260901_034056.json",
     },
-    # gpt cot files are final but short of 5400 (failed samples); no gpt
-    # selfreport leg has run yet as of 2026-09-01 11:15am.
+    # Everything below is sonnet-judged (no terra run yet). gpt cot files are
+    # final but short of 5400 (failed samples); no gpt selfreport leg has run
+    # yet as of 2026-09-01 11:15am.
     "gpt-5": {"cot": "cot_gpt-5_20260901_102007.json", "selfreport": None},
     "gpt-5.1": {"cot": "cot_gpt-5.1_20260901_101924.json", "selfreport": None},
     "gpt-5.2": {"cot": "cot_gpt-5.2_20260901_102115.json", "selfreport": None},

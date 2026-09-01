@@ -163,3 +163,10 @@ both decline. Chain would be sonnet-5 → terra → qwen (only qwen sees the res
 Gate before adopting: run the same judge-agreement check we did for terra/luna/sonnet-5/opus-5
 (`results/eval_bench/judge_agreement/`) — **qwen vs sonnet-5 on model_awareness κ** — and only use it
 as backup if it tracks. Deferred; the ~0.7% N/A is tolerable for now.
+
+## Update 2026-09-01 (later): flipped back to terra primary, sonnet-5 backup
+
+Robbie's call after the OAI ban was reversed and the corp card came back. Defaults in
+`eval_eval_bench_cot.py` / `eval_eval_bench_tiered.py` are now `JUDGE_MODEL=gpt-5.6-terra`,
+`BACKUP_JUDGE_MODEL=claude-sonnet-5`. The hybrid mechanics above are unchanged — only the roles
+swapped; the sonnet-primary stack is still one env override away when grading on Anthropic credits.
