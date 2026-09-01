@@ -11,11 +11,16 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+# Brand/logo colors (Robbie's call): each provider gets its own logo hue so a
+# reader recognizes it without the legend. OpenAI's mark is black; Anthropic's is
+# the "Claude" clay/orange; Google green; open-weight is a mixed category (5 labs)
+# with no single logo, so it takes a distinct violet. Kept CVD-legible by the
+# per-line direct labels every ladder chart carries (secondary encoding).
 PROVIDER_COLOR = {
-    "Anthropic": "#2a78d6",
-    "OpenAI": "#eb6834",
-    "Google": "#1baf7a",
-    "Open-weight": "#eda100",
+    "Anthropic": "#d97757",  # Claude clay/orange
+    "OpenAI": "#0d0d0d",  # OpenAI black
+    "Google": "#34a853",  # Google green
+    "Open-weight": "#7c3aed",  # violet (category, not a single brand)
 }
 # Safety/capability pair for valence splits; slots 8 and 7 of the same palette,
 # deliberately disjoint from the provider slots above.
