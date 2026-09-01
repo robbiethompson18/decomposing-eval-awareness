@@ -34,6 +34,14 @@ giving me commmentary back in chat. All prose is mine.
   (`ln -s ../decomposing-eval-awareness/results results`) so all outputs land in one place — safe
   because result files are timestamped, so parallel runs don't collide. Also symlink `.envrc`. Don't
   symlink `.venv`; make a fresh one if you need to run code there.
+- Target-model roster (14 models; starvation configs per model in
+  `.claude/notes/cot-extraction-model-roster.md`):
+  - Gemini: `gemini-3.1-pro-preview`, `gemini-3.5-flash`
+  - Anthropic: `claude-sonnet-4-5-20250929`, `claude-haiku-4-5-20251001`
+  - OpenAI: `gpt-5`, `gpt-5.1`, `gpt-5.2`, `gpt-5.4`, `gpt-5.6-sol` — even Aug'25→mid-'26 spread;
+    gpt-5.5 dropped (adjacent to 5.4, identical extraction behavior)
+  - Open-weight tier-1 (newest flagship from each top-5 OW lab; OpenRouter keys in
+    `lib/config.py`): `qwen3.8-2.4t`, `deepseek-v4-pro`, `kimi-k3`, `glm-5.3`, `minimax-m3`
 
 ## Notes
 
