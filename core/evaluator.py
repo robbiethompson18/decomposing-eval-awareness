@@ -240,7 +240,18 @@ async def evaluate_sample(
         ]
 
     async with semaphore:
-        judge = await judge_fn()
+        try:
+            judge = await judge_fn()
+        except Exception as e:  # noqa: BLE001
+            # Retries exhausted (e.g. OpenAI's cyber content filter rejecting the
+            # transcript). Keep the record with judge=None so the backup judge
+            # can grade it, instead of dropping the sample from the results.
+            print(
+                f"[{idx}/{total}] {sample_id}: judge failed ({type(e).__name__}); left for backup"
+            )
+            return result_fn(
+                {"judgment": None, "raw": f"ERROR: {type(e).__name__}: {e}"}
+            )
         judgment = judge.get("judgment", {})
 
         # Print progress
