@@ -27,7 +27,8 @@ giving me commmentary back in chat. All prose is mine.
   and faster, and it emits no refusals/invalid JSON (unlike claude-sonnet-5, which refused the most
   harmful items). Set `JUDGE_MODEL=gpt-5.6-terra` on grader runs.
 - Import layering: `lib/` imports nothing from this repo; `core/` may import `lib/` but never
-  `utils`; `run/`/`eval/` scripts may import anything. Keep new leaf helpers in `lib/`, not `core/`.
+  `utils`; `run/`/`eval/`/`plots/` scripts may import anything. Keep new leaf helpers in `lib/`,
+  not `core/`.
 - If you're fighting over a branch or checkout with another agent, just make a fresh checkout
   (`/extra-checkout decomposing-eval-awareness`; `-2`…`-5` exist already). In every extra checkout,
   symlink `results/` back to the main checkout

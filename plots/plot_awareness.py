@@ -28,20 +28,25 @@ the affected plot and listed on stderr. #@robbie fill in the None cells
 """
 
 import json
-import math
 import os
 import sys
 from collections import Counter
 from datetime import date
 from glob import glob
 
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.metrics import bucket_conclusion, extract_conclusion
+from lib.stats import wilson_ci
+from plots.style import (
+    GRID,
+    INK,
+    INK2,
+    PROVIDER_COLOR,
+    SURFACE,
+    new_fig,
+    provider_legend,
+    save,
+)
 
 RESULTS = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results", "eval_bench"
@@ -63,14 +68,13 @@ BIG_RUN: dict[str, dict[str, str | None]] = {
         # terra-judged alternate: ..._20260901_032213.json
         "selfreport": "selfreport_claude-haiku-4.5_20260901_034056.json",
     },
-    "gpt-5": {
-        "cot": None,
-        "selfreport": None,
-    },  # cot still judging (n=4968 last survey)
-    "gpt-5.1": {"cot": None, "selfreport": None},  # cot still judging (n=5022)
-    "gpt-5.2": {"cot": None, "selfreport": None},  # cot still judging (n=5130)
-    "gpt-5.4": {"cot": None, "selfreport": None},  # cot still judging (n=4644)
-    "gpt-5.6-sol": {"cot": None, "selfreport": None},  # not started yet
+    # gpt cot files are final but short of 5400 (failed samples); no gpt
+    # selfreport leg has run yet as of 2026-09-01 11:15am.
+    "gpt-5": {"cot": "cot_gpt-5_20260901_102007.json", "selfreport": None},
+    "gpt-5.1": {"cot": "cot_gpt-5.1_20260901_101924.json", "selfreport": None},
+    "gpt-5.2": {"cot": "cot_gpt-5.2_20260901_102115.json", "selfreport": None},
+    "gpt-5.4": {"cot": "cot_gpt-5.4_20260901_102144.json", "selfreport": None},
+    "gpt-5.6-sol": {"cot": "cot_gpt-5.6-sol_20260901_102920.json", "selfreport": None},
     "gemini-3.1-pro": {"cot": None, "selfreport": None},  # only 4-sample canary so far
     "gemini-3.5-flash": {
         "cot": "cot_gemini-3.5-flash_20260901_100742.json",
@@ -215,28 +219,9 @@ DISPLAY_NAMES = {
 # kept so re-adding them to a future sweep can't silently produce the plot.)
 UPLIFT_EXCLUDE = {"claude-opus-5", "claude-fable-5"}
 
-# dataviz reference palette, light mode; providers get fixed slots (never cycled).
-PROVIDER_COLOR = {
-    "Anthropic": "#2a78d6",
-    "OpenAI": "#eb6834",
-    "Google": "#1baf7a",
-    "Open-weight": "#eda100",
-}
-SURFACE, INK, INK2 = "#fcfcfb", "#0b0b0b", "#52514e"
-
 
 def name(model: str) -> str:
     return DISPLAY_NAMES.get(model, model)
-
-
-def wilson_ci(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
-    if n == 0:
-        return (0.0, 0.0)
-    p = k / n
-    denom = 1 + z * z / n
-    center = (p + z * z / (2 * n)) / denom
-    half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / denom
-    return (center - half, center + half)
 
 
 def load_records(path: str) -> list[dict]:
@@ -305,30 +290,6 @@ def summarize(records: list[dict], config: str) -> dict:
     }
 
 
-def style_axes(ax):
-    ax.set_facecolor(SURFACE)
-    for side in ("top", "right"):
-        ax.spines[side].set_visible(False)
-    for side in ("left", "bottom"):
-        ax.spines[side].set_color(INK2)
-    ax.tick_params(colors=INK2, labelcolor=INK)
-
-
-def new_fig(w=8.0, h=5.0):
-    fig, ax = plt.subplots(figsize=(w, h), dpi=200)
-    fig.patch.set_facecolor(SURFACE)
-    style_axes(ax)
-    return fig, ax
-
-
-def save(fig, out_dir: str, name_: str):
-    path = os.path.join(out_dir, name_)
-    fig.tight_layout()
-    fig.savefig(path, facecolor=SURFACE)
-    plt.close(fig)
-    print(f"wrote {path}")
-
-
 def plot_by_provider(rows: list[dict], out_dir: str, config: str):
     """Horizontal bars, grouped by provider, sorted by rate within group."""
     rows = sorted(rows, key=lambda r: (r["provider"], -r["rate"]))
@@ -351,11 +312,8 @@ def plot_by_provider(rows: list[dict], out_dir: str, config: str):
     ax.invert_yaxis()
     ax.set_xlabel("CoT-judged eval-awareness (% of graded samples)", color=INK2)
     ax.set_title(f"Eval awareness by provider ({config} config)", color=INK, loc="left")
-    ax.xaxis.grid(True, color="#e5e4e0", lw=0.7, zorder=0)
-    handles = [plt.Rectangle((0, 0), 1, 1, color=c) for c in PROVIDER_COLOR.values()]
-    ax.legend(
-        handles, PROVIDER_COLOR.keys(), frameon=False, fontsize=8, loc="lower right"
-    )
+    ax.xaxis.grid(True, color=GRID, lw=0.7, zorder=0)
+    provider_legend(ax, loc="lower right")
     save(fig, out_dir, f"awareness_by_provider_{config}.png")
 
 
@@ -399,11 +357,8 @@ def plot_scatter(rows, out_dir, config, xkey, xlabel, fname, log_x=False):
     ax.set_title(
         f"Eval awareness by {xlabel.lower()} ({config} config)", color=INK, loc="left"
     )
-    ax.yaxis.grid(True, color="#e5e4e0", lw=0.7, zorder=0)
-    handles = [
-        plt.Line2D([], [], marker="o", ls="", color=c) for c in PROVIDER_COLOR.values()
-    ]
-    ax.legend(handles, PROVIDER_COLOR.keys(), frameon=False, fontsize=8)
+    ax.yaxis.grid(True, color=GRID, lw=0.7, zorder=0)
+    provider_legend(ax, marker=True)
     save(fig, out_dir, fname)
 
 
@@ -421,7 +376,7 @@ def plot_uplift(rows: list[dict], out_dir: str, config: str):
     ys = range(len(rows))
     for y, r in zip(ys, rows):
         cot, self_ = r["rate"] * 100, r["self_rate"] * 100
-        ax.plot([cot, self_], [y, y], color="#e5e4e0", lw=2, zorder=2)
+        ax.plot([cot, self_], [y, y], color=GRID, lw=2, zorder=2)
         ax.plot(
             cot,
             y,
@@ -449,7 +404,7 @@ def plot_uplift(rows: list[dict], out_dir: str, config: str):
     ax.set_title(
         f"Uplift from asking the model itself ({config} config)", color=INK, loc="left"
     )
-    ax.xaxis.grid(True, color="#e5e4e0", lw=0.7, zorder=0)
+    ax.xaxis.grid(True, color=GRID, lw=0.7, zorder=0)
     save(fig, out_dir, f"selfreport_uplift_{config}.png")
 
 
