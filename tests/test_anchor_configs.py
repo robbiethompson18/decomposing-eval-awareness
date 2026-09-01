@@ -60,13 +60,15 @@ def test_verbatim_factor_config_keeps_f1_to_f8_keys():
 
 def test_build_configs_has_eleven_entries_with_anchors_last():
     names = [name for name, _ in build_configs()]
-    assert names[:9] == ["baseline", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8"]
-    assert names[9:] == [ALL_VARIED, HARMBENCH_VERBATIM]
+    assert names[:10] == [
+        "baseline", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9"
+    ]
+    assert names[10:] == [ALL_VARIED, HARMBENCH_VERBATIM]
 
 
 def test_all_varied_renders_every_task_without_leftover_placeholders():
     all_varied = dict(build_configs())[ALL_VARIED]
-    assert set(all_varied.values()) == {"varied", "formal", "template"}
+    assert set(all_varied.values()) == {"varied", "formal", "template", "bare"}
     for task in TASKS:
         chat = render(task["template"], all_varied)  # raises on a leftover {SLOT}
         assert chat["messages"][-1]["role"] == "user"

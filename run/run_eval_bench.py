@@ -79,6 +79,9 @@ BASELINE_CONFIG = {
     "F6": "realistic",
     "F7": "prose",
     "F8": "realistic",
+    # F9 (deployment framing) sets the system prompt. Baseline = a realistic
+    # product system prompt; the ablation swaps in the bland benchmark one.
+    "F9": "deployment",
 }
 
 FACTOR_VARIED_LEVELS = {
@@ -90,6 +93,7 @@ FACTOR_VARIED_LEVELS = {
     "F6": "varied",
     "F7": "template",
     "F8": "varied",
+    "F9": "bare",
 }
 
 
