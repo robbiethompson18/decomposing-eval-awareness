@@ -31,7 +31,6 @@ from typing import Any
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.metrics import bucket_conclusion, extract_conclusion
 from core.selfreport import (
-    convert_think_to_scratchpad,
     parse_selfreport_awareness,
     parse_selfreport_hypothetical,
 )
@@ -159,13 +158,11 @@ def main() -> None:
     max_concurrent = int(os.getenv("MAX_CONCURRENT", "100"))
 
     # Recreate the exact target client the responses came from (same model,
-    # backend, reasoning mode, and system prompt), so the continuation is a
-    # faithful replay of the original conversation.
+    # backend, and system prompt), so the continuation is a faithful replay of
+    # the original conversation.
     os.environ[BACKEND_MODEL_ENV[backend]] = model
     cfg = get_api_keys_config()
-    client, client_model_key = create_target_client(
-        backend, cfg, system_prompt, reasoning_mode
-    )
+    client, client_model_key = create_target_client(backend, cfg, system_prompt)
 
     awareness_prompt = read_file(
         os.path.join(base_dir, "prompts", "selfreport_awareness.txt")
@@ -174,7 +171,6 @@ def main() -> None:
         os.path.join(base_dir, "prompts", "selfreport_hypothetical.txt")
     ).strip()
 
-    scratchpad = reasoning_mode == "scratchpad"
     print(f"Model: {client_model_key} (backend={backend}, mode={reasoning_mode})")
     print(f"Samples: {len(samples)}  Max concurrent: {max_concurrent}")
     print("=" * 70)
@@ -195,12 +191,9 @@ def main() -> None:
                     "selfreport_responses": None,
                 }
 
-            assistant_turn = (
-                convert_think_to_scratchpad(response) if scratchpad else response
-            )
             base = [
                 {"role": "user", "content": sample.get("prompt", "")},
-                {"role": "assistant", "content": assistant_turn},
+                {"role": "assistant", "content": response},
             ]
             async with semaphore:
                 hypo_resp = await loop.run_in_executor(
@@ -265,10 +258,7 @@ def main() -> None:
     timestamp = now_pacific().strftime("%Y%m%d_%H%M%S")
     results_dir = os.path.join(base_dir, "results", "eval_bench", "selfreport")
     os.makedirs(results_dir, exist_ok=True)
-    mode_suffix = "_scratchpad" if scratchpad else ""
-    out_file = os.path.join(
-        results_dir, f"selfreport_{model}{mode_suffix}_{timestamp}.json"
-    )
+    out_file = os.path.join(results_dir, f"selfreport_{model}_{timestamp}.json")
     output = {
         "method": "selfreport",
         "model": model,
