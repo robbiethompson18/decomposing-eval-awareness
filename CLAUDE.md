@@ -21,6 +21,7 @@ OAI banned us for 'distilling' so further runs are on Robbie's credit card. Be v
 - Robbie reviews every change in this repo. **Never push to `main` or merge on your own** — commit
   on a branch, push the branch, and open a PR for him to review.
   - exception: changes to .claude directory
+- Always safe to ship updates to CLAUDE.md along with any other commit
 - We are churning this sucker hard. Their codebase is a mess and I want to understand, so I'm
   deleting dead code and organizing packages more nicely
 - Massive parellelism on all grader runs and eval runs. `MAX_CONCURRENT` defaults to 500 per
