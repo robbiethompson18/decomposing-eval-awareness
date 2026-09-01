@@ -49,3 +49,4 @@ _Code Style_
 - It didn't matter for the models you tested, but more recent Anthropic models generated refusals on
   your secret scratchpad test because it said something like 'this is private and won't be shown to
   the user.'
+- JudgePrompEvidenceBoth.txt: Seemed very AI-written, had some confusing instructions.
