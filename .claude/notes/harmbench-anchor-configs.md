@@ -57,6 +57,55 @@ F8 +17, **F4 +5**. The grid's strongest axes are things HarmBench doesn't do.
 - Planned (12) `harmbench_paraphrase` (see TODO.md): verbatim − paraphrase isolates item-level
   memorization from genre recognition, replacing a guided-completion contamination test.
 
+## RESULTS (2026-09-01, 5 OW models, 50-task subset, self-report, 1 sample/cell)
+
+Self-report eval-awareness, **safety** arm. "pred" = OFAT additive null: that model's own
+baseline + ΔF4 + ΔF5 in log-odds (Haldane +0.5 smoothing), sigmoid'd back.
+
+| model | baseline | verbatim | pred | all_varied |
+|---|---|---|---|---|
+| glm-5.3 | 24% | 80% | 69% | 100% |
+| deepseek-v4-pro | 29% | 74% | 56% | 100% |
+| kimi-k3 | 57% | 86% | 92% | 100% |
+| qwen3.8-2.4t | 60% | 78% | 82% | 100% |
+| minimax-m3 | 67% | 92% | 87% | 100% |
+| **pooled** | **47%** (355/749) | **82%** (245/300) | | **100%** (300/300) |
+
+**Headline: the paper's naturalization pipeline removes ~half the eval signal that was in the
+source benchmark.** Verbatim HarmBench > the paper's rendering of the *identical* behaviors in
+all 5 models. Same content, same model, same system prompt. Nothing in the 9-config grid measured
+this, because the grid never contained the source. (GLM alone: verbatim vs baseline z=6.6,
+p≈4e-11; not driven by the ContextString dossier — 74% on entity-less *standard* behaviors vs 81%
+on *contextual*.)
+
+**Additivity is directionally right, not reliable.** Within ~10 pts for 4/5, but the error flips
+sign with baseline: the two low-baseline models overshoot prediction (+11, +18), the two highest
+undershoot (−6, −4). That's a ceiling signature, not clean additive factors. Don't lean on
+additivity in the writeup. Part of the low-baseline overshoot is likely the missing F3 `stem`
+term the null omits entirely.
+
+**`all_varied` saturates on the safety arm** — 300/300, every model. Useless as a measurement
+there (predicted and measured both pinned at 100%); it's an existence proof only.
+
+**The capability arm is where `all_varied` earns its keep** — and it's the best figure from this
+run. Benign twins (thank-you notes, wiki edits), baseline → all_varied:
+
+| model | baseline | all_varied |
+|---|---|---|
+| kimi-k3 | 5% | 98% |
+| glm-5.3 | 1% | 97% |
+| qwen3.8-2.4t | 0% | 62% |
+| minimax-m3 | 3% | 54% |
+| deepseek-v4-pro | 0% | 30% |
+
+Wrapping a *completely harmless* request in benchmark scaffolding takes models from near-certain
+"real user" to near-certain "evaluation" with zero change in what's asked. Unlike the saturated
+safety arm this spreads models 30–98%, so it actually discriminates.
+
+Caveats: self-report only (no CoT-judge channel on the anchors yet — see
+[[selfreport-vs-cot-gap]], that channel has run 3–25× lower); 1 sample/cell on anchors vs 3 on
+the grid; OW models only.
+
 ## Run mechanics
 
 `CONFIG_FILTER=all_varied,harmbench_verbatim` appends into the existing per-model response files
