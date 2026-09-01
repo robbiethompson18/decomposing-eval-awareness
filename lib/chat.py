@@ -131,12 +131,18 @@ def to_openai_chat_content(content: "str | list[Block]"):
     return out
 
 
-def to_openai_responses_content(content: "str | list[Block]"):
-    """OpenAI Responses input content: list of input_text / input_image parts."""
+def to_openai_responses_content(content: "str | list[Block]", role: str = "user"):
+    """OpenAI Responses content parts. The part type depends on the turn's
+    role: user turns take input_text / input_image, but a prior assistant turn
+    (e.g. a replayed response in the self-report probe) must be output_text —
+    the API rejects input_text there, and assistant turns can't carry images."""
     out = []
     for b in _as_blocks(content):
         if b["type"] == "text":
-            out.append({"type": "input_text", "text": b["text"]})
+            kind = "output_text" if role == "assistant" else "input_text"
+            out.append({"type": kind, "text": b["text"]})
+        elif role == "assistant":
+            raise ValueError("Responses API: assistant turns cannot contain images")
         else:
             out.append({"type": "input_image", "image_url": _data_uri(b["source"])})
     return out
@@ -187,21 +193,13 @@ def to_openai_chat_messages(
 
 
 def to_openai_responses_input(messages: list[ChatMessage]) -> list[dict]:
-    """Responses API rejects `input_text` on assistant turns: prior assistant
-    output (e.g. a replayed response in the self-report probe) must be sent as
-    `output_text` parts. Only user turns carry images."""
-    out = []
-    for m in messages:
-        if m["role"] == "assistant":
-            parts = [
-                {"type": "output_text", "text": b["text"]}
-                for b in _as_blocks(m["content"])
-                if b["type"] == "text"
-            ]
-        else:
-            parts = to_openai_responses_content(m["content"])
-        out.append({"role": m["role"], "content": parts})
-    return out
+    return [
+        {
+            "role": m["role"],
+            "content": to_openai_responses_content(m["content"], m["role"]),
+        }
+        for m in messages
+    ]
 
 
 def to_gemini_contents(messages: list[ChatMessage]) -> list[dict]:
