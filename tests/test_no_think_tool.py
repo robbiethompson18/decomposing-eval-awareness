@@ -8,7 +8,6 @@ import sys
 from types import SimpleNamespace
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from core import target
 from core.target import (
     THINK_TOOL_MANDATE,
     AnthropicApiClient,
@@ -87,12 +86,15 @@ def test_anthropic_no_think_tool_sends_bare_request(monkeypatch):
             json=lambda: {"content": [{"type": "text", "text": "hello"}]},
         )
 
-    monkeypatch.setattr(target.requests, "post", fake_post)
-    assert AnthropicApiClient(_cfg(THINK_TOOL=False)).query_chat(CHAT) == "hello"
+    client = AnthropicApiClient(_cfg(THINK_TOOL=False))
+    monkeypatch.setattr(client.session, "post", fake_post)
+    assert client.query_chat(CHAT) == "hello"
     assert "tools" not in seen and "system" not in seen and "output_config" not in seen
 
     seen.clear()
-    out = AnthropicApiClient(_cfg()).query_chat(CHAT)
+    client = AnthropicApiClient(_cfg())
+    monkeypatch.setattr(client.session, "post", fake_post)
+    out = client.query_chat(CHAT)
     assert out == "<think></think>hello"
     assert seen["system"] == THINK_TOOL_MANDATE and seen["tools"][0]["name"] == "think"
 

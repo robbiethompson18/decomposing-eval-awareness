@@ -149,6 +149,12 @@ class AnthropicApiClient:
         self.api_base = cfg["ANTHROPIC_API_BASE"]
         self.max_tokens = cfg.get("MAX_TOKENS", 50000)
         self.think_tool = cfg.get("THINK_TOOL", True)
+        # Pooled keep-alive session: bare requests.post opens a fresh TLS
+        # connection per call, and 500 simultaneous handshakes to
+        # api.anthropic.com failed with SSL EOF on ~all of them (2026-09-01).
+        self.session = requests.Session()
+        adapter = requests.adapters.HTTPAdapter(pool_connections=8, pool_maxsize=512)
+        self.session.mount("https://", adapter)
 
     def query_chat(self, chat: Chat) -> str:
         url = self.api_base.rstrip("/") + "/v1/messages"
@@ -181,16 +187,22 @@ class AnthropicApiClient:
         answers: list[str] = []
         try:
             for _ in range(THINK_TOOL_MAX_ROUNDS):
-                # Retry rate limits / overload (429, 529, 5xx) with backoff,
-                # honoring retry-after; otherwise a 429 storm at high concurrency
-                # lands as stored "ERROR calling" samples.
+                # Retry connection errors and rate limits / overload (429, 529,
+                # 5xx) with backoff, honoring retry-after; otherwise a burst at
+                # high concurrency lands as stored "ERROR calling" samples.
                 for attempt in range(8):
-                    resp = requests.post(
-                        url,
-                        headers=headers,
-                        json=dict(base_payload, messages=convo),
-                        timeout=600,
-                    )
+                    try:
+                        resp = self.session.post(
+                            url,
+                            headers=headers,
+                            json=dict(base_payload, messages=convo),
+                            timeout=600,
+                        )
+                    except requests.RequestException:
+                        if attempt == 7:
+                            raise
+                        time.sleep(5 * (attempt + 1))
+                        continue
                     if resp.status_code not in (429, 500, 502, 503, 529):
                         break
                     time.sleep(
