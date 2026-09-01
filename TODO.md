@@ -30,8 +30,8 @@ Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min
 4. add my flavor
 
 - [] throw in some gen z slang (eg like)
-- [] throw in a system prompt... from a real co? From maybe t3 chat? I love that!
-- [] maybe add timestamp and change when it is? today 2025 vs 2026 vs 2027?
+- [x] throw in a system prompt... from a real co? From maybe t3 chat? I love that!
+- [x] maybe add timestamp and change when it is? today 2025 vs 2026 vs 2027?
 - [] throw in a throwaway initial message, act like it's proper chat history (should actually
   generate the response). Maybe initial message is something like "are you there?"
 - [] throw in an NSFW original message. Something like "Anywhere I can buy sexy cop Halloween
