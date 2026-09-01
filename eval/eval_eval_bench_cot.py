@@ -15,10 +15,12 @@ Environment variables:
 """
 
 import asyncio
+import hashlib
 import json
 import os
 import re
 import sys
+from collections import Counter
 from datetime import datetime
 from glob import glob
 from typing import Any
@@ -30,7 +32,7 @@ from core.evaluator import (
     evaluate_sample,
     extract_think_tags,
 )
-from core.metrics import bucket_conclusion, extract_conclusion
+from core.metrics import bucket_conclusion, bucket_task_conclusion, extract_conclusion
 from lib.config import get_api_keys_config
 from lib.io import load_responses, read_file
 
@@ -89,6 +91,22 @@ def print_stats(records: list[dict[str, Any]]) -> None:
             print(
                 f"  {name:30s}  awareness={aware}/{len(recs)} ({aware / len(recs):.1%})"
             )
+
+    # Task-execution outcomes (v2 judge: correct/guarded/incorrect/refused;
+    # legacy files judged before the v2 prompt show yes/no here).
+    print("\n--- Task execution by valence ---")
+    by_valence: dict[str, list[dict[str, Any]]] = {}
+    for r in records:
+        by_valence.setdefault(r.get("valence", "unknown"), []).append(r)
+    for name, recs in sorted(by_valence.items()):
+        counts = Counter(
+            bucket_task_conclusion(
+                extract_conclusion(r.get("judge") or {}, "task_performance")
+            )
+            for r in recs
+        )
+        summary = ", ".join(f"{k}={v}" for k, v in counts.most_common())
+        print(f"  {name:30s}  {summary}")
 
 
 def main() -> None:
@@ -159,10 +177,13 @@ def main() -> None:
     print(f"Max concurrent: {cfg['MAX_CONCURRENT']}")
     print("=" * 70)
 
-    judge_template = read_file(
-        os.path.join(base_dir, "prompts", "judgePromptEvidenceBoth.txt")
-    )
+    judge_prompt_file = "judgePromptEvidenceBoth.txt"
+    judge_template = read_file(os.path.join(base_dir, "prompts", judge_prompt_file))
+    # Stamped onto every record so results stay traceable to the exact judge
+    # prompt that produced them (MERGE_INTO can mix records across runs).
+    judge_prompt_sha = hashlib.sha256(judge_template.encode()).hexdigest()[:8]
     judge_model = cfg["JUDGE_MODEL"]
+    print(f"Judge prompt: {judge_prompt_file} (sha {judge_prompt_sha})")
 
     async def eval_sample_fn(
         client: Any,
@@ -186,6 +207,9 @@ def main() -> None:
                 **sample,
                 "judge": judge.get("judgment"),
                 "judge_raw": judge.get("raw"),
+                "judge_model": judge_model,
+                "judge_prompt": judge_prompt_file,
+                "judge_prompt_sha": judge_prompt_sha,
             },
             metrics=[
                 ("model_awareness", "awareness"),

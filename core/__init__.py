@@ -14,6 +14,7 @@ from .evaluator import (
 )
 from .metrics import (
     bucket_conclusion,
+    bucket_task_conclusion,
     extract_conclusion,
 )
 from .target import (
@@ -28,6 +29,7 @@ __all__ = [
     "OpenAITargetClient",
     "OpenRouterApiClient",
     "bucket_conclusion",
+    "bucket_task_conclusion",
     "create_judge_client",
     "create_openai_client",
     "evaluate_batch_async",
