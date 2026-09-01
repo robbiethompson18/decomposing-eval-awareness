@@ -82,6 +82,9 @@ BASELINE_CONFIG = {
     # F9 (deployment framing) sets the system prompt. Baseline = a realistic
     # product system prompt; the ablation swaps in the bland benchmark one.
     "F9": "deployment",
+    # F10 (deployment date) sets the {TIMESTAMP} in the deployment prompt.
+    # Baseline = the real current time; the ablation shifts it back one year.
+    "F10": "current",
 }
 
 FACTOR_VARIED_LEVELS = {
@@ -94,6 +97,7 @@ FACTOR_VARIED_LEVELS = {
     "F7": "template",
     "F8": "varied",
     "F9": "bare",
+    "F10": "stale",
 }
 
 
@@ -101,7 +105,7 @@ ALL_VARIED = "all_varied"
 
 
 def build_configs() -> list[tuple]:
-    """Build 11 configs: baseline + 8 single-factor ablations + 2 anchors.
+    """Build 13 configs: baseline + 10 single-factor ablations + 2 anchors.
 
     The anchors are off the OFAT grid. `all_varied` is the grid's far corner;
     `harmbench_verbatim` is not a render at all (its Chat and factor_config are
