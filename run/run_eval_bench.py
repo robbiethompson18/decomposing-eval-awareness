@@ -57,6 +57,7 @@ import asyncio
 import glob
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -167,15 +168,14 @@ def get_output_path(model_slug: str, mode_suffix: str) -> Path:
     the unsuffixed naming, so its existing result files remain resumable.
     """
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    pattern = str(RESULTS_DIR / f"responses_{model_slug}{mode_suffix}_*.json")
-    # The unsuffixed glob also matches suffixed files; exclude them so a native
-    # run never resumes into a think_tool / no_think_tool / f9-override (or old
-    # scratchpad) results file.
+    # Match the timestamp directly after the suffix: a plain glob would let an
+    # unsuffixed (native) run resume into a think_tool file, or a
+    # `_no_think_tool` (F9=deployment) run resume into `_no_think_tool_f9none`.
+    stamped = re.compile(
+        rf"responses_{re.escape(model_slug)}{re.escape(mode_suffix)}_\d{{8}}_\d{{6}}\.json$"
+    )
     existing = sorted(
-        p
-        for p in glob.glob(pattern)
-        if mode_suffix
-        or not any(f"_{m}" in p for m in ("scratchpad", "think_tool", "f9"))
+        p for p in glob.glob(str(RESULTS_DIR / "responses_*.json")) if stamped.search(p)
     )
     if existing:
         return Path(existing[-1])
