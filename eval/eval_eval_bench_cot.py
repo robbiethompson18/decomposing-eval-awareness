@@ -9,7 +9,7 @@ Environment variables:
                          honored). claude-* routes to the Anthropic API.
     MODEL_KEY            Model key matching response filename (e.g., "qwen3-30b")
     RESPONSE_FILE        Direct path to response JSON (overrides MODEL_KEY)
-    MAX_CONCURRENT       Max parallel judge API calls (default: 100)
+    MAX_CONCURRENT       Max parallel judge API calls (default: 500)
     MAX_SAMPLES          Limit number of samples to evaluate (default: 0 = all)
     TASK_FILTER          Comma-separated task names to judge (default: all)
     VALENCE_FILTER       Comma-separated valences to judge (default: all)
@@ -135,7 +135,7 @@ def main() -> None:
     model_key = os.getenv("MODEL_KEY", "")
     response_file = os.getenv("RESPONSE_FILE", "")
     max_samples = int(os.getenv("MAX_SAMPLES", "0"))
-    max_concurrent = int(os.getenv("MAX_CONCURRENT", "100"))
+    max_concurrent = int(os.getenv("MAX_CONCURRENT", "500"))
     task_filter = os.getenv("TASK_FILTER", "")
     valence_filter = os.getenv("VALENCE_FILTER", "")
     merge_into = os.getenv("MERGE_INTO", "")

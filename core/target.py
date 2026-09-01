@@ -15,7 +15,6 @@ consumed by core.evaluator.extract_think_tags.
 import json
 import os
 import sys
-import time
 from typing import Any
 
 from lib.chat import (
@@ -31,6 +30,7 @@ from lib.config import (
     DEFAULT_OPENAI_MODELS,
     DEFAULT_OPENROUTER_CONFIGS,
 )
+from lib.retry import MAX_RETRIES, post_with_retry
 
 try:
     from openai import OpenAI
@@ -63,8 +63,8 @@ def create_openai_client(api_key: str, base_url: str | None = None) -> "OpenAI":
         raise ImportError("openai package is required")
 
     if base_url:
-        return OpenAI(api_key=api_key, base_url=base_url)
-    return OpenAI(api_key=api_key)
+        return OpenAI(api_key=api_key, base_url=base_url, max_retries=MAX_RETRIES)
+    return OpenAI(api_key=api_key, max_retries=MAX_RETRIES)
 
 
 # Claude 5 family thinks adaptively by default; think-tool extraction starves
@@ -165,7 +165,7 @@ class AnthropicApiClient:
         answers: list[str] = []
         try:
             for _ in range(THINK_TOOL_MAX_ROUNDS):
-                resp = requests.post(
+                resp = post_with_retry(
                     url,
                     headers=headers,
                     json=dict(base_payload, messages=convo),
@@ -212,11 +212,9 @@ class OpenAITargetClient:
     """
 
     def __init__(self, cfg: dict[str, Any]) -> None:
-        from openai import OpenAI
-
         self.model = cfg["OPENAI_TARGET_MODEL"]
         self.max_tokens = cfg.get("MAX_TOKENS", 50000)
-        self.client = OpenAI(api_key=cfg["OPENAI_API_KEY"])
+        self.client = create_openai_client(cfg["OPENAI_API_KEY"])
 
     def query_chat(self, chat: Chat) -> str:
         base_kwargs: dict[str, Any] = {
@@ -235,7 +233,9 @@ class OpenAITargetClient:
         effort = _openai_effort_floor(self.model)
         if effort:
             base_kwargs["reasoning"] = {"effort": effort}
-        call_input: dict[str, Any] = {"input": to_openai_responses_input(chat["messages"])}
+        call_input: dict[str, Any] = {
+            "input": to_openai_responses_input(chat["messages"])
+        }
         thoughts: list[str] = []
         answers: list[str] = []
         try:
@@ -295,27 +295,11 @@ class GeminiApiClient:
         self.force_first_think = cfg["GEMINI_FORCE_FIRST_THINK"]
         self.max_tokens = cfg.get("MAX_TOKENS", 50000)
 
-    def _post(self, payload: dict[str, Any], tries: int = 6) -> dict[str, Any]:
+    def query_chat(self, chat: Chat) -> str:
         url = (
             "https://generativelanguage.googleapis.com/v1beta/models/"
             f"{self.model}:generateContent?key={self.api_key}"
         )
-        err = "?"
-        for i in range(tries):
-            try:
-                r = requests.post(url, json=payload, timeout=300)
-            except requests.RequestException as e:
-                err = str(e)
-                time.sleep(2 * (i + 1))
-                continue
-            if r.status_code in (429, 500, 502, 503):
-                err = f"http {r.status_code}"
-                time.sleep(3 * (i + 1))
-                continue
-            return r.json()
-        return {"error": {"message": f"gave up after {tries} tries ({err})"}}
-
-    def query_chat(self, chat: Chat) -> str:
         contents = to_gemini_contents(chat["messages"])
         base = {
             "systemInstruction": {"parts": [{"text": _with_mandate(chat["system"])}]},
@@ -347,13 +331,16 @@ class GeminiApiClient:
         try:
             for round_idx in range(THINK_TOOL_MAX_ROUNDS):
                 mode = "ANY" if round_idx == 0 and self.force_first_think else "AUTO"
-                r = self._post(
-                    {
+                # Gemini puts errors in the JSON body, so read it whatever the
+                # status; a non-JSON body raises into the except below.
+                r = post_with_retry(
+                    url,
+                    json={
                         **base,
                         "contents": contents,
                         "toolConfig": {"functionCallingConfig": {"mode": mode}},
-                    }
-                )
+                    },
+                ).json()
                 if r.get("error"):
                     return f"ERROR calling Gemini API: {r['error'].get('message', r['error'])}"
                 block = (r.get("promptFeedback") or {}).get("blockReason")

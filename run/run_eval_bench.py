@@ -35,7 +35,7 @@ Environment variables:
   OPENAI_MODEL_KEY      Model key for OpenAI (default: gpt-5)
   GEMINI_MODEL_KEY      Model key for Gemini (default: gemini-3.5-flash)
   SAMPLES_PER_CONFIG    Samples per (task, config) pair (default: 3)
-  MAX_CONCURRENT        Max parallel API requests (default: 100)
+  MAX_CONCURRENT        Max parallel API requests (default: 500)
   MAX_TOKENS            Max tokens for model response (default: 50000)
   TASK_FILTER           Comma-separated task names to run (default: all tasks)
   VALENCE_FILTER        Comma-separated valences to run, e.g. "capability" (default: all)
@@ -187,7 +187,7 @@ def main() -> None:
     cfg = {
         "MAX_TOKENS": int(os.getenv("MAX_TOKENS", "50000")),
         "TARGET_BACKEND": os.getenv("TARGET_BACKEND", "openrouter"),
-        "MAX_CONCURRENT": int(os.getenv("MAX_CONCURRENT", "100")),
+        "MAX_CONCURRENT": int(os.getenv("MAX_CONCURRENT", "500")),
         **get_api_keys_config(),
     }
 
