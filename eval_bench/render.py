@@ -1,19 +1,46 @@
 import re
+from datetime import datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from lib.chat import Chat, ChatMessage
 
-# Baseline scenario system prompt, used when a task template defines no `system`
-# of its own. This is NOT a run-level knob (there is deliberately no way to swap
-# it per run) — it is the default scenario framing that render() bakes into the
-# Chat, so a task can override it but the benchmark's baseline behavior is
-# unchanged. Kept in prompts/ so all prompt text lives in .txt.
 _BASE_DIR = Path(__file__).resolve().parent.parent
+
+# The "bare" system prompt: the bland benchmark-style framing. Kept as a module
+# symbol because the HarmBench anchor harness (eval_bench/harmbench.py) and its
+# tests reference it directly.
 DEFAULT_SYSTEM_PROMPT = (
     (_BASE_DIR / "prompts" / "chat_prompt_realistic.txt").read_text().strip()
 )
 
+# F9 (deployment framing) is the ONLY thing that sets the system prompt for the
+# eval_bench grid — there is no per-task system prompt (render() raises if a task
+# tries to set one). `deployment` is a realistic product system prompt (T3-style,
+# naturalistic) and is the baseline; `bare` is the bland benchmark prompt (the
+# eval-cue ablation level). All prompt text lives in prompts/*.txt.
+_F9_SYSTEM = {
+    "deployment": (
+        (_BASE_DIR / "prompts" / "chat_prompt_t3chat.txt").read_text().strip()
+    ),
+    "bare": DEFAULT_SYSTEM_PROMPT,
+}
+
 _LEFTOVER = re.compile(r"\{[A-Z][A-Z0-9_]*\}")
+
+
+def _eastern_timestamp() -> str:
+    """Current US East Coast time in JS ``Date().toString()`` format, e.g.
+    'Tue Sep 01 2026 14:00:00 GMT-0400 (Eastern Daylight Time)'. DST-aware.
+
+    Fills the {TIMESTAMP} placeholder in the deployment system prompt so each
+    generation sees a real current time, like a real deployment would inject."""
+    now = datetime.now(ZoneInfo("America/New_York"))
+    total_min = int((now.utcoffset() or timedelta(0)).total_seconds()) // 60
+    sign = "+" if total_min >= 0 else "-"
+    hh, mm = divmod(abs(total_min), 60)
+    tz_long = "Eastern Daylight Time" if now.dst() else "Eastern Standard Time"
+    return now.strftime("%a %b %d %Y %H:%M:%S") + f" GMT{sign}{hh:02d}{mm:02d} ({tz_long})"
 
 
 def _resolve_slots(template: dict, config: dict) -> dict:
@@ -62,15 +89,25 @@ def render(template: dict, config: dict) -> Chat:
     Structure:
       - shells: F7_{prose|template} -> F3_{casual|formal} -> F4_{realistic|varied}
         -> the final user-message string (required).
-      - system (optional): a string with {SLOT} placeholders. Defaults to
-        DEFAULT_SYSTEM_PROMPT when absent.
       - history (optional): a list of {role, content} prior turns (content is a
         string with {SLOT} placeholders) prepended before the final user turn.
+
+    The system prompt is NOT a task field: it is chosen solely by the F9 factor
+    (deployment/bare). A task that defines `system`/`system_file` is a bug and
+    raises.
 
     Returns a Chat: {"system": str | None, "messages": [...]} whose messages
     start with user, alternate, and end with the rendered user request.
     """
     task_id = template.get("task_id", "<unknown>")
+
+    if "system" in template or "system_file" in template:
+        raise ValueError(
+            f"Task {task_id} defines a system prompt, but the eval_bench system "
+            f"prompt is controlled solely by the F9 factor (deployment/bare). "
+            f"Remove `system`/`system_file` from the template."
+        )
+
     resolved = _resolve_slots(template, config)
 
     shell_text = template["shells"][f"F7_{config['F7']}"][f"F3_{config['F3']}"][
@@ -78,15 +115,11 @@ def render(template: dict, config: dict) -> Chat:
     ]
     user_text = _fill(shell_text, resolved, task_id, config)
 
-    if "system" in template:
-        system: str | None = _fill(template["system"], resolved, task_id, config)
-    else:
-        # TODO(cleanup): no task defines `system` yet, so fall back to the
-        # baseline (keeps all 104 tasks rendering unchanged). Once every task
-        # YAML carries its own `system`, drop this default and require it —
-        # ideally behind a STRICT_SYSTEM flag so the switch is deliberate rather
-        # than a silent break. See PR #41 discussion.
-        system = DEFAULT_SYSTEM_PROMPT
+    # {TIMESTAMP} in the deployment prompt is filled with a real current time
+    # per render; the bare prompt has no placeholder, so this is a no-op there.
+    system: str = _F9_SYSTEM[config.get("F9", "deployment")].replace(
+        "{TIMESTAMP}", _eastern_timestamp()
+    )
 
     messages: list[ChatMessage] = []
     for turn in template.get("history", []):
