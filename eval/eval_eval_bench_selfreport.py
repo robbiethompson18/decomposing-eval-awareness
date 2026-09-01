@@ -25,7 +25,6 @@ import json
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
 from glob import glob
 from typing import Any
 
@@ -39,6 +38,7 @@ from core.selfreport import (
 from core.target import create_target_client
 from lib.config import get_api_keys_config
 from lib.io import read_file
+from lib.time_utils import now_pacific
 
 BACKEND_MODEL_ENV = {
     "anthropic_api": "ANTHROPIC_MODEL_KEY",
@@ -262,7 +262,7 @@ def main() -> None:
 
     records = asyncio.run(run_all())
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = now_pacific().strftime("%Y%m%d_%H%M%S")
     results_dir = os.path.join(base_dir, "results", "eval_bench", "selfreport")
     os.makedirs(results_dir, exist_ok=True)
     mode_suffix = "_scratchpad" if scratchpad else ""
