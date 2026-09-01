@@ -10,6 +10,12 @@ CoT capture is single-method by design:
 
 All clients return responses in the same <think>reasoning</think>answer shape
 consumed by core.evaluator.extract_think_tags.
+
+cfg["THINK_TOOL"] = False (run_eval_bench THINK_TOOL=0) turns extraction off on
+the closed backends: no tool, no mandate appended to the system prompt, native
+reasoning left at each API's default, and the bare answer returned with no
+<think> block. That is the "arm A" deployment-like condition for testing
+whether the think-tool harness itself raises eval-awareness.
 """
 
 import json
@@ -115,10 +121,16 @@ def _openai_effort_floor(model: str) -> str | None:
     return None
 
 
-def _format_think_response(thoughts: list[str], answers: list[str]) -> str:
-    """Join tool thoughts + visible text into the <think> structure the judge expects."""
-    reasoning = "\n\n".join(t for t in thoughts if t).strip()
+def _format_response(thoughts: list[str], answers: list[str], think_tool: bool) -> str:
+    """Join tool thoughts + visible text into the <think> structure the judge expects.
+
+    Without the think tool nothing was captured, so the answer comes back bare
+    (no <think> block at all); the CoT judges refuse such files.
+    """
     answer = "\n".join(a for a in answers if a).strip()
+    if not think_tool:
+        return answer
+    reasoning = "\n\n".join(t for t in thoughts if t).strip()
     return f"<think>{reasoning}</think>{answer}".strip()
 
 
@@ -136,6 +148,7 @@ class AnthropicApiClient:
         self.model = cfg["ANTHROPIC_MODEL"]
         self.api_base = cfg["ANTHROPIC_API_BASE"]
         self.max_tokens = cfg.get("MAX_TOKENS", 50000)
+        self.think_tool = cfg.get("THINK_TOOL", True)
 
     def query_chat(self, chat: Chat) -> str:
         url = self.api_base.rstrip("/") + "/v1/messages"
@@ -144,22 +157,25 @@ class AnthropicApiClient:
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
         }
-        base_payload = {
+        base_payload: dict[str, Any] = {
             "model": self.model,
-            "system": _with_mandate(chat["system"]),
-            "tools": [
+            "max_tokens": self.max_tokens,
+        }
+        system = _with_mandate(chat["system"]) if self.think_tool else chat["system"]
+        if system:
+            base_payload["system"] = system
+        if self.think_tool:
+            base_payload["tools"] = [
                 {
                     "name": THINK_TOOL_NAME,
                     "description": THINK_TOOL_DESCRIPTION,
                     "input_schema": THINK_TOOL_SCHEMA,
                 }
-            ],
-            "max_tokens": self.max_tokens,
-        }
-        # Starvation: no thinking param at all for 4.x models; force Claude 5's
-        # adaptive thinking down.
-        if self.model in ADAPTIVE_THINKING_MODELS:
-            base_payload["output_config"] = {"effort": "low"}
+            ]
+            # Starvation: no thinking param at all for 4.x models; force Claude 5's
+            # adaptive thinking down.
+            if self.model in ADAPTIVE_THINKING_MODELS:
+                base_payload["output_config"] = {"effort": "low"}
         convo: list[dict[str, Any]] = to_anthropic_messages(chat["messages"])
         thoughts: list[str] = []
         answers: list[str] = []
@@ -198,7 +214,7 @@ class AnthropicApiClient:
                         ],
                     }
                 )
-            return _format_think_response(thoughts, answers)
+            return _format_response(thoughts, answers, self.think_tool)
         except Exception as e:  # noqa: BLE001 -- never crash a long parallel run; ERROR string is the convention downstream
             return f"ERROR calling Anthropic API: {e}"
 
@@ -216,26 +232,32 @@ class OpenAITargetClient:
 
         self.model = cfg["OPENAI_TARGET_MODEL"]
         self.max_tokens = cfg.get("MAX_TOKENS", 50000)
+        self.think_tool = cfg.get("THINK_TOOL", True)
         self.client = OpenAI(api_key=cfg["OPENAI_API_KEY"])
 
     def query_chat(self, chat: Chat) -> str:
         base_kwargs: dict[str, Any] = {
             "model": self.model,
-            "instructions": _with_mandate(chat["system"]),
-            "tools": [
+            "max_output_tokens": self.max_tokens,
+        }
+        system = _with_mandate(chat["system"]) if self.think_tool else chat["system"]
+        if system:
+            base_kwargs["instructions"] = system
+        if self.think_tool:
+            base_kwargs["tools"] = [
                 {
                     "type": "function",
                     "name": THINK_TOOL_NAME,
                     "description": THINK_TOOL_DESCRIPTION,
                     "parameters": THINK_TOOL_SCHEMA,
                 }
-            ],
-            "max_output_tokens": self.max_tokens,
+            ]
+            effort = _openai_effort_floor(self.model)
+            if effort:
+                base_kwargs["reasoning"] = {"effort": effort}
+        call_input: dict[str, Any] = {
+            "input": to_openai_responses_input(chat["messages"])
         }
-        effort = _openai_effort_floor(self.model)
-        if effort:
-            base_kwargs["reasoning"] = {"effort": effort}
-        call_input: dict[str, Any] = {"input": to_openai_responses_input(chat["messages"])}
         thoughts: list[str] = []
         answers: list[str] = []
         try:
@@ -269,7 +291,7 @@ class OpenAITargetClient:
                         for c in calls
                     ],
                 }
-            return _format_think_response(thoughts, answers)
+            return _format_response(thoughts, answers, self.think_tool)
         except Exception as e:  # noqa: BLE001 -- never crash a long parallel run; ERROR string is the convention downstream
             return f"ERROR calling OpenAI API target: {e}"
 
@@ -294,6 +316,7 @@ class GeminiApiClient:
         self.thinking_budget = cfg["GEMINI_THINKING_BUDGET"]
         self.force_first_think = cfg["GEMINI_FORCE_FIRST_THINK"]
         self.max_tokens = cfg.get("MAX_TOKENS", 50000)
+        self.think_tool = cfg.get("THINK_TOOL", True)
 
     def _post(self, payload: dict[str, Any], tries: int = 6) -> dict[str, Any]:
         url = (
@@ -317,11 +340,16 @@ class GeminiApiClient:
 
     def query_chat(self, chat: Chat) -> str:
         contents = to_gemini_contents(chat["messages"])
-        base = {
-            "systemInstruction": {"parts": [{"text": _with_mandate(chat["system"])}]},
+        base: dict[str, Any] = {
+            "generationConfig": {"maxOutputTokens": self.max_tokens},
+        }
+        system = _with_mandate(chat["system"]) if self.think_tool else chat["system"]
+        if system:
+            base["systemInstruction"] = {"parts": [{"text": system}]}
+        if self.think_tool:
             # Gemini's function schemas use OpenAPI-style uppercase type names,
             # so THINK_TOOL_SCHEMA can't be shared verbatim.
-            "tools": [
+            base["tools"] = [
                 {
                     "functionDeclarations": [
                         {
@@ -335,25 +363,22 @@ class GeminiApiClient:
                         }
                     ]
                 }
-            ],
-            "generationConfig": {
-                "maxOutputTokens": self.max_tokens,
-                "thinkingConfig": {"thinkingBudget": self.thinking_budget},
-            },
-        }
+            ]
+            base["generationConfig"]["thinkingConfig"] = {
+                "thinkingBudget": self.thinking_budget
+            }
         thoughts: list[str] = []
         answers: list[str] = []
         think_tok = 0
         try:
             for round_idx in range(THINK_TOOL_MAX_ROUNDS):
-                mode = "ANY" if round_idx == 0 and self.force_first_think else "AUTO"
-                r = self._post(
-                    {
-                        **base,
-                        "contents": contents,
-                        "toolConfig": {"functionCallingConfig": {"mode": mode}},
-                    }
-                )
+                payload = {**base, "contents": contents}
+                if self.think_tool:
+                    mode = (
+                        "ANY" if round_idx == 0 and self.force_first_think else "AUTO"
+                    )
+                    payload["toolConfig"] = {"functionCallingConfig": {"mode": mode}}
+                r = self._post(payload)
                 if r.get("error"):
                     return f"ERROR calling Gemini API: {r['error'].get('message', r['error'])}"
                 block = (r.get("promptFeedback") or {}).get("blockReason")
@@ -404,7 +429,7 @@ class GeminiApiClient:
                 f"think_chars={sum(len(t) for t in thoughts)}, "
                 f"hidden_think_tok={think_tok})"
             )
-            return _format_think_response(thoughts, answers)
+            return _format_response(thoughts, answers, self.think_tool)
         except Exception as e:  # noqa: BLE001 -- never crash a long parallel run; ERROR string is the convention downstream
             return f"ERROR calling Gemini API: {e}"
 
@@ -508,6 +533,11 @@ def create_target_client(
         Tuple of (client, backend_slug)
     """
     b = backend.strip().lower()
+    cot_mode = (
+        "think-tool extraction"
+        if cfg.get("THINK_TOOL", True)
+        else "no think tool, CoT not captured"
+    )
 
     if b == "anthropic_api":
         model_key = os.getenv("ANTHROPIC_MODEL_KEY", "claude-sonnet-4.5")
@@ -520,9 +550,7 @@ def create_target_client(
             sys.exit(1)
         cfg["ANTHROPIC_MODEL"] = DEFAULT_ANTHROPIC_MODELS[model_key]
         if verbose:
-            print(
-                f"Using Anthropic API backend (think-tool extraction, model={model_key})..."
-            )
+            print(f"Using Anthropic API backend ({cot_mode}, model={model_key})...")
         return AnthropicApiClient(cfg), model_key
     if b == "openai_api":
         model_key = os.getenv("OPENAI_MODEL_KEY", "gpt-5")
@@ -533,9 +561,7 @@ def create_target_client(
             sys.exit(1)
         cfg["OPENAI_TARGET_MODEL"] = DEFAULT_OPENAI_MODELS[model_key]
         if verbose:
-            print(
-                f"Using OpenAI API backend (think-tool extraction, model={model_key})..."
-            )
+            print(f"Using OpenAI API backend ({cot_mode}, model={model_key})...")
         return OpenAITargetClient(cfg), model_key
     if b == "openrouter":
         model_key = os.getenv("OPENROUTER_MODEL_KEY", "qwen3-30b")
@@ -563,7 +589,7 @@ def create_target_client(
         cfg["GEMINI_FORCE_FIRST_THINK"] = force_first_think
         if verbose:
             print(
-                f"Using Gemini API backend (think-tool extraction, model={model_key}, "
+                f"Using Gemini API backend ({cot_mode}, model={model_key}, "
                 f"id={model_id}, thinkingBudget={thinking_budget}, "
                 f"forceFirstThink={force_first_think})..."
             )

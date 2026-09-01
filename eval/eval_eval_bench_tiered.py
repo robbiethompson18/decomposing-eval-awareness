@@ -284,9 +284,14 @@ def main() -> None:
             f"ERROR: no response file (set RESPONSE_FILE or MODEL_KEY). dir={response_dir}"
         )
 
-    samples, model = load_responses(response_file)
+    samples, model, reasoning_mode = load_responses(response_file)
     if not samples:
         sys.exit("ERROR: no samples in response file.")
+    if reasoning_mode == "none":
+        sys.exit(
+            "ERROR: this response file was generated with THINK_TOOL=0, so it has "
+            "no CoT to judge. Use eval/eval_eval_bench_selfreport.py instead."
+        )
 
     task_filter = os.getenv("TASK_FILTER", "")
     valence_filter = os.getenv("VALENCE_FILTER", "")

@@ -193,9 +193,15 @@ def main() -> None:
 
     print(f"Response file: {response_file}")
 
-    samples, model = load_responses(response_file)
+    samples, model, reasoning_mode = load_responses(response_file)
     if not samples:
         print("ERROR: No samples found.")
+        sys.exit(1)
+    if reasoning_mode == "none":
+        print(
+            "ERROR: this response file was generated with THINK_TOOL=0, so it has "
+            "no CoT to judge. Use eval/eval_eval_bench_selfreport.py instead."
+        )
         sys.exit(1)
 
     if not model_key:

@@ -41,6 +41,16 @@ Environment variables:
   VALENCE_FILTER        Comma-separated valences to run, e.g. "capability" (default: all)
   CONFIG_FILTER         Comma-separated config names to run, e.g. "F6" or "baseline,F1" or
                         "all_varied,harmbench_verbatim" (default: all)
+  THINK_TOOL            "0" disables think-tool CoT extraction on the closed backends
+                        (no tool, no mandate, native reasoning at API default, no
+                        <think> block in the response). Default: "1".
+  F9_BASELINE           F9 level used as the baseline system prompt: deployment
+                        (default), bare, or none (no system prompt at all).
+
+  Arm A of the think-tool-confound test (no harness at all, self-report only):
+    THINK_TOOL=0 F9_BASELINE=none CONFIG_FILTER=baseline TARGET_BACKEND=... python run/run_eval_bench.py
+  Its output file is suffixed _no_think_tool_f9none so it never resumes into an
+  arm-B (think-tool) file.
 """
 
 import asyncio
@@ -61,7 +71,7 @@ from eval_bench.harmbench import (
     harmbench_verbatim_chat,
     load_harmbench_subset,
 )
-from eval_bench.render import render
+from eval_bench.render import F9_LEVELS, render
 from lib.config import get_api_keys_config
 from lib.parallel import query_parallel
 from lib.time_utils import now_pacific
@@ -100,7 +110,7 @@ FACTOR_VARIED_LEVELS = {
 ALL_VARIED = "all_varied"
 
 
-def build_configs() -> list[tuple]:
+def build_configs(f9_baseline: str = BASELINE_CONFIG["F9"]) -> list[tuple]:
     """Build 11 configs: baseline + 8 single-factor ablations + 2 anchors.
 
     The anchors are off the OFAT grid. `all_varied` is the grid's far corner;
@@ -108,10 +118,14 @@ def build_configs() -> list[tuple]:
     built per task from the vendored HarmBench row, safety arm only), so its
     entry here carries the standard-behavior factor vector as a placeholder for
     config_list and is special-cased in the item loop.
+
+    f9_baseline overrides the baseline system-prompt level (F9_BASELINE env);
+    the F9 ablation still flips to `bare`, whatever the baseline is.
     """
-    configs = [("baseline", dict(BASELINE_CONFIG))]
+    baseline = dict(BASELINE_CONFIG, F9=f9_baseline)
+    configs = [("baseline", baseline)]
     for factor, varied_level in FACTOR_VARIED_LEVELS.items():
-        cfg = dict(BASELINE_CONFIG)
+        cfg = dict(baseline)
         cfg[factor] = varied_level
         configs.append((factor, cfg))
     configs.append((ALL_VARIED, dict(FACTOR_VARIED_LEVELS)))
@@ -151,11 +165,13 @@ def get_output_path(model_slug: str, mode_suffix: str) -> Path:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     pattern = str(RESULTS_DIR / f"responses_{model_slug}{mode_suffix}_*.json")
     # The unsuffixed glob also matches suffixed files; exclude them so a native
-    # run never resumes into a think_tool (or old scratchpad) results file.
+    # run never resumes into a think_tool / no_think_tool / f9-override (or old
+    # scratchpad) results file.
     existing = sorted(
         p
         for p in glob.glob(pattern)
-        if mode_suffix or not any(f"_{m}_" in p for m in ("scratchpad", "think_tool"))
+        if mode_suffix
+        or not any(f"_{m}" in p for m in ("scratchpad", "think_tool", "f9"))
     )
     if existing:
         return Path(existing[-1])
@@ -183,22 +199,28 @@ def save_results(out_file: Path, output_data: dict[str, Any]) -> None:
 
 def main() -> None:
     samples_per_config = int(os.getenv("SAMPLES_PER_CONFIG", "3"))
+    think_tool = os.getenv("THINK_TOOL", "1") != "0"
+    f9_baseline = os.getenv("F9_BASELINE", BASELINE_CONFIG["F9"])
+    if f9_baseline not in F9_LEVELS:
+        print(f"ERROR: Unknown F9_BASELINE '{f9_baseline}'. Available: {F9_LEVELS}")
+        sys.exit(1)
 
     cfg = {
         "MAX_TOKENS": int(os.getenv("MAX_TOKENS", "50000")),
         "TARGET_BACKEND": os.getenv("TARGET_BACKEND", "openrouter"),
         "MAX_CONCURRENT": int(os.getenv("MAX_CONCURRENT", "100")),
+        "THINK_TOOL": think_tool,
         **get_api_keys_config(),
     }
 
     backend = cfg["TARGET_BACKEND"]
     # The system prompt is no longer set at the run level: it travels per-sample
-    # inside each task's Chat (render() fills a task's own `system`, or the
-    # baseline default), and closed backends append the think-tool mandate.
+    # inside each task's Chat (render() picks it from the F9 factor), and closed
+    # backends append the think-tool mandate unless THINK_TOOL=0.
     client, model_slug = create_target_client(backend, cfg)
 
     tasks = load_all_tasks()
-    configs = build_configs()
+    configs = build_configs(f9_baseline)
     harmbench_rows = load_harmbench_subset()
 
     task_filter = os.getenv("TASK_FILTER", "")
@@ -220,17 +242,26 @@ def main() -> None:
         tasks_by_name.setdefault(t["task_name"], []).append(t)
     task_names = sorted(tasks_by_name.keys())
 
-    # Determine output file and load existing progress
-    reasoning_method = "native" if backend == "openrouter" else "think_tool"
-    out_file = get_output_path(
-        model_slug, "" if backend == "openrouter" else "_think_tool"
-    )
+    # Determine output file and load existing progress. The suffix encodes
+    # every run-level choice that changes what a sample id means, so a run
+    # never resumes into a file generated under a different harness.
+    if backend == "openrouter":
+        reasoning_method, mode_suffix = "native", ""
+    elif think_tool:
+        reasoning_method, mode_suffix = "think_tool", "_think_tool"
+    else:
+        reasoning_method, mode_suffix = "none", "_no_think_tool"
+    if f9_baseline != BASELINE_CONFIG["F9"]:
+        mode_suffix += f"_f9{f9_baseline}"
+    out_file = get_output_path(model_slug, mode_suffix)
     existing_data, completed_ids = load_existing_results(out_file)
 
     output_data = existing_data or {
         "model": model_slug,
         "backend": backend,
         "reasoning_mode": reasoning_method,
+        "think_tool": think_tool,
+        "f9_baseline": f9_baseline,
         "samples_per_config": samples_per_config,
         "n_tasks": len(tasks),
         "n_configs": len(configs),

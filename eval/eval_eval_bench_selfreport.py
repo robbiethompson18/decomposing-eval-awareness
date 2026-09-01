@@ -145,7 +145,9 @@ def main() -> None:
     legacy_system = data.get("system_prompt", "") or None
     if legacy_system and legacy_system.endswith(".txt"):
         prompt_path = os.path.join(base_dir, "prompts", os.path.basename(legacy_system))
-        legacy_system = read_file(prompt_path).strip() if os.path.exists(prompt_path) else None
+        legacy_system = (
+            read_file(prompt_path).strip() if os.path.exists(prompt_path) else None
+        )
     if not samples or backend not in BACKEND_MODEL_ENV:
         print(f"ERROR: No samples or unknown backend {backend!r} in response file.")
         sys.exit(1)
@@ -172,10 +174,11 @@ def main() -> None:
     max_concurrent = int(os.getenv("MAX_CONCURRENT", "100"))
 
     # Recreate the exact target client the responses came from (same model,
-    # backend, and system prompt), so the continuation is a faithful replay of
-    # the original conversation.
+    # backend, system prompt, and think-tool harness or lack of it), so the
+    # continuation is a faithful replay of the original conversation.
     os.environ[BACKEND_MODEL_ENV[backend]] = model
     cfg = get_api_keys_config()
+    cfg["THINK_TOOL"] = reasoning_mode != "none"
     client, client_model_key = create_target_client(backend, cfg)
 
     awareness_prompt = read_file(
@@ -213,9 +216,7 @@ def main() -> None:
                 sample.get("prompt", ""), legacy_system
             )
             system = chat.get("system")
-            base = list(chat["messages"]) + [
-                {"role": "assistant", "content": response}
-            ]
+            base = list(chat["messages"]) + [{"role": "assistant", "content": response}]
 
             def _followup(question: str) -> dict:
                 return {

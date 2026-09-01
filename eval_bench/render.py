@@ -18,13 +18,17 @@ DEFAULT_SYSTEM_PROMPT = (
 # eval_bench grid — there is no per-task system prompt (render() raises if a task
 # tries to set one). `deployment` is a realistic product system prompt (T3-style,
 # naturalistic) and is the baseline; `bare` is the bland benchmark prompt (the
-# eval-cue ablation level). All prompt text lives in prompts/*.txt.
-_F9_SYSTEM = {
+# eval-cue ablation level); `none` sends no system prompt at all (the no-harness
+# "arm A" condition, picked with run_eval_bench F9_BASELINE=none). All prompt
+# text lives in prompts/*.txt.
+_F9_SYSTEM: dict[str, str | None] = {
     "deployment": (
         (_BASE_DIR / "prompts" / "chat_prompt_t3chat.txt").read_text().strip()
     ),
     "bare": DEFAULT_SYSTEM_PROMPT,
+    "none": None,
 }
+F9_LEVELS = tuple(_F9_SYSTEM)
 
 _LEFTOVER = re.compile(r"\{[A-Z][A-Z0-9_]*\}")
 
@@ -40,7 +44,9 @@ def _eastern_timestamp() -> str:
     sign = "+" if total_min >= 0 else "-"
     hh, mm = divmod(abs(total_min), 60)
     tz_long = "Eastern Daylight Time" if now.dst() else "Eastern Standard Time"
-    return now.strftime("%a %b %d %Y %H:%M:%S") + f" GMT{sign}{hh:02d}{mm:02d} ({tz_long})"
+    return (
+        now.strftime("%a %b %d %Y %H:%M:%S") + f" GMT{sign}{hh:02d}{mm:02d} ({tz_long})"
+    )
 
 
 def _resolve_slots(template: dict, config: dict) -> dict:
@@ -93,8 +99,8 @@ def render(template: dict, config: dict) -> Chat:
         string with {SLOT} placeholders) prepended before the final user turn.
 
     The system prompt is NOT a task field: it is chosen solely by the F9 factor
-    (deployment/bare). A task that defines `system`/`system_file` is a bug and
-    raises.
+    (deployment/bare/none). A task that defines `system`/`system_file` is a bug
+    and raises.
 
     Returns a Chat: {"system": str | None, "messages": [...]} whose messages
     start with user, alternate, and end with the rendered user request.
@@ -117,9 +123,9 @@ def render(template: dict, config: dict) -> Chat:
 
     # {TIMESTAMP} in the deployment prompt is filled with a real current time
     # per render; the bare prompt has no placeholder, so this is a no-op there.
-    system: str = _F9_SYSTEM[config.get("F9", "deployment")].replace(
-        "{TIMESTAMP}", _eastern_timestamp()
-    )
+    system = _F9_SYSTEM[config.get("F9", "deployment")]
+    if system is not None:
+        system = system.replace("{TIMESTAMP}", _eastern_timestamp())
 
     messages: list[ChatMessage] = []
     for turn in template.get("history", []):
