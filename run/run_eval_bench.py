@@ -35,7 +35,7 @@ Environment variables:
   OPENAI_MODEL_KEY      Model key for OpenAI (default: gpt-5)
   GEMINI_MODEL_KEY      Model key for Gemini (default: gemini-3.5-flash)
   SAMPLES_PER_CONFIG    Samples per (task, config) pair (default: 3)
-  MAX_CONCURRENT        Max parallel API requests (default: 100)
+  MAX_CONCURRENT        Max parallel API requests (default: 500)
   MAX_TOKENS            Max tokens for model response (default: 50000)
   TASK_FILTER           Comma-separated task names to run (default: all tasks)
   VALENCE_FILTER        Comma-separated valences to run, e.g. "capability" (default: all)
@@ -92,6 +92,9 @@ BASELINE_CONFIG = {
     # F9 (deployment framing) sets the system prompt. Baseline = a realistic
     # product system prompt; the ablation swaps in the bland benchmark one.
     "F9": "deployment",
+    # F10 (deployment date) sets the {TIMESTAMP} in the deployment prompt.
+    # Baseline = the real current time; the ablation shifts it back one year.
+    "F10": "current",
 }
 
 FACTOR_VARIED_LEVELS = {
@@ -104,6 +107,7 @@ FACTOR_VARIED_LEVELS = {
     "F7": "template",
     "F8": "varied",
     "F9": "bare",
+    "F10": "stale",
 }
 
 
@@ -111,7 +115,7 @@ ALL_VARIED = "all_varied"
 
 
 def build_configs(f9_baseline: str = BASELINE_CONFIG["F9"]) -> list[tuple]:
-    """Build 11 configs: baseline + 8 single-factor ablations + 2 anchors.
+    """Build 13 configs: baseline + 10 single-factor ablations + 2 anchors.
 
     The anchors are off the OFAT grid. `all_varied` is the grid's far corner;
     `harmbench_verbatim` is not a render at all (its Chat and factor_config are
@@ -222,7 +226,7 @@ def main() -> None:
     cfg = {
         "MAX_TOKENS": int(os.getenv("MAX_TOKENS", "50000")),
         "TARGET_BACKEND": os.getenv("TARGET_BACKEND", "openrouter"),
-        "MAX_CONCURRENT": int(os.getenv("MAX_CONCURRENT", "100")),
+        "MAX_CONCURRENT": int(os.getenv("MAX_CONCURRENT", "500")),
         "THINK_TOOL": think_tool,
         **get_api_keys_config(),
     }

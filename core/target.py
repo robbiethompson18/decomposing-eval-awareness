@@ -21,7 +21,6 @@ whether the think-tool harness itself raises eval-awareness.
 import json
 import os
 import sys
-import time
 from typing import Any
 
 from lib.chat import (
@@ -37,6 +36,7 @@ from lib.config import (
     DEFAULT_OPENAI_MODELS,
     DEFAULT_OPENROUTER_CONFIGS,
 )
+from lib.retry import MAX_RETRIES, post_with_retry
 
 try:
     from openai import OpenAI
@@ -69,8 +69,8 @@ def create_openai_client(api_key: str, base_url: str | None = None) -> "OpenAI":
         raise ImportError("openai package is required")
 
     if base_url:
-        return OpenAI(api_key=api_key, base_url=base_url)
-    return OpenAI(api_key=api_key)
+        return OpenAI(api_key=api_key, base_url=base_url, max_retries=MAX_RETRIES)
+    return OpenAI(api_key=api_key, max_retries=MAX_RETRIES)
 
 
 # Claude 5 family thinks adaptively by default; think-tool extraction starves
@@ -149,12 +149,6 @@ class AnthropicApiClient:
         self.api_base = cfg["ANTHROPIC_API_BASE"]
         self.max_tokens = cfg.get("MAX_TOKENS", 50000)
         self.think_tool = cfg.get("THINK_TOOL", True)
-        # Pooled keep-alive session: bare requests.post opens a fresh TLS
-        # connection per call, and 500 simultaneous handshakes to
-        # api.anthropic.com failed with SSL EOF on ~all of them (2026-09-01).
-        self.session = requests.Session()
-        adapter = requests.adapters.HTTPAdapter(pool_connections=8, pool_maxsize=512)
-        self.session.mount("https://", adapter)
 
     def query_chat(self, chat: Chat) -> str:
         url = self.api_base.rstrip("/") + "/v1/messages"
@@ -187,27 +181,12 @@ class AnthropicApiClient:
         answers: list[str] = []
         try:
             for _ in range(THINK_TOOL_MAX_ROUNDS):
-                # Retry connection errors and rate limits / overload (429, 529,
-                # 5xx) with backoff, honoring retry-after; otherwise a burst at
-                # high concurrency lands as stored "ERROR calling" samples.
-                for attempt in range(8):
-                    try:
-                        resp = self.session.post(
-                            url,
-                            headers=headers,
-                            json=dict(base_payload, messages=convo),
-                            timeout=600,
-                        )
-                    except requests.RequestException:
-                        if attempt == 7:
-                            raise
-                        time.sleep(5 * (attempt + 1))
-                        continue
-                    if resp.status_code not in (429, 500, 502, 503, 529):
-                        break
-                    time.sleep(
-                        float(resp.headers.get("retry-after", 5 * (attempt + 1)))
-                    )
+                resp = post_with_retry(
+                    url,
+                    headers=headers,
+                    json=dict(base_payload, messages=convo),
+                    timeout=600,
+                )
                 resp.raise_for_status()
                 blocks = resp.json().get("content") or []
                 tool_uses = []
@@ -249,13 +228,10 @@ class OpenAITargetClient:
     """
 
     def __init__(self, cfg: dict[str, Any]) -> None:
-        from openai import OpenAI
-
         self.model = cfg["OPENAI_TARGET_MODEL"]
         self.max_tokens = cfg.get("MAX_TOKENS", 50000)
         self.think_tool = cfg.get("THINK_TOOL", True)
-        # SDK retries 429/5xx with exponential backoff (honors retry-after).
-        self.client = OpenAI(api_key=cfg["OPENAI_API_KEY"], max_retries=8)
+        self.client = create_openai_client(cfg["OPENAI_API_KEY"])
 
     def query_chat(self, chat: Chat) -> str:
         base_kwargs: dict[str, Any] = {
@@ -340,27 +316,11 @@ class GeminiApiClient:
         self.max_tokens = cfg.get("MAX_TOKENS", 50000)
         self.think_tool = cfg.get("THINK_TOOL", True)
 
-    def _post(self, payload: dict[str, Any], tries: int = 6) -> dict[str, Any]:
+    def query_chat(self, chat: Chat) -> str:
         url = (
             "https://generativelanguage.googleapis.com/v1beta/models/"
             f"{self.model}:generateContent?key={self.api_key}"
         )
-        err = "?"
-        for i in range(tries):
-            try:
-                r = requests.post(url, json=payload, timeout=300)
-            except requests.RequestException as e:
-                err = str(e)
-                time.sleep(2 * (i + 1))
-                continue
-            if r.status_code in (429, 500, 502, 503):
-                err = f"http {r.status_code}"
-                time.sleep(3 * (i + 1))
-                continue
-            return r.json()
-        return {"error": {"message": f"gave up after {tries} tries ({err})"}}
-
-    def query_chat(self, chat: Chat) -> str:
         contents = to_gemini_contents(chat["messages"])
         base: dict[str, Any] = {
             "generationConfig": {"maxOutputTokens": self.max_tokens},
@@ -400,7 +360,9 @@ class GeminiApiClient:
                         "ANY" if round_idx == 0 and self.force_first_think else "AUTO"
                     )
                     payload["toolConfig"] = {"functionCallingConfig": {"mode": mode}}
-                r = self._post(payload)
+                # Gemini puts errors in the JSON body, so read it whatever the
+                # status; a non-JSON body raises into the except below.
+                r = post_with_retry(url, json=payload).json()
                 if r.get("error"):
                     return f"ERROR calling Gemini API: {r['error'].get('message', r['error'])}"
                 block = (r.get("promptFeedback") or {}).get("blockReason")

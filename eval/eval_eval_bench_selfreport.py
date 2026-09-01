@@ -14,7 +14,7 @@ existing bucket/stats helpers work on them.
 Environment variables:
     MODEL_KEY       Model key matching response filename (e.g., "qwen3-30b")
     RESPONSE_FILE   Direct path to response JSON (overrides MODEL_KEY)
-    MAX_CONCURRENT  Max parallel target API calls (default: 100)
+    MAX_CONCURRENT  Max parallel target API calls (default: 500)
     MAX_SAMPLES     Limit number of samples to evaluate (default: 0 = all)
     TASK_FILTER     Comma-separated task names to include (default: all)
     VALENCE_FILTER  Comma-separated valences to include (default: all)
@@ -171,7 +171,7 @@ def main() -> None:
         print("ERROR: No samples match the given filters.")
         sys.exit(1)
 
-    max_concurrent = int(os.getenv("MAX_CONCURRENT", "100"))
+    max_concurrent = int(os.getenv("MAX_CONCURRENT", "500"))
 
     # Recreate the exact target client the responses came from (same model,
     # backend, system prompt, and think-tool harness or lack of it), so the

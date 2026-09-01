@@ -8,6 +8,7 @@ import sys
 from types import SimpleNamespace
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core import target
 from core.target import (
     THINK_TOOL_MANDATE,
     AnthropicApiClient,
@@ -86,15 +87,12 @@ def test_anthropic_no_think_tool_sends_bare_request(monkeypatch):
             json=lambda: {"content": [{"type": "text", "text": "hello"}]},
         )
 
-    client = AnthropicApiClient(_cfg(THINK_TOOL=False))
-    monkeypatch.setattr(client.session, "post", fake_post)
-    assert client.query_chat(CHAT) == "hello"
+    monkeypatch.setattr(target, "post_with_retry", fake_post)
+    assert AnthropicApiClient(_cfg(THINK_TOOL=False)).query_chat(CHAT) == "hello"
     assert "tools" not in seen and "system" not in seen and "output_config" not in seen
 
     seen.clear()
-    client = AnthropicApiClient(_cfg())
-    monkeypatch.setattr(client.session, "post", fake_post)
-    out = client.query_chat(CHAT)
+    out = AnthropicApiClient(_cfg()).query_chat(CHAT)
     assert out == "<think></think>hello"
     assert seen["system"] == THINK_TOOL_MANDATE and seen["tools"][0]["name"] == "think"
 
@@ -118,12 +116,13 @@ def test_openai_no_think_tool_sends_bare_request():
 def test_gemini_no_think_tool_sends_bare_request(monkeypatch):
     seen = {}
 
-    def fake_post(payload, tries=6):
-        seen.update(payload)
-        return {"candidates": [{"content": {"parts": [{"text": "hello"}]}}]}
+    def fake_post(url, json, **kw):
+        seen.update(json)
+        return SimpleNamespace(
+            json=lambda: {"candidates": [{"content": {"parts": [{"text": "hello"}]}}]}
+        )
 
-    client = GeminiApiClient(_cfg(THINK_TOOL=False))
-    monkeypatch.setattr(client, "_post", fake_post)
-    assert client.query_chat(CHAT) == "hello"
+    monkeypatch.setattr(target, "post_with_retry", fake_post)
+    assert GeminiApiClient(_cfg(THINK_TOOL=False)).query_chat(CHAT) == "hello"
     assert "tools" not in seen and "systemInstruction" not in seen
     assert "toolConfig" not in seen and "thinkingConfig" not in seen["generationConfig"]

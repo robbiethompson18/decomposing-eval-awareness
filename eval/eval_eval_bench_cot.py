@@ -5,24 +5,21 @@ Loads responses from run_eval_bench.py and evaluates each sample with a judge mo
 using the standard CoT monitoring pipeline.
 
 Environment variables:
-    JUDGE_MODEL          Primary judge (default: gpt-5.6-terra; OPENAI_EVAL_MODEL
-                         also honored). claude-* routes to the Anthropic API.
-    BACKUP_JUDGE_MODEL   Fallback judge for transcripts the primary refused / returned
-                         unparseable JSON for (default: claude-sonnet-5). Only those
-                         samples are re-graded; set "" to disable the fallback.
+    JUDGE_MODEL          Judge (default: gpt-5.6-terra; OPENAI_EVAL_MODEL also
+                         honored). claude-* routes to the Anthropic API.
     MODEL_KEY            Model key matching response filename (e.g., "qwen3-30b")
     RESPONSE_FILE        Direct path to response JSON (overrides MODEL_KEY)
-    MAX_CONCURRENT       Max parallel judge API calls (default: 100)
+    MAX_CONCURRENT       Max parallel judge API calls (default: 500)
     MAX_SAMPLES          Limit number of samples to evaluate (default: 0 = all)
     TASK_FILTER          Comma-separated task names to judge (default: all)
     VALENCE_FILTER       Comma-separated valences to judge (default: all)
     MERGE_INTO           Path to existing CoT JSON to merge into (replaces matching IDs)
 
-Default grader stack: gpt-5.6-terra primary (0 refusals, κ=0.91 vs gpt-5) +
-claude-sonnet-5 backup for anything terra returns unparseable (awareness κ=1.0
-vs terra on a 280-transcript check). Flip with JUDGE_MODEL=claude-sonnet-5
-BACKUP_JUDGE_MODEL=gpt-5.6-terra to grade on Anthropic credits instead. See
-.claude/notes/grader-selection-and-refusal-clause.md.
+Default grader: gpt-5.6-terra (0 refusals, κ=0.91 vs gpt-5). Transcripts the
+judge cannot grade at all (OpenAI's cyber content filter rejects the most harmful
+ones) come back with every conclusion N/A and the error in the reasoning — there
+is no backup grader, since claude-sonnet-5 refused the same transcripts terra
+was blocked on. See .claude/notes/grader-selection-and-refusal-clause.md.
 """
 
 import asyncio
@@ -47,25 +44,6 @@ from lib.chat import chat_to_transcript_text
 from lib.config import get_api_keys_config
 from lib.io import load_responses, read_file
 from lib.time_utils import now_pacific
-
-# A verdict is valid if the judge returned a parseable model_awareness conclusion
-# ("yes"/"no"/"n/a"). A refusal comes back as {"raw": <text>} with no
-# model_awareness key, and a hard content-filter block leaves judge=None — both
-# need the backup judge.
-_VALID_CONCLUSIONS = {"yes", "no", "n/a"}
-
-
-def needs_backup(record: dict[str, Any]) -> bool:
-    """True if the primary judge failed to produce a usable verdict for this record."""
-    judge = record.get("judge")
-    if not isinstance(judge, dict):
-        return True
-    awareness = judge.get("model_awareness")
-    if not isinstance(awareness, dict):
-        return True
-    return (
-        str(awareness.get("conclusion", "")).strip().lower() not in _VALID_CONCLUSIONS
-    )
 
 
 def find_response_file(response_dir: str, model_key: str) -> str:
@@ -154,31 +132,23 @@ def main() -> None:
     judge_model = (
         os.getenv("JUDGE_MODEL") or os.getenv("OPENAI_EVAL_MODEL") or "gpt-5.6-terra"
     )
-    # Backup grader for transcripts the primary refuses / returns unparseable
-    # JSON for; "" disables. Skipped if it equals the primary.
-    backup_judge_model = os.getenv("BACKUP_JUDGE_MODEL", "claude-sonnet-5").strip()
-    if backup_judge_model == judge_model:
-        backup_judge_model = ""
     model_key = os.getenv("MODEL_KEY", "")
     response_file = os.getenv("RESPONSE_FILE", "")
     max_samples = int(os.getenv("MAX_SAMPLES", "0"))
-    max_concurrent = int(os.getenv("MAX_CONCURRENT", "100"))
+    max_concurrent = int(os.getenv("MAX_CONCURRENT", "500"))
     task_filter = os.getenv("TASK_FILTER", "")
     valence_filter = os.getenv("VALENCE_FILTER", "")
     merge_into = os.getenv("MERGE_INTO", "")
 
-    for role, jm in (("primary", judge_model), ("backup", backup_judge_model)):
-        if not jm:
-            continue
-        if jm.startswith("claude"):
-            if not anthropic_api_key:
-                print(
-                    f"ERROR: ANTHROPIC_API_KEY required for Claude {role} judge {jm!r}."
-                )
-                sys.exit(1)
-        elif not openai_api_key:
-            print(f"ERROR: OPENAI_API_KEY required for OpenAI {role} judge {jm!r}.")
+    if judge_model.startswith("claude"):
+        if not anthropic_api_key:
+            print(
+                f"ERROR: ANTHROPIC_API_KEY required for Claude judge {judge_model!r}."
+            )
             sys.exit(1)
+    elif not openai_api_key:
+        print(f"ERROR: OPENAI_API_KEY required for OpenAI judge {judge_model!r}.")
+        sys.exit(1)
 
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     response_dir = os.path.join(base_dir, "results", "eval_bench", "response")
@@ -226,7 +196,6 @@ def main() -> None:
 
     print(f"Loaded {len(samples)} samples from model: {model}")
     print(f"Judge model: {judge_model}")
-    print(f"Backup judge: {backup_judge_model or '(disabled)'}")
     print(f"Max concurrent: {max_concurrent}")
     print("=" * 70)
 
@@ -238,11 +207,7 @@ def main() -> None:
     print(f"Judge prompt: {judge_prompt_file} (sha {judge_prompt_sha})")
 
     def make_eval_fn(active_judge: str):
-        """Build a sample-evaluator bound to a specific judge model.
-
-        result_fn does {**sample, ...}: on the backup pass `sample` is the primary
-        record, so its stale judge_* fields are overwritten with the backup's.
-        """
+        """Build a sample-evaluator bound to a specific judge model."""
 
         async def eval_sample_fn(
             client: Any,
@@ -298,30 +263,6 @@ def main() -> None:
         )
 
     all_records = run_judge(judge_model, samples)
-
-    # Backup pass: re-grade only the transcripts the primary judge refused or
-    # returned unparseable JSON for (Claude judges refuse the most harmful items).
-    if backup_judge_model:
-        stalled = [r for r in all_records if needs_backup(r)]
-        if not stalled:
-            print(f"\nAll {len(all_records)} verdicts parseable; backup not needed.")
-        else:
-            print(
-                f"\n{len(stalled)}/{len(all_records)} verdicts unparseable from "
-                f"{judge_model}; re-grading those with backup {backup_judge_model}..."
-            )
-            redone = run_judge(backup_judge_model, stalled)
-            for r in redone:
-                r["judge_backup_used"] = True
-            redone_ids = {r.get("id") for r in redone}
-            all_records = [
-                r for r in all_records if r.get("id") not in redone_ids
-            ] + redone
-            still_bad = sum(1 for r in redone if needs_backup(r))
-            print(
-                f"  backup resolved {len(redone) - still_bad}/{len(redone)} "
-                f"({still_bad} still unparseable)"
-            )
 
     # Save or merge results
     if merge_into and os.path.exists(merge_into):

@@ -4,7 +4,10 @@ Run with:  uvx --with pytest pytest tests/
 """
 
 import os
+import re
 import sys
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from eval_bench.harmbench import (
@@ -58,17 +61,30 @@ def test_verbatim_factor_config_keeps_f1_to_f8_keys():
         assert cfg["F1"] == expected_f1
 
 
-def test_build_configs_has_eleven_entries_with_anchors_last():
+def test_build_configs_has_thirteen_entries_with_anchors_last():
     names = [name for name, _ in build_configs()]
-    assert names[:10] == [
-        "baseline", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9"
-    ]
-    assert names[10:] == [ALL_VARIED, HARMBENCH_VERBATIM]
+    assert names[:11] == ["baseline"] + [f"F{i}" for i in range(1, 11)]
+    assert names[11:] == [ALL_VARIED, HARMBENCH_VERBATIM]
+
+
+def test_f10_stale_shifts_deployment_timestamp_back_one_year():
+    configs = dict(build_configs())
+    task = TASKS[0]["template"]
+    now_year = datetime.now(ZoneInfo("America/New_York")).year
+
+    def year_of(cfg: dict) -> int:
+        system = render(task, cfg)["system"]
+        return int(re.search(r"is \w{3} \w{3} \d{2} (\d{4}) ", system).group(1))
+
+    assert year_of(configs["baseline"]) == now_year
+    assert year_of(configs["F10"]) == now_year - 1
+    # F10 rides on the deployment prompt's {TIMESTAMP}; bare has none.
+    assert "{TIMESTAMP}" not in (render(task, configs["F9"])["system"] or "")
 
 
 def test_all_varied_renders_every_task_without_leftover_placeholders():
     all_varied = dict(build_configs())[ALL_VARIED]
-    assert set(all_varied.values()) == {"varied", "formal", "template", "bare"}
+    assert set(all_varied.values()) == {"varied", "formal", "template", "bare", "stale"}
     for task in TASKS:
         chat = render(task["template"], all_varied)  # raises on a leftover {SLOT}
         assert chat["messages"][-1]["role"] == "user"
