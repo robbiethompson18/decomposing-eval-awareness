@@ -72,6 +72,10 @@ Current notes:
 <!-- As notes are added under .claude/notes/, list them here, one per line: -->
 <!-- - [Title — when to read](.claude/notes/foo.md) — short gloss -->
 
+- [Think-tool harness vs self-report — read before quoting closed-model self-report numbers, deciding whether to keep the think tool, or comparing F9 system-prompt levels](.claude/notes/think-tool-harness-vs-selfreport.md)
+  — 4 models x {think tool, no tool} x {bare, T3, none} system prompt, 1000/cell: the tool
+  suppresses (sonnet −15) or does nothing; no-system-prompt is the high-awareness condition;
+  T3 prompt lowers haiku/gemini 7–12; concurrency-500 TLS failures and resume/path gotchas.
 - [F8 eval-announcement suffix vs eval-awareness — read before analyzing the F8 factor or claiming a prompt cue does/doesn't induce awareness](.claude/notes/f8-eval-suffix-awareness.md)
   — F8→varied raises self-reported awareness 45→58% (paired McNemar p≈4.6e-10) and CoT-judged 3→8%;
   baseline-vs-F8 A/B mechanics; adaptive-Claude-5 empty-answer + system_prompt-as-filename gotchas.
