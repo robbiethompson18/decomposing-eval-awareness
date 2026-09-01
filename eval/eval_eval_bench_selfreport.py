@@ -18,6 +18,7 @@ Environment variables:
     MAX_SAMPLES     Limit number of samples to evaluate (default: 0 = all)
     TASK_FILTER     Comma-separated task names to include (default: all)
     VALENCE_FILTER  Comma-separated valences to include (default: all)
+    CONFIG_FILTER   Comma-separated config names to include (default: all)
 """
 
 import asyncio
@@ -155,12 +156,16 @@ def main() -> None:
         samples = samples[:max_samples]
     task_filter = os.getenv("TASK_FILTER", "")
     valence_filter = os.getenv("VALENCE_FILTER", "")
+    config_filter = os.getenv("CONFIG_FILTER", "")
     if task_filter:
         allowed = {t.strip() for t in task_filter.split(",")}
         samples = [s for s in samples if s.get("task_name", "") in allowed]
     if valence_filter:
         allowed = {v.strip() for v in valence_filter.split(",")}
         samples = [s for s in samples if s.get("valence", "") in allowed]
+    if config_filter:
+        allowed = {c.strip() for c in config_filter.split(",")}
+        samples = [s for s in samples if s.get("config_name", "") in allowed]
     if not samples:
         print("ERROR: No samples match the given filters.")
         sys.exit(1)
