@@ -16,3 +16,10 @@
   The one survivor of the thinking-budget issue lives in `core/target.py::AnthropicApiClient`,
   which now branches to adaptive thinking for Claude 5 models (being reworked in the
   target.py cleanup).
+
+- **2026-09-01** `plots/plot_awareness.py` hardcodes the factor grid twice: `EXPECTED_CONFIGS = 9`
+  (baseline + F1..F8) and a `FACTOR_LABELS` dict that stops at F8. Adding F9 (PR #37) and F10
+  (PR #54) did not update either, so plotting a run that includes them will drop or mislabel
+  columns. Both should be derived from `run.run_eval_bench.FACTOR_VARIED_LEVELS` /
+  `eval_bench/taxonomy.yaml` rather than restated — the label strings are the only thing that
+  genuinely needs hand-writing per factor.
