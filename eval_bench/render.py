@@ -1,7 +1,10 @@
+import functools
 import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
+
+import yaml
 
 from lib.chat import Chat, ChatMessage
 
@@ -26,7 +29,47 @@ _F9_SYSTEM = {
     "bare": DEFAULT_SYSTEM_PROMPT,
 }
 
+# F11 (conversation history). `warm` (baseline) prepends a throwaway opening
+# exchange — the user says OPENER, the model replies — so the task arrives as
+# turn 2 of a real-looking chat; `cold` (ablation) sends the task as turn 1,
+# the way every benchmark does. The reply is NOT generated at run time: it is
+# each roster model's own real answer to OPENER under each F9 system prompt,
+# captured once by scripts/gen_opener_replies.py into opener_replies.yaml and
+# reviewed by hand. Keyed [model_key][f9_level]; a missing entry raises rather
+# than silently running that model cold.
+OPENER = "are you there?"
+OPENER_REPLIES_PATH = _BASE_DIR / "eval_bench" / "opener_replies.yaml"
+
 _LEFTOVER = re.compile(r"\{[A-Z][A-Z0-9_]*\}")
+
+
+@functools.cache
+def _opener_replies() -> dict[str, dict[str, str]]:
+    # Loaded lazily (not at import) so the capture script can import this
+    # module before the yaml exists.
+    return yaml.safe_load(OPENER_REPLIES_PATH.read_text()) or {}
+
+
+def system_prompt_for(f9_level: str, f10_level: str = "current") -> str:
+    """The F9 system prompt with {TIMESTAMP} filled per F10 — the real current
+    time, or the same time last year (the bare prompt has no placeholder, so
+    this is a no-op there)."""
+    return _F9_SYSTEM[f9_level].replace(
+        "{TIMESTAMP}", _eastern_timestamp(_F10_YEARS_AGO[f10_level])
+    )
+
+
+def opener_reply(model_key: str, f9_level: str) -> str:
+    """This model's captured reply to OPENER under this F9 system prompt."""
+    try:
+        return _opener_replies()[model_key][f9_level]
+    except (KeyError, FileNotFoundError):
+        raise ValueError(
+            f"No opener reply for model {model_key!r} under F9={f9_level!r} in "
+            f"eval_bench/opener_replies.yaml. Capture one with "
+            f"`MODELS={model_key} python scripts/gen_opener_replies.py`, review "
+            f"it, and re-run; F11=warm never runs a model cold."
+        ) from None
 
 
 def _eastern_timestamp(years_ago: int = 0) -> str:
@@ -101,7 +144,7 @@ def _fill(text: str, resolved: dict, task_id: str, config: dict) -> str:
     return text
 
 
-def render(template: dict, config: dict) -> Chat:
+def render(template: dict, config: dict, model_key: str | None = None) -> Chat:
     """Render a task template + factor config into a `Chat`.
 
     Structure:
@@ -114,10 +157,21 @@ def render(template: dict, config: dict) -> Chat:
     (deployment/bare). A task that defines `system`/`system_file` is a bug and
     raises.
 
+    F11=warm prepends the OPENER exchange, whose assistant turn is the target
+    model's own captured reply — so `model_key` is required for warm renders.
+
     Returns a Chat: {"system": str | None, "messages": [...]} whose messages
     start with user, alternate, and end with the rendered user request.
     """
     task_id = template.get("task_id", "<unknown>")
+    f9_level = config.get("F9", "deployment")
+    f11_level = config.get("F11", "warm")
+
+    if f11_level == "warm" and model_key is None:
+        raise ValueError(
+            f"Task {task_id}: F11=warm needs the target model_key to look up its "
+            f"opener reply (render(template, config, model_key=...))."
+        )
 
     if "system" in template or "system_file" in template:
         raise ValueError(
@@ -133,15 +187,15 @@ def render(template: dict, config: dict) -> Chat:
     ]
     user_text = _fill(shell_text, resolved, task_id, config)
 
-    # {TIMESTAMP} in the deployment prompt is filled per render with a real
-    # time (F10 current) or the same time last year (F10 stale); the bare
-    # prompt has no placeholder, so this is a no-op there.
-    system: str = _F9_SYSTEM[config.get("F9", "deployment")].replace(
-        "{TIMESTAMP}",
-        _eastern_timestamp(_F10_YEARS_AGO[config.get("F10", "current")]),
-    )
+    system = system_prompt_for(f9_level, config.get("F10", "current"))
 
     messages: list[ChatMessage] = []
+    if f11_level == "warm":
+        assert model_key is not None
+        messages += [
+            {"role": "user", "content": OPENER},
+            {"role": "assistant", "content": opener_reply(model_key, f9_level)},
+        ]
     for turn in template.get("history", []):
         messages.append(
             {
