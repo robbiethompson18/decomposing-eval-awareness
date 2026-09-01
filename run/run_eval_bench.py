@@ -18,14 +18,18 @@ Usage:
   # Run GPT-5 via native OpenAI API:
   TARGET_BACKEND=openai_api OPENAI_MODEL_KEY=gpt-5 SAMPLES_PER_CONFIG=3 python run/run_eval_bench.py
 
+  # Run Gemini via native API:
+  TARGET_BACKEND=gemini_api GEMINI_MODEL_KEY=gemini-3.5-flash SAMPLES_PER_CONFIG=3 python run/run_eval_bench.py
+
   # Resume a crashed run (auto-detects existing file and skips completed samples):
   Just re-run the same command. The script finds the latest matching output file and resumes.
 
 Environment variables:
-  TARGET_BACKEND        Backend to use (openrouter, anthropic_api, openai_api)
+  TARGET_BACKEND        Backend to use (openrouter, anthropic_api, openai_api, gemini_api)
   OPENROUTER_MODEL_KEY  Model key for OpenRouter (default: qwen3-30b)
   ANTHROPIC_MODEL_KEY   Model key for Anthropic (default: claude-sonnet-4.5)
   OPENAI_MODEL_KEY      Model key for OpenAI (default: gpt-5)
+  GEMINI_MODEL_KEY      Model key for Gemini (default: gemini-3.5-flash)
   SAMPLES_PER_CONFIG    Samples per (task, config) pair (default: 3)
   MAX_CONCURRENT        Max parallel API requests (default: 100)
   MAX_TOKENS            Max tokens for model response (default: 50000)

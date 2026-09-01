@@ -43,6 +43,7 @@ BACKEND_MODEL_ENV = {
     "anthropic_api": "ANTHROPIC_MODEL_KEY",
     "openai_api": "OPENAI_MODEL_KEY",
     "openrouter": "OPENROUTER_MODEL_KEY",
+    "gemini_api": "GEMINI_MODEL_KEY",
 }
 
 SKIPPED_MSG = "No stored response to continue; self-report skipped."
