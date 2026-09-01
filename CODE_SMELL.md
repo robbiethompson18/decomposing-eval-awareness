@@ -38,3 +38,12 @@
   columns. Both should be derived from `run.run_eval_bench.FACTOR_VARIED_LEVELS` /
   `eval_bench/taxonomy.yaml` rather than restated — the label strings are the only thing that
   genuinely needs hand-writing per factor.
+
+## 2026-09-01 — self-report probe unparseable for claude-haiku-4.5 (77% invalid)
+
+`eval/eval_eval_bench_selfreport.py` routes the follow-up through the think-tool target client, and
+haiku-4.5 answers the awareness question inside a long `<think>` tool call without ever emitting
+the verdict format `core/selfreport.py` parses: 307/400 `invalid` in the F11 test run, identical
+across configs. Either strip the mandate for the probe (plain call, no think tool) or make the
+parser read the verdict out of the tool trace. Until then haiku self-report cells have n≈45.
+See `.claude/notes/f11-conversation-history.md`.
