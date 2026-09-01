@@ -14,6 +14,8 @@ There is a blog post I'm drafting for this for my personal website at
 for me. You can address my @claude comments by doing mechanical things (eg adding links) and by
 giving me commmentary back in chat. All prose is mine.
 
+OAI banned us for 'distilling' so further runs are on Robbie's credit card. Be very cautious about using these.
+
 ## Rules
 
 - Robbie reviews every change in this repo. **Never push to `main` or merge on your own** — commit
