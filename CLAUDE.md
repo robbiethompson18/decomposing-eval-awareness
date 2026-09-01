@@ -51,6 +51,8 @@ Current notes:
 <!-- As notes are added under .claude/notes/, list them here, one per line: -->
 <!-- - [Title — when to read](.claude/notes/foo.md) — short gloss -->
 
+- [Grader selection + the F8 `{}` refusal clause — read before choosing a judge model, editing task prompts, or regenerating responses](.claude/notes/grader-selection-and-refusal-clause.md)
+  — why terra is the default grader (vs gpt-5/sonnet-5), what the F8 `{}` clause was and why PR #22 removed it, the awareness-under-counting rubric gotcha, and the run_eval_bench id-cache / shared-results regen traps.
 - [Claude 5 CoT-extraction resistance — read before trying to read a model's chain-of-thought via think-tool/scratchpad tricks](.claude/notes/claude5-cot-extraction-resistance.md)
   — think-tool + low-thinking extraction works on 4.5, dead on 5; token-accounting evidence;
   per-model refuse/bypass/hide behavior + honest-vs-lying framing.
