@@ -28,14 +28,16 @@ def query_hf_model(
     prompt: str,
     system_prompt: str,
     max_new_tokens: int = 2048,
-    temperature: float = 0.3,
+    temperature: float = 1.0,
     top_p: float = 0.95,
     enable_thinking: bool = True,
 ) -> str:
     """Query a HuggingFace model locally (designed for Qwen3 thinking models).
 
-    Default temperature=0.3 for relatively deterministic outputs.
-    Lower temperature = more deterministic (0=greedy, 1=normal, >1=creative).
+    Default temperature=1.0 to match the regimes forced by the Claude thinking
+    API and GPT-5 (no temperature support), keeping sampling comparable across
+    backends. Vendor guidance for qwen/deepseek thinking models is ~0.6 if
+    degenerate CoTs appear.
     """
     import torch  # Lazy import - only loaded when this function is called
 
@@ -165,7 +167,7 @@ class DeepSeekApiClient:
                 resp = self.client.chat.completions.create(
                     model=self.model,
                     messages=messages,
-                    temperature=0.3,
+                    temperature=1.0,
                     max_tokens=self.max_tokens,
                     stream=False,
                 )
@@ -357,7 +359,7 @@ class OpenRouterApiClient:
         self.model = cfg["OPENROUTER_MODEL"]
         self.max_tokens = cfg.get("MAX_TOKENS", 2048)
         self.temperature = cfg.get(
-            "TEMPERATURE", 0.3
+            "TEMPERATURE", 1.0
         )  # None = don't set (for reasoning models)
         self.client = create_openai_client(
             cfg["OPENROUTER_API_KEY"], base_url="https://openrouter.ai/api/v1"
@@ -538,19 +540,18 @@ class AnthropicApiClientScratchpad:
 
         # Standard Messages API without extended thinking
         # Model is expected to output <SCRATCHPAD_REASONING> tags based on system prompt
+        # No temperature: default (1.0) matches the extended-thinking runs,
+        # where the API forbids setting it, keeping scratchpad vs native comparable.
         payload = {
             "model": self.model,
             "system": self.system_prompt,
             "messages": messages,
             "max_tokens": self.max_tokens,
-            "temperature": 0.3,
         }
         # Claude 5 family defaults to adaptive thinking; force it all the way down
         # so reasoning happens in the visible <SCRATCHPAD_REASONING> tags, not natively.
-        # (temperature is deprecated for these models, so drop it.)
         if self.model in ADAPTIVE_THINKING_MODELS:
             payload["output_config"] = {"effort": "low"}
-            del payload["temperature"]
         try:
             resp = requests.post(url, headers=headers, json=payload, timeout=600)
             resp.raise_for_status()

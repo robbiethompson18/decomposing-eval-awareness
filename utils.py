@@ -66,36 +66,36 @@ DEFAULT_OPENAI_MODELS: dict[str, str] = {
 # temperature=None means model doesn't support it (reasoning models)
 # Note: claude-sonnet-4.5 and gpt-5 use native APIs, not OpenRouter
 DEFAULT_OPENROUTER_CONFIGS: dict[str, tuple[str, float | None]] = {
-    "claude-sonnet-4.5": ("anthropic/claude-sonnet-4.5", 0.3),
-    "claude-opus-4.5": ("anthropic/claude-opus-4.5", 0.3),
+    "claude-sonnet-4.5": ("anthropic/claude-sonnet-4.5", 1.0),
+    "claude-opus-4.5": ("anthropic/claude-opus-4.5", 1.0),
     "gpt-5": ("openai/gpt-5", None),  # GPT-5 doesn't support temperature
-    "qwen3-30b": ("qwen/qwen3-30b-a3b-thinking-2507", 0.3),
-    "qwen3-235b": ("qwen/qwen3-235b-a22b-thinking-2507", 0.3),
-    "deepseek-r1": ("deepseek/deepseek-r1", 0.3),  # DeepSeek R1 reasoning model
-    "kimi-k2.5": ("moonshotai/kimi-k2.5", 0.3),  # Moonshot Kimi K2.5 reasoning model
-    "glm-5": ("z-ai/glm-5", 0.3),  # Z.ai GLM-5 reasoning model
+    "qwen3-30b": ("qwen/qwen3-30b-a3b-thinking-2507", 1.0),
+    "qwen3-235b": ("qwen/qwen3-235b-a22b-thinking-2507", 1.0),
+    "deepseek-r1": ("deepseek/deepseek-r1", 1.0),  # DeepSeek R1 reasoning model
+    "kimi-k2.5": ("moonshotai/kimi-k2.5", 1.0),  # Moonshot Kimi K2.5 reasoning model
+    "glm-5": ("z-ai/glm-5", 1.0),  # Z.ai GLM-5 reasoning model
     "gpt-oss-120b": (
         "openai/gpt-oss-120b",
-        0.3,
+        1.0,
     ),  # OpenAI open-weight MoE reasoning model
     "gpt-oss-20b": (
         "openai/gpt-oss-20b",
-        0.3,
+        1.0,
     ),  # OpenAI open-weight small MoE reasoning model
 }
 
 # AgentHarm model configs: model_key -> (inspect_ai_model_id, temperature)
 # Maps short model keys to full Inspect AI model identifiers for consistent naming
 AGENTHARM_MODEL_CONFIGS: dict[str, tuple[str, float]] = {
-    "claude-sonnet-4.5": ("anthropic/claude-sonnet-4-5-20250929", 0.3),
+    "claude-sonnet-4.5": ("anthropic/claude-sonnet-4-5-20250929", 1.0),
     "gpt-5": ("openai/gpt-5", 1.0),
-    "qwen3-30b": ("openrouter/qwen/qwen3-30b-a3b-thinking-2507", 0.3),
-    "qwen3-235b": ("openrouter/qwen/qwen3-235b-a22b-thinking-2507", 0.3),
-    "deepseek-r1": ("openrouter/deepseek/deepseek-r1", 0.3),
-    "kimi-k2.5": ("openrouter/moonshotai/kimi-k2.5", 0.3),
-    "glm-5": ("openrouter/z-ai/glm-5", 0.3),
-    "gpt-oss-120b": ("openrouter/openai/gpt-oss-120b", 0.3),
-    "gpt-oss-20b": ("openrouter/openai/gpt-oss-20b", 0.3),
+    "qwen3-30b": ("openrouter/qwen/qwen3-30b-a3b-thinking-2507", 1.0),
+    "qwen3-235b": ("openrouter/qwen/qwen3-235b-a22b-thinking-2507", 1.0),
+    "deepseek-r1": ("openrouter/deepseek/deepseek-r1", 1.0),
+    "kimi-k2.5": ("openrouter/moonshotai/kimi-k2.5", 1.0),
+    "glm-5": ("openrouter/z-ai/glm-5", 1.0),
+    "gpt-oss-120b": ("openrouter/openai/gpt-oss-120b", 1.0),
+    "gpt-oss-20b": ("openrouter/openai/gpt-oss-20b", 1.0),
 }
 
 
