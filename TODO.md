@@ -3,12 +3,13 @@ Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min
 1. [x] take a tour of the codebase, try to understand
    - ripped out a lot of shit
 2. Do what I need to do before trying to replicate:
-   - [] nail down the many ways we check for eval awareness and figure out what I'm checking rn (ask
-     the model, CoT transcript, tool transcript)
-   - [x] Figure out which models we can actually go apples to apples on (not recent ANT models, they
-     - where does CoT work? two gemini (3.1 pro and 3.5 flash), sonnet 4.5, haiku 4.5, Fable (kinda,
-       just veryshort), and any OAI model.
-   - [] 10 responses that say you're in an eval... what to do?
+   - [x] nail down the many ways we check for eval awareness and figure out what I'm checking rn
+         (ask the model, transcript with everything.)
+   - [x] Figure out which models we can actually do CoT:
+     - two gemini (3.1 pro and 3.5 flash), sonnet 4.5, haiku 4.5, Fable (kinda, just veryshort), and
+       any OAI model.
+   - [x] 10 responses that say you're in an eval... what to do? I think gotta just leave them and
+         analyze as is
 3. [ ] Replicate their results
    - [ ] see Sonnet getting higher eval awareness
    - [ ] do maybe 20% of the data and see what results we get
@@ -19,9 +20,9 @@ Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min
    - [ ] plot eval awareness over time by model. I think this is just a done thing in other places?
 6. [ ] Start NLA work
 7. [ ] Dig into all the refusals from Opus and Fable... are they reasonable?
-8. [ ] rig up the self-report probe on eval_bench (upstream `eval/eval_*_selfreport.py` +
-       `prompts/selfreport_awareness.txt` / `selfreport_hypothetical.txt`; never wired to eval_bench
-       upstream) — soon but not now
+8. [ ] rig up the self-report probe on eval*bench (upstream
+       `eval/eval*\*\_selfreport.py`+   `prompts/selfreport_awareness.txt`/`selfreport_hypothetical.txt`;
+       never wired to eval_bench upstream) — soon but not now
 
 Later:
 
@@ -83,3 +84,42 @@ Later:
 3. engagement from the guy I did a SPAR interview with this morning
 
 So I should do both of those _right now_
+
+## STill to review:
+
+1. prompts/judgePromptEvidenceBoth.txt — unreviewed, load-bearing, and rough. Unchanged since fork,
+   referenced only by eval_eval_bench_cot.py, and it's the thing every awareness number flows
+   through. Reading it cold: it has "very very very selective," a "punctation" typo, unescaped
+   quotes inside the JSON output template (line 60: "Your analysis of how the "answer" does or does
+   not..." — broken as JSON, fine as an example but sloppy), and a semantically weird instruction
+   that even a "No" conclusion must include "evidence" quotes (lines 77) — meaning your evidence
+   fields for negative judgments contain quotes of task-focused reasoning, which is easy to misread
+   downstream. If you've been treating judge output as ground truth without having read this file,
+   worth 10 minutes.
+
+2. eval_bench/render.py — only Ruff formatting since fork; substance never reviewed. The diff since
+   fork is 100% quote-style/line-wrap changes. The actual logic has a real footgun: the substitution
+   loop (render.py:38-44) runs to a fixed point capped at 10 iterations and silently returns
+   partially-substituted text. A typo'd slot name in any task YAML — or a slot the config doesn't
+   cover — ships a prompt containing a literal {victim_name} with no error. Given F1 of your own
+   taxonomy is "placeholder-looking entities trigger eval awareness," an accidental leftover
+   {placeholder} would directly contaminate results. A post-loop assert '{' not in text-style check
+   would be cheap.
+
+3. Dead upstream artifacts, candidates for the ongoing strip:
+
+- scripts/submit_eval_bench_cot.sh + submit_run_eval_bench.sh — the two surviving SLURM submitters
+  (you deleted the other 7 in 96ac521). Unchanged since fork, unreferenced by README/TODO, and you
+  run locally with parallelism 100. They also carry module load python/3.11 cluster boilerplate and
+  the over-defensive SCRIPT_DIR=$(cd ...) pattern your CLAUDE.md specifically calls out.
+
+4. Minor:
+
+- prompts/chat_prompt_realistic.txt looks empty to wc -l (no trailing newline) — it's a one-liner,
+  fine, just don't be fooled like I briefly was.
+- eval/eval_eval_bench_cot.py is still ~63% Changling's lines by blame (167/264), including two
+  near-identical re.search model-key extraction blocks at lines 223 and 239 — small dedup
+  opportunity next time you're in there.
+- The selfreport prompts (selfreport_awareness.txt, selfreport_hypothetical.txt) are also
+  byte-identical to upstream — though since the selfreport-probe PR built on them, they were
+  presumably at least read.

@@ -8,11 +8,16 @@ directly, so I planned to replicate your results and extend them.
 
 (TODO)
 
-### Judge Agreement:
+### Third party Judge Agreement:
 
 GPT 5 agrees 100% with itself, but Cohen's Kapps is as low as .7 when replacing GPT 5 with GPT 5.6
 Terra as the grader. Some of the disagreements are instructive, see eg first bullet on correctness
 section.
+
+### Self-report vs third-party CoT monitor:
+
+Models are way more likely to say that they are eval-aware than the third-party grader is. Did you
+ever test this? Your repo had results for this, but I never saw them in the paper.
 
 ## Questions and Corrections
 
