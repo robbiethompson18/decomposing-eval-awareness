@@ -23,7 +23,10 @@ OAI banned us for 'distilling' so further runs are on Robbie's credit card. Be v
   - exception: changes to .claude directory
 - We are churning this sucker hard. Their codebase is a mess and I want to understand, so I'm
   deleting dead code and organizing packages more nicely
-- Massive parellelism on all grader runs and eval runs. At least parallelism 100
+- Massive parellelism on all grader runs and eval runs. `MAX_CONCURRENT` defaults to 500 per
+  process (2026-09-01). Every API client retries 429/5xx with backoff via `lib/retry.py`
+  (`MAX_RETRIES`), so bursts of rate limits slow a run down instead of leaving silent
+  `ERROR calling ...` holes in the results file. Count those strings after a run anyway.
 - Default grader stack (2026-09-01, Robbie): **`gpt-5.6-terra` primary + `claude-sonnet-5` backup**.
   The CoT judge (`eval/eval_eval_bench_cot.py`) and tiered judge grade with terra (0 refusals,
   κ=0.91 vs gpt-5), then re-grade only unparseable verdicts with sonnet-5. sonnet-5 agrees with terra

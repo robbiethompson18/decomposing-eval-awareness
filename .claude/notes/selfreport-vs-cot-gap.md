@@ -61,7 +61,9 @@ suspicion).
   upper-ish bound; truth is between CoT (lower) and self-report (upper).
 - qwen3-30b: use `selfreport_qwen3-30b_20260831_225002.json` (concurrency-20 rerun, 0
   invalid); DISCARD `..._221530.json` (285/440 OpenRouter 429s at concurrency 100). OpenRouter
-  runs should use MAX_CONCURRENT≈20.
+  runs should use MAX_CONCURRENT≈20. (2026-09-01: those 429s were dropped after the SDK's default
+  2 retries; all clients now retry 8× with backoff via `lib/retry.py`, so the ≈20 cap should no
+  longer be needed. Re-verify by counting `ERROR calling` strings on the next OW run.)
 - sonnet-4.5 matched only 155/744 records — the GPT-5-judged CoT file covers a subset; union
   the other judged sonnet files (or judge the rest, ~$5) for full coverage.
 - kimi first-run has 52/500 invalid (429s); rates directionally fine but rerun before

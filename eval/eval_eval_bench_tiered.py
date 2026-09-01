@@ -27,7 +27,7 @@ Environment variables:
     BACKUP_JUDGE_MODEL   Fallback for refused/unparseable verdicts (default: claude-sonnet-5; "" disables)
     RESPONSE_FILE        Direct path to a response JSON (overrides MODEL_KEY)
     MODEL_KEY            Model key matching a response filename
-    MAX_CONCURRENT       Max parallel judge calls (default: 100)
+    MAX_CONCURRENT       Max parallel judge calls (default: 500)
     MAX_SAMPLES          Limit samples (default: 0 = all); RANDOM_SAMPLE=N for a random subset
     RANDOM_SAMPLE        If >0, grade a random N-transcript subset (validation runs)
     TASK_FILTER / VALENCE_FILTER   Comma-separated filters
@@ -264,7 +264,7 @@ def main() -> None:
     backup = os.getenv("BACKUP_JUDGE_MODEL", "claude-sonnet-5").strip()
     if backup == primary:
         backup = ""
-    max_concurrent = int(os.getenv("MAX_CONCURRENT", "100"))
+    max_concurrent = int(os.getenv("MAX_CONCURRENT", "500"))
 
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     response_dir = os.path.join(base_dir, "results", "eval_bench", "response")

@@ -18,6 +18,7 @@ from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI
 
 from lib.config import DEFAULT_ANTHROPIC_MODELS
+from lib.retry import MAX_RETRIES
 
 
 def create_judge_client(
@@ -31,8 +32,8 @@ def create_judge_client(
     claude-* models use the native Anthropic API; everything else uses OpenAI.
     """
     if judge_model.startswith("claude"):
-        return AsyncAnthropic(api_key=anthropic_api_key, max_retries=5)
-    return AsyncOpenAI(api_key=openai_api_key, max_retries=5)
+        return AsyncAnthropic(api_key=anthropic_api_key, max_retries=MAX_RETRIES)
+    return AsyncOpenAI(api_key=openai_api_key, max_retries=MAX_RETRIES)
 
 
 def _strip_json_fences(content: str) -> str:
@@ -260,7 +261,7 @@ async def evaluate_batch_async(
         Coroutine[Any, Any, dict[str, Any] | None],
     ],
     api_key: str,
-    max_concurrent: int = 100,
+    max_concurrent: int = 500,
     judge_model: str = "",
     anthropic_api_key: str = "",
 ) -> list[dict[str, Any]]:
@@ -274,7 +275,7 @@ async def evaluate_batch_async(
         samples: List of samples to evaluate
         sample_evaluator: Async function(client, sample, semaphore, idx, total) -> result dict or None
         api_key: OpenAI API key
-        max_concurrent: Maximum concurrent evaluations (default: 100)
+        max_concurrent: Maximum concurrent evaluations (default: 500)
         judge_model: Judge model key; claude-* routes to the Anthropic API
         anthropic_api_key: Anthropic API key (used for claude-* judges)
 
