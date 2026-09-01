@@ -106,6 +106,10 @@ Current notes:
   — A/B on 5 OW models: grades agree (awareness 82%, task 78%) but traces don't (Jaccard 0.19) and
   the think tool captures less CoT; three per-provider reasoning-disable behaviors; stick with raw
   native reasoning for OW.
+- [F11 conversation history — read before claiming a prior chat turn does/doesn't change awareness, or running warm-history configs on minimax/gemini](.claude/notes/f11-conversation-history.md)
+  — first test (9 models, 200/cell): null on both probes (CoT 1.1 vs 0.8%, self-report 34.9 vs
+  32.8%, mixed signs per model); a prior assistant turn switches off minimax's CoT in 45% of
+  samples; haiku-4.5 self-report 77% unparseable.
 - [Anchor configs: harmbench_verbatim + all_varied — read before claiming any grid cell "is" HarmBench, or before sending verbatim behaviors to a closed API](.claude/notes/harmbench-anchor-configs.md)
   — why all-varied ≠ verbatim (both levels are constructions around the content), where verbatim
   sits on F1–F8 (~2/8, the weak ones), 100/100 task names are HarmBench BehaviorIDs, contextual
