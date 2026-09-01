@@ -236,12 +236,12 @@ def main() -> None:
     start_time = datetime.now()
     new_count = 0
 
-    for t_idx, task_name in enumerate(task_names, 1):
-        task_group = tasks_by_name[task_name]
-
-        # Build items for this task, skipping completed
-        items = []
-        for task in task_group:
+    # Build items across ALL tasks up front: per-task batches cap in-flight
+    # requests at configs*samples per round, wasting MAX_CONCURRENT. Chunks
+    # preserve incremental saving.
+    items = []
+    for task_name in task_names:
+        for task in tasks_by_name[task_name]:
             template = task["template"]
             for config_name, factor_config in configs:
                 prompt_text = render(template, factor_config)
@@ -266,19 +266,16 @@ def main() -> None:
                         )
                     )
 
-        if not items:
-            print(
-                f"[{t_idx}/{len(task_names)}] {task_name}: already complete, skipping"
-            )
-            continue
+    chunk_size = max(cfg["MAX_CONCURRENT"] * 4, 100)
+    n_chunks = (len(items) + chunk_size - 1) // chunk_size
+    print(f"{len(items)} calls to make in {n_chunks} chunks of <={chunk_size}")
 
-        expected = len(task_group) * len(configs) * samples_per_config
-        print(
-            f"[{t_idx}/{len(task_names)}] {task_name}: {len(items)} calls ({expected - len(items)} cached)"
-        )
+    for c_idx in range(n_chunks):
+        chunk = items[c_idx * chunk_size : (c_idx + 1) * chunk_size]
+        print(f"[chunk {c_idx + 1}/{n_chunks}] {len(chunk)} calls")
 
         batch_results = asyncio.run(
-            query_parallel(items, build_result, cfg["MAX_CONCURRENT"])
+            query_parallel(chunk, build_result, cfg["MAX_CONCURRENT"])
         )
 
         output_data["samples"].extend(batch_results)
