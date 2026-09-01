@@ -62,7 +62,8 @@ TASKS = os.path.join(ROOT, "eval_bench", "tasks")
 
 # The 2026-08-31→09-01 giant run: responses generated 20260901_005920 (Pacific),
 # selfreport probes replayed from the same response files. CoT grader: prefer
-# the gpt-5.6-terra-judged file (the default grader, see CLAUDE.md); fall back
+# the gpt-5.6-terra-judged file (the default grader when these pins were made;
+# the default is now claude-sonnet-5, see CLAUDE.md); fall back
 # to the claude-sonnet-5-judged file where terra hasn't been run yet (~150
 # records per sonnet file are terra via id-cache reuse). One row per roster
 # model; None = that leg hadn't finished when pins were last updated (rerun

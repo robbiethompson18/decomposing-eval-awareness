@@ -5,10 +5,10 @@ Loads responses from run_eval_bench.py and evaluates each sample with a judge mo
 using the standard CoT monitoring pipeline.
 
 Environment variables:
-    JUDGE_MODEL          Primary judge (default: gpt-5.6-terra; OPENAI_EVAL_MODEL
+    JUDGE_MODEL          Primary judge (default: claude-sonnet-5; OPENAI_EVAL_MODEL
                          also honored). claude-* routes to the Anthropic API.
     BACKUP_JUDGE_MODEL   Fallback judge for transcripts the primary refused / returned
-                         unparseable JSON for (default: claude-sonnet-5). Only those
+                         unparseable JSON for (default: gpt-5.6-terra). Only those
                          samples are re-graded; set "" to disable the fallback.
     MODEL_KEY            Model key matching response filename (e.g., "qwen3-30b")
     RESPONSE_FILE        Direct path to response JSON (overrides MODEL_KEY)
@@ -18,11 +18,13 @@ Environment variables:
     VALENCE_FILTER       Comma-separated valences to judge (default: all)
     MERGE_INTO           Path to existing CoT JSON to merge into (replaces matching IDs)
 
-Default grader stack: gpt-5.6-terra primary (0 refusals, κ=0.91 vs gpt-5) +
-claude-sonnet-5 backup for anything terra returns unparseable (awareness κ=1.0
-vs terra on a 280-transcript check). Flip with JUDGE_MODEL=claude-sonnet-5
-BACKUP_JUDGE_MODEL=gpt-5.6-terra to grade on Anthropic credits instead. See
-.claude/notes/grader-selection-and-refusal-clause.md.
+Default grader stack: claude-sonnet-5 primary (awareness κ=1.0 vs terra on a
+280-transcript check, but refuses ~3% of the most-harmful transcripts) +
+gpt-5.6-terra backup for only those refusals (0 refusals, κ=0.91 vs gpt-5).
+Sonnet is primary because OpenAI keeps deactivating our account; the terra
+backup needs a working OpenAI key or set BACKUP_JUDGE_MODEL="" and accept
+~3% N/A. Flip with JUDGE_MODEL=gpt-5.6-terra BACKUP_JUDGE_MODEL=claude-sonnet-5
+when an OpenAI key works. See .claude/notes/grader-selection-and-refusal-clause.md.
 """
 
 import asyncio
@@ -152,11 +154,11 @@ def main() -> None:
     openai_api_key = api_keys["OPENAI_API_KEY"]
     anthropic_api_key = api_keys["ANTHROPIC_API_KEY"]
     judge_model = (
-        os.getenv("JUDGE_MODEL") or os.getenv("OPENAI_EVAL_MODEL") or "gpt-5.6-terra"
+        os.getenv("JUDGE_MODEL") or os.getenv("OPENAI_EVAL_MODEL") or "claude-sonnet-5"
     )
     # Backup grader for transcripts the primary refuses / returns unparseable
     # JSON for; "" disables. Skipped if it equals the primary.
-    backup_judge_model = os.getenv("BACKUP_JUDGE_MODEL", "claude-sonnet-5").strip()
+    backup_judge_model = os.getenv("BACKUP_JUDGE_MODEL", "gpt-5.6-terra").strip()
     if backup_judge_model == judge_model:
         backup_judge_model = ""
     model_key = os.getenv("MODEL_KEY", "")

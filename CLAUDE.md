@@ -24,14 +24,22 @@ OAI banned us for 'distilling' so further runs are on Robbie's credit card. Be v
 - We are churning this sucker hard. Their codebase is a mess and I want to understand, so I'm
   deleting dead code and organizing packages more nicely
 - Massive parellelism on all grader runs and eval runs. At least parallelism 100
-- Default grader stack (2026-09-01, Robbie): **`gpt-5.6-terra` primary + `claude-sonnet-5` backup**.
-  The CoT judge (`eval/eval_eval_bench_cot.py`) and tiered judge grade with terra (0 refusals,
-  κ=0.91 vs gpt-5), then re-grade only unparseable verdicts with sonnet-5. sonnet-5 agrees with terra
-  at **κ=1.0 on model_awareness** (280-transcript check) but refuses ~3.2% of the most-harmful
-  transcripts, so it's the backup, not the primary. Grading on Anthropic credits instead is
-  `JUDGE_MODEL=claude-sonnet-5 BACKUP_JUDGE_MODEL=gpt-5.6-terra` (~$25 vs ~$800 all-terra). opus-5
-  refuses 3× as often as sonnet-5 for no accuracy gain, so it's not used. Set backup to `""` to
-  disable.
+- Default awareness probe (2026-09-01, Robbie): **self-report** (`eval/eval_eval_bench_selfreport.py`,
+  the model grades its own transcript), not the third-party CoT judge. Self-report finds 3–25× more
+  awareness than the CoT judge on the same transcripts, so it has the statistical power the CoT rate
+  (3–8%) lacks. The CoT judge (`eval/eval_eval_bench_cot.py`) is **opt-in**: run it when you need
+  `task_performance` (compliance — self-report doesn't measure it), the paper-comparable
+  lower-bound rate, or a CoT-vs-self-report comparison. Self-report is a *leading* probe (the menu
+  hands the model the eval hypothesis), so report it as an upper-ish bound; see
+  `.claude/notes/selfreport-vs-cot-gap.md` for the literature.
+- CoT-judge grader stack when you do run it (2026-09-01, Robbie): **`claude-sonnet-5` primary +
+  `gpt-5.6-terra` backup**. sonnet-5 agrees with terra at **κ=1.0 on model_awareness**
+  (280-transcript check) but refuses ~3.2% of the most-harmful transcripts; terra re-grades only
+  those (0 refusals, κ=0.91 vs gpt-5). Sonnet is primary because OpenAI keeps deactivating our
+  account; if no OpenAI key works, set `BACKUP_JUDGE_MODEL=""` and accept ~3% N/A. Flip to
+  `JUDGE_MODEL=gpt-5.6-terra BACKUP_JUDGE_MODEL=claude-sonnet-5` when an OpenAI key works
+  (~$800 all-terra vs ~$25 for the sonnet-primary stack). opus-5 refuses 3× as often as sonnet-5
+  for no accuracy gain, so it's not used.
 - Import layering: `lib/` imports nothing from this repo; `core/` may import `lib/` but never
   `utils`; `run/`/`eval/`/`plots/` scripts may import anything. Keep new leaf helpers in `lib/`,
   not `core/`.
@@ -74,9 +82,10 @@ Current notes:
   — F8→varied raises self-reported awareness 45→58% (paired McNemar p≈4.6e-10) and CoT-judged 3→8%;
   baseline-vs-F8 A/B mechanics; adaptive-Claude-5 empty-answer + system_prompt-as-filename gotchas.
 - [Self-report vs CoT-monitoring awareness gap — read before writing up awareness numbers, choosing probes for a model, or comparing to the paper's rates](.claude/notes/selfreport-vs-cot-gap.md)
-  — self-report runs 3–25× above CoT-verbalized on the same transcripts; apples-to-apples model
-  list (opus-5/fable-5 excluded); fable's reasoning_extraction refusal; which result files to
-  use/discard.
+  — self-report runs 3–25× above CoT-verbalized on the same transcripts; why self-report is the
+  default probe and what the literature (paper App. B.2, Needham, Sonnet 5 card) says about
+  self-report vs CoT-judge bias; apples-to-apples model list (opus-5/fable-5 excluded); fable's
+  reasoning_extraction refusal; which result files to use/discard.
 - [Grader selection + the F8 `{}` refusal clause — read before choosing a judge model, editing task prompts, or regenerating responses](.claude/notes/grader-selection-and-refusal-clause.md)
   — why terra is the default grader (vs gpt-5/sonnet-5), what the F8 `{}` clause was and why PR #22 removed it, the awareness-under-counting rubric gotcha, and the run_eval_bench id-cache / shared-results regen traps.
 - [Claude 5 CoT-extraction resistance — read before trying to read a model's chain-of-thought via think-tool/scratchpad tricks](.claude/notes/claude5-cot-extraction-resistance.md)

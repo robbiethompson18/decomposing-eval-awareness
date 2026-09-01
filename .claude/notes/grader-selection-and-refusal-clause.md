@@ -167,6 +167,20 @@ as backup if it tracks. Deferred; the ~0.7% N/A is tolerable for now.
 ## Update 2026-09-01 (later): flipped back to terra primary, sonnet-5 backup
 
 Robbie's call after the OAI ban was reversed and the corp card came back. Defaults in
-`eval_eval_bench_cot.py` / `eval_eval_bench_tiered.py` are now `JUDGE_MODEL=gpt-5.6-terra`,
+`eval_eval_bench_cot.py` / `eval_eval_bench_tiered.py` were `JUDGE_MODEL=gpt-5.6-terra`,
 `BACKUP_JUDGE_MODEL=claude-sonnet-5`. The hybrid mechanics above are unchanged — only the roles
 swapped; the sonnet-primary stack is still one env override away when grading on Anthropic credits.
+
+## Update 2026-09-01 (later still): sonnet-5 primary again, and the CoT judge is now opt-in
+
+OpenAI deactivated the account a second time, so the defaults are back to `JUDGE_MODEL=claude-sonnet-5`,
+`BACKUP_JUDGE_MODEL=gpt-5.6-terra` (the "hybrid grader stack" section above). The terra backup only
+fires on sonnet's ~3% refusals; if no OpenAI key works, the backup calls raise after retries,
+`evaluate_batch_async` drops them, and the merge keeps sonnet's original refusal record → `invalid`.
+Same ~3% N/A we'd get with `BACKUP_JUDGE_MODEL=""`, just slower (5 retries × backoff per record). Treat terra-primary as the
+exception you opt into with env overrides when a key works.
+
+Bigger change the same day: the **default awareness probe is now self-report**, not this judge
+(rule in `CLAUDE.md`). The CoT judge is still the only thing that grades `task_performance`
+(compliance / the paper's "propensity" half), so it's opt-in rather than deleted. Rationale and
+literature in [[selfreport-vs-cot-gap]].
