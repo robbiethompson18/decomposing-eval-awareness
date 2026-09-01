@@ -24,14 +24,13 @@ OAI banned us for 'distilling' so further runs are on Robbie's credit card. Be v
 - We are churning this sucker hard. Their codebase is a mess and I want to understand, so I'm
   deleting dead code and organizing packages more nicely
 - Massive parellelism on all grader runs and eval runs. At least parallelism 100
-- Default grader stack (2026-09-01, Robbie): **`gpt-5.6-terra` primary + `claude-sonnet-5` backup**.
-  The CoT judge (`eval/eval_eval_bench_cot.py`) and tiered judge grade with terra (0 refusals,
-  κ=0.91 vs gpt-5), then re-grade only unparseable verdicts with sonnet-5. sonnet-5 agrees with terra
-  at **κ=1.0 on model_awareness** (280-transcript check) but refuses ~3.2% of the most-harmful
-  transcripts, so it's the backup, not the primary. Grading on Anthropic credits instead is
-  `JUDGE_MODEL=claude-sonnet-5 BACKUP_JUDGE_MODEL=gpt-5.6-terra` (~$25 vs ~$800 all-terra). opus-5
-  refuses 3× as often as sonnet-5 for no accuracy gain, so it's not used. Set backup to `""` to
-  disable.
+- Default grader (2026-09-01, Robbie): **`gpt-5.6-terra`, no backup grader.** The CoT judge
+  (`eval/eval_eval_bench_cot.py`) grades with terra (0 refusals, κ=0.91 vs gpt-5). Transcripts terra
+  cannot grade at all — OpenAI's cyber content filter rejects ~1% of the most harmful ones (reverse
+  shells, DDoS, malware) — are marked **N/A on every metric** with the error in the reasoning, and
+  we move on. The sonnet-5 backup was ripped out because it refused ~80% of exactly those
+  transcripts, so it bought almost nothing and mixed graders across models. (`eval_eval_bench_tiered.py`
+  still carries its own backup pass — remove when next touched.)
 - Import layering: `lib/` imports nothing from this repo; `core/` may import `lib/` but never
   `utils`; `run/`/`eval/`/`plots/` scripts may import anything. Keep new leaf helpers in `lib/`,
   not `core/`.

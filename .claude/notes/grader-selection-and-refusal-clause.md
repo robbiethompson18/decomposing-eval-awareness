@@ -170,3 +170,22 @@ Robbie's call after the OAI ban was reversed and the corp card came back. Defaul
 `eval_eval_bench_cot.py` / `eval_eval_bench_tiered.py` are now `JUDGE_MODEL=gpt-5.6-terra`,
 `BACKUP_JUDGE_MODEL=claude-sonnet-5`. The hybrid mechanics above are unchanged — only the roles
 swapped; the sonnet-primary stack is still one env override away when grading on Anthropic credits.
+
+## Update 2026-09-01 (evening): backup grader ripped out; judge failures → N/A
+
+Two bugs surfaced on the first full terra-primary sweep (14 models × 5400):
+
+1. **Dropped rows.** OpenAI's cyber content filter (`400 flagged for possible cybersecurity risk`)
+   rejects 30–90 transcripts per model as *judge input* (reverse shells, DDoS, cryptojacking,
+   malware). `evaluate_sample` let the exception propagate and `evaluate_batch_async` silently
+   dropped the row, so every terra-judged cot file was short — including the pre-ban ones (sonnet-4.5
+   5346/5400, haiku-4.5 5371/5400). The backup pass never saw them.
+2. **Backup useless on those rows.** Once routed to sonnet-5, it refused ~80% of them (9/11 on
+   reverse_shell_windows2), so the backup recovered almost nothing while mixing graders.
+
+Fix (Robbie's call): no backup grader at all. A judge call that fails after retries yields a record
+with every conclusion `N/A` and `judge call failed: <error>` as the reasoning
+(`core.evaluator.judge_failed_na`), so it lands in the N/A bucket the stats already report separately
+and never in the denominator. The filter is nondeterministic (~35% of rejected calls pass on retry),
+so the existing 5-attempt loop still runs first. Expect ~40–60 N/A rows per model from this.
+
