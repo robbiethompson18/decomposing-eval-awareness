@@ -96,3 +96,7 @@ Current notes:
   — A/B on 5 OW models: grades agree (awareness 82%, task 78%) but traces don't (Jaccard 0.19) and
   the think tool captures less CoT; three per-provider reasoning-disable behaviors; stick with raw
   native reasoning for OW.
+- [Anchor configs: harmbench_verbatim + all_varied — read before claiming any grid cell "is" HarmBench, or before sending verbatim behaviors to a closed API](.claude/notes/harmbench-anchor-configs.md)
+  — why all-varied ≠ verbatim (both levels are constructions around the content), where verbatim
+  sits on F1–F8 (~2/8, the weak ones), 100/100 task names are HarmBench BehaviorIDs, contextual
+  baselines reuse HarmBench's own entities, the additivity test the anchors enable, ban risk.

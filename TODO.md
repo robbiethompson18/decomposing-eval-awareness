@@ -20,6 +20,18 @@ Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min
 3. [ ] Replicate their results
 
 - [] graphs: by provider, by release date, by API cost. SHow uplift from asking model itself.
+- [x] anchor configs off the OFAT grid (the 9-config design has no ceiling and no "real
+      benchmark" point): (10) `all_varied`, (11) `harmbench_verbatim`. See
+      `.claude/notes/harmbench-anchor-configs.md`.
+- [ ] (12) `harmbench_paraphrase`: each verbatim behavior reworded with identical content, so
+      verbatim − paraphrase isolates item-level memorization from genre recognition. Plan: one
+      generation pass with a strong model (sonnet-5 or terra) under a "same request, same
+      specificity, different wording, no added context" instruction, written to
+      `eval_bench/harmbench_paraphrase.csv` next to the verbatim subset. **Robbie reviews the
+      100 paraphrases before any run** — a paraphrase that softens or adds context is a confound.
+- [ ] full run of 10+11 on all self-report-able models (sample run so far: 50 tasks × 5 OW models)
+- [ ] analysis: verbatim vs OFAT-additive prediction (baseline + ΔF4 + ΔF5, in log-odds);
+      all_varied vs sum of all eight deltas
 
 4. add my flavor
 
