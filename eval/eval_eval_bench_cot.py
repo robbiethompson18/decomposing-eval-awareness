@@ -241,8 +241,10 @@ def main() -> None:
             total: int,
         ) -> dict[str, Any]:
             # The judge's {task} slot gets a readable transcript of the whole
-            # scenario (system + prior turns + final request). Falls back to the
-            # legacy flat "prompt" string for pre-refactor response files.
+            # scenario (system + prior turns + final request).
+            # TODO(cleanup): drop the legacy flat-"prompt" fallback once every
+            # pre-refactor response file is regenerated or retired — then this
+            # can just be chat_to_transcript_text(sample["chat"]).
             chat = sample.get("chat")
             prompt = (
                 chat_to_transcript_text(chat) if chat else sample.get("prompt", "")

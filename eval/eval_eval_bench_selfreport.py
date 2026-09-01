@@ -202,6 +202,8 @@ def main() -> None:
 
             # Replay the stored conversation, then append the (assistant) reply
             # and one self-report question, as a fresh Chat per follow-up.
+            # TODO(cleanup): drop the legacy prompt/legacy_system fallback (and
+            # the resolution above) once pre-refactor response files are retired.
             chat = sample.get("chat") or user_text_chat(
                 sample.get("prompt", ""), legacy_system
             )
