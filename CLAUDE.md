@@ -111,3 +111,8 @@ Current notes:
   (tau-bench sends a 6 KB policy doc), the "no system prompt" set is a completion-era fossil, and
   HarmBench is the outlier among its own safety neighbours; plus the T3-vs-control A/B null
   (69% vs 71%, n=144 paired) showing the system prompt is a weak lever on awareness.
+- [F10 deployment date: null result + run mechanics — read before testing another single-factor grid cell, citing an F10 number, or trusting a run's concurrency/resume behaviour](.claude/notes/f10-deployment-date-null.md)
+  — a stale timestamp does not reliably cue eval-awareness (pooled -1.7pp, p=0.14, n=1154);
+  sonnet-4.5 +7.0 and qwen3.8 -6.0 move in *opposite* directions, suggesting the factor measures
+  distance from training cutoff rather than staleness; haiku/gemini instrument failures and the
+  three run traps (resume-by-model glob, inherited MAX_CONCURRENT=100, per-task-set batching).
