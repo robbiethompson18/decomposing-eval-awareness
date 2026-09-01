@@ -5,8 +5,9 @@ Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min
 2. Do what I need to do before trying to replicate:
    - [] nail down the many ways we check for eval awareness and figure out what I'm checking rn (ask
      the model, CoT transcript, tool transcript)
-   - [] Figure out which models we can actually go apples to apples on (not recent ANT models, they
-     don't do CoT)
+   - [x] Figure out which models we can actually go apples to apples on (not recent ANT models, they
+     - where does CoT work? two gemini (3.1 pro and 3.5 flash), sonnet 4.5, haiku 4.5, Fable (kinda,
+       just veryshort), and any OAI model.
    - [] 10 responses that say you're in an eval... what to do?
 3. [ ] Replicate their results
    - [ ] see Sonnet getting higher eval awareness
