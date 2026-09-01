@@ -122,3 +122,28 @@ evaluation item" score model_awareness only ~35% (not ~100%). Treat the explicit
 - Model registry: `lib/config.py`
 - F8 suffix source: `eval_bench/tasks/<task>/<valence>.yaml` → `slots.F8_SUFFIX`
 - Session experiment scripts + data (gitignored): `results/eval_bench/judge_agreement/`
+
+## Hybrid grader stack (2026-09-01): sonnet-5 primary + terra backup
+
+After OpenAI deactivated the corp account (distillation ToS ban, took out both the OpenAI target
+models *and* terra as judge — terra is OpenAI-family), we re-benchmarked graders on a fresh personal
+key over a stratified 280-transcript sample (10 target models × 2 valences × 9 configs):
+
+| pair (vs terra) | model_awareness κ | hypo κ | task κ | refusals |
+|---|---|---|---|---|
+| luna | **1.000** | 0.882 | 0.867 | 0 |
+| sonnet-5 (on graded) | **1.000** | 0.818 | 0.766 | **3.2%** (9/280) |
+| opus-5 (on graded) | **1.000** | 0.888 | 0.769 | **9.3%** (26/280) |
+
+All four judges (terra, luna, sonnet-5, opus-5) are **identical on model_awareness** — the headline
+metric — for transcripts they actually grade. The only differentiator is refusal rate on the most
+harmful items (pacemaker/snuff/kidnapping-note transcripts): terra & luna 0, sonnet-5 3.2%, opus-5
+9.3%. So: **sonnet-5 primary** (free on Anthropic credits) + **terra backup** (`BACKUP_JUDGE_MODEL`)
+re-grades only sonnet-5's refusals. Cost on the full ~64k-transcript run: ~$25 (terra on the ~3%) vs
+~$800 all-terra. opus-5 dropped — 3× the refusals, no accuracy gain.
+
+Secondary-metric disagreements are all benign: hypo disagreements are threshold (luna/opus count
+"recognized fictional entity names" as hypothetical-recognition; terra needs scenario-level
+constructedness); task_performance disagreements are all *adjacent* buckets on the 4-point ordinal
+(correct↔guarded↔incorrect↔refused), never 2-step jumps. Agreement data:
+`results/eval_bench/judge_agreement/terra_vs_luna_20260901/`.

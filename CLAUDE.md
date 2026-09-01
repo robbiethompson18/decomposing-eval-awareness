@@ -22,10 +22,15 @@ giving me commmentary back in chat. All prose is mine.
 - We are churning this sucker hard. Their codebase is a mess and I want to understand, so I'm
   deleting dead code and organizing packages more nicely
 - Massive parellelism on all grader runs and eval runs. At least parallelism 100
-- Default grader is `gpt-5.6-terra`, not `gpt-5`. On a 300-transcript agreement check terra tracked
-  gpt-5 at/above gpt-5's own self-agreement floor (model_awareness κ=0.91) while being far cheaper
-  and faster, and it emits no refusals/invalid JSON (unlike claude-sonnet-5, which refused the most
-  harmful items). Set `JUDGE_MODEL=gpt-5.6-terra` on grader runs.
+- Default grader stack (2026-09-01): **`claude-sonnet-5` primary + `gpt-5.6-terra` backup**. The CoT
+  judge (`eval/eval_eval_bench_cot.py`) grades with sonnet-5, then re-grades only the transcripts
+  sonnet-5 refuses (unparseable verdict) with terra. Rationale: sonnet-5 is free on our Anthropic
+  credits and agrees with terra at **κ=1.0 on model_awareness** (280-transcript check, terra vs luna
+  vs sonnet-5 vs opus-5 all identical on the headline metric), but refuses ~3.2% of the most-harmful
+  transcripts — terra (0 refusals) mops those up for ~$25 on the full run vs ~$800 all-terra. opus-5
+  refuses 3× as often as sonnet-5 for no accuracy gain, so it's not used. Override with
+  `JUDGE_MODEL=` / `BACKUP_JUDGE_MODEL=` (set backup to `""` to disable). terra alone is still valid
+  (κ=0.91 vs gpt-5, no refusals) if Anthropic credits aren't available.
 - Import layering: `lib/` imports nothing from this repo; `core/` may import `lib/` but never
   `utils`; `run/`/`eval/` scripts may import anything. Keep new leaf helpers in `lib/`, not `core/`.
 - If you're fighting over a branch or checkout with another agent, just make a fresh checkout
