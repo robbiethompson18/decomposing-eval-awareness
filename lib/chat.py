@@ -187,10 +187,21 @@ def to_openai_chat_messages(
 
 
 def to_openai_responses_input(messages: list[ChatMessage]) -> list[dict]:
-    return [
-        {"role": m["role"], "content": to_openai_responses_content(m["content"])}
-        for m in messages
-    ]
+    """Responses API rejects `input_text` on assistant turns: prior assistant
+    output (e.g. a replayed response in the self-report probe) must be sent as
+    `output_text` parts. Only user turns carry images."""
+    out = []
+    for m in messages:
+        if m["role"] == "assistant":
+            parts = [
+                {"type": "output_text", "text": b["text"]}
+                for b in _as_blocks(m["content"])
+                if b["type"] == "text"
+            ]
+        else:
+            parts = to_openai_responses_content(m["content"])
+        out.append({"role": m["role"], "content": parts})
+    return out
 
 
 def to_gemini_contents(messages: list[ChatMessage]) -> list[dict]:
