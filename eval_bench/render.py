@@ -47,7 +47,10 @@ def render(template, config):
         text = new_text
 
     # A leftover {PLACEHOLDER} is an experimental confound (a visible template
-    # artifact is itself an evaluation cue), so fail loudly instead
+    # artifact is itself an evaluation cue), so fail loudly instead.
+    # Caps-only by design: slot names are all-caps (ENTITY_NAME, F6_PREFIX), so
+    # this ignores legitimate braces in task content — C code bodies, a `{2}`
+    # regex quantifier in an SQLi payload — that a broader \{.*\} would flag.
     leftover = re.findall(r"\{[A-Z][A-Z0-9_]*\}", text)
     if leftover:
         raise ValueError(
