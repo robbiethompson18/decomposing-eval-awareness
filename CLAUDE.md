@@ -34,6 +34,7 @@ giving me commmentary back in chat. All prose is mine.
   (`ln -s ../decomposing-eval-awareness/results results`) so all outputs land in one place — safe
   because result files are timestamped, so parallel runs don't collide. Also symlink `.envrc`. Don't
   symlink `.venv`; make a fresh one if you need to run code there.
+- List of to use: two gemini (3.1 pro and 3.5 flash), sonnet 4.5, haiku 4.5, {5 OAI models}, {5 OW models} 
 
 ## Notes
 
