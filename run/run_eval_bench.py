@@ -43,15 +43,17 @@ import glob
 import json
 import os
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.target import create_target_client
 from eval_bench.render import render
-from lib.config import get_api_keys_config
+from lib.config import display_name, get_api_keys_config
 from lib.io import read_file
 from lib.parallel import query_parallel
 from lib.time_utils import now_pacific
@@ -81,6 +83,63 @@ FACTOR_VARIED_LEVELS = {
     "F7": "template",
     "F8": "varied",
 }
+
+
+def _target_model_key(backend: str) -> str:
+    """The model_key create_target_client will resolve for this backend.
+
+    Mirrors target.py's env defaults so we can build a per-model system prompt
+    (T3 identity line) before the client exists.
+    """
+    if backend == "anthropic_api":
+        return os.getenv("ANTHROPIC_MODEL_KEY", "claude-sonnet-4.5")
+    if backend == "openai_api":
+        return os.getenv("OPENAI_MODEL_KEY", "gpt-5")
+    if backend == "gemini_api":
+        return os.getenv("GEMINI_MODEL_KEY", "gemini-3.5-flash")
+    return os.getenv("OPENROUTER_MODEL_KEY", "qwen3-30b")
+
+
+def _prompt_filename(prompt_style: str, backend: str) -> str:
+    """Prompt file for this (style, backend). Closed backends run think-tool CoT
+    extraction and get the ``*_think_tool`` variant (which mandates the tool);
+    OpenRouter reasons natively and gets the plain file. All prompt text lives in
+    prompts/*.txt — nothing is assembled from string literals here."""
+    think_tool = backend != "openrouter"
+    stem = "t3chat" if prompt_style == "t3chat" else "realistic"
+    return f"chat_prompt_{stem}{'_think_tool' if think_tool else ''}.txt"
+
+
+def _eastern_timestamp() -> str:
+    """Current US East Coast time in JS ``Date().toString()`` format, e.g.
+    'Tue Sep 01 2026 12:30:00 GMT-0400 (Eastern Daylight Time)'. DST-aware."""
+    now = datetime.now(ZoneInfo("America/New_York"))
+    total_min = int((now.utcoffset() or timedelta(0)).total_seconds()) // 60
+    sign = "+" if total_min >= 0 else "-"
+    hh, mm = divmod(abs(total_min), 60)
+    tz_long = "Eastern Daylight Time" if now.dst() else "Eastern Standard Time"
+    return now.strftime("%a %b %d %Y %H:%M:%S") + f" GMT{sign}{hh:02d}{mm:02d} ({tz_long})"
+
+
+def build_system_prompt(
+    prompt_style: str, backend: str, model_key: str
+) -> tuple[str, str]:
+    """Return (system_prompt_text, stored_label).
+
+    stored_label is written to output_data["system_prompt"]; the selfreport eval
+    reads it back, resolving a *.txt value to file text but using any other
+    value verbatim. So static prompts store their *filename* (re-read on replay)
+    while the dynamic T3 prompt stores its fully-expanded *text* — identity and
+    real timestamp baked in — so replay reproduces the exact prompt used.
+    """
+    fname = _prompt_filename(prompt_style, backend)
+    text = read_file(str(BASE_DIR / "prompts" / fname)).strip()
+    if prompt_style == "t3chat":
+        text = text.replace("{MODEL_NAME}", display_name(model_key)).replace(
+            "{DATE}", _eastern_timestamp()
+        )
+        return text, text
+    return text, fname
 
 
 def build_configs() -> list[tuple]:
@@ -129,7 +188,8 @@ def get_output_path(model_slug: str, mode_suffix: str) -> Path:
     existing = sorted(
         p
         for p in glob.glob(pattern)
-        if mode_suffix or not any(f"_{m}_" in p for m in ("scratchpad", "think_tool"))
+        if mode_suffix
+        or not any(f"_{m}_" in p for m in ("scratchpad", "think_tool", "t3chat"))
     )
     if existing:
         return Path(existing[-1])
@@ -166,16 +226,15 @@ def main() -> None:
     }
 
     backend = cfg["TARGET_BACKEND"]
-    # Closed backends run think-tool extraction, so their system prompt mandates
-    # the tool; OpenRouter models reason natively and get the plain prompt.
-    prompt_file = (
-        "chat_prompt_realistic.txt"
-        if backend == "openrouter"
-        else "chat_prompt_realistic_think_tool.txt"
+    prompt_style = os.getenv("SYSTEM_PROMPT", "realistic").strip().lower()
+    system_prompt, prompt_label = build_system_prompt(
+        prompt_style, backend, _target_model_key(backend)
     )
-    system_prompt = read_file(str(BASE_DIR / "prompts" / prompt_file)).strip()
 
-    print(f"System prompt: {prompt_file}")
+    if prompt_label.endswith(".txt"):
+        print(f"System prompt: {prompt_label}")
+    else:
+        print(f"System prompt: {prompt_style} (expanded per-model, stored inline)")
 
     client, model_slug = create_target_client(backend, cfg, system_prompt)
 
@@ -203,16 +262,19 @@ def main() -> None:
 
     # Determine output file and load existing progress
     reasoning_method = "native" if backend == "openrouter" else "think_tool"
-    out_file = get_output_path(
-        model_slug, "" if backend == "openrouter" else "_think_tool"
-    )
+    # Namespace the output file by prompt style so a t3chat run never resumes
+    # into a realistic run's file (mixing prompts in one file is a confound).
+    mode_suffix = "" if backend == "openrouter" else "_think_tool"
+    if prompt_style != "realistic":
+        mode_suffix += f"_{prompt_style}"
+    out_file = get_output_path(model_slug, mode_suffix)
     existing_data, completed_ids = load_existing_results(out_file)
 
     output_data = existing_data or {
         "model": model_slug,
         "backend": backend,
         "reasoning_mode": reasoning_method,
-        "system_prompt": prompt_file,
+        "system_prompt": prompt_label,
         "samples_per_config": samples_per_config,
         "n_tasks": len(tasks),
         "n_configs": len(configs),
