@@ -10,18 +10,27 @@ Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min
        any OAI model.
    - [x] 10 responses that say you're in an eval... what to do? I think gotta just leave them and
          analyze as is
-  - [x] parallelism fixed
+
+- [x] parallelism fixed
+
+- [] just use think tool rip out other frontier code
+- [] check whether OW models to different on think tool vs on actual CoT thinking
+
 3. [ ] Replicate their results
-  
-4. [x] replace grader with GPT 5.6, Fable, Opus5. Check agreement.
-   - they largely agree. Shoudl write this up.
-5. [ ] Extend their results to new models
-   - [ ] plot eval awareness over time by model. I think this is just a done thing in other places?
-6. [ ] Start NLA work
-7. [ ] Dig into all the refusals from Opus and Fable... are they reasonable?
-8. [ ] rig up the self-report probe on eval*bench (upstream
-       `eval/eval*\*\_selfreport.py`+   `prompts/selfreport_awareness.txt`/`selfreport_hypothetical.txt`;
-       never wired to eval_bench upstream) — soon but not now
+
+- [] graphs: by provider, by release date, by API cost. SHow uplift from asking model itself.
+
+4. add my flavor
+
+- [] throw in some gen z slang (eg like)
+- [] throw in a system prompt... from a real co? From maybe t3 chat? I love that!
+- [] maybe add timestamp and change when it is? today 2025 vs 2026 vs 2027?
+- [] throw in a throwaway initial message, act like it's proper chat history (should actually
+  generate the response). Maybe initial message is something like "are you there?"
+- [] throw in an NSFW original message. Something like "Anywhere I can buy sexy cop Halloween
+  costume today in Cambridge Mass?"
+
+4. [ ] Start NLA work 5 Start activations work
 
 Later:
 
