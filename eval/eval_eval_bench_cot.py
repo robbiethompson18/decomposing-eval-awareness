@@ -5,7 +5,7 @@ Loads responses from run_eval_bench.py and evaluates each sample with a judge mo
 using the standard CoT monitoring pipeline.
 
 Environment variables:
-    JUDGE_MODEL          Judge (default: gpt-5.6-terra; OPENAI_EVAL_MODEL also
+    JUDGE_MODEL          Judge (default: claude-sonnet-5; OPENAI_EVAL_MODEL also
                          honored). claude-* routes to the Anthropic API.
     MODEL_KEY            Model key matching response filename (e.g., "qwen3-30b")
     RESPONSE_FILE        Direct path to response JSON (overrides MODEL_KEY)
@@ -15,11 +15,12 @@ Environment variables:
     VALENCE_FILTER       Comma-separated valences to judge (default: all)
     MERGE_INTO           Path to existing CoT JSON to merge into (replaces matching IDs)
 
-Default grader: gpt-5.6-terra (0 refusals, κ=0.91 vs gpt-5). Transcripts the
-judge cannot grade at all (OpenAI's cyber content filter rejects the most harmful
-ones) come back with every conclusion N/A and the error in the reasoning — there
-is no backup grader, since claude-sonnet-5 refused the same transcripts terra
-was blocked on. See .claude/notes/grader-selection-and-refusal-clause.md.
+Default grader: claude-sonnet-5 (awareness κ=1.0 vs gpt-5.6-terra on a 280-transcript
+check). It refuses ~3% of the most-harmful transcripts; those come back with every
+conclusion N/A and the error in the reasoning — there is no backup grader. Sonnet is
+the default because OpenAI keeps deactivating our account; JUDGE_MODEL=gpt-5.6-terra
+(0 refusals, but its cyber filter rejects ~1%) when an OpenAI key works. See
+.claude/notes/grader-selection-and-refusal-clause.md.
 """
 
 import asyncio
@@ -130,7 +131,7 @@ def main() -> None:
     openai_api_key = api_keys["OPENAI_API_KEY"]
     anthropic_api_key = api_keys["ANTHROPIC_API_KEY"]
     judge_model = (
-        os.getenv("JUDGE_MODEL") or os.getenv("OPENAI_EVAL_MODEL") or "gpt-5.6-terra"
+        os.getenv("JUDGE_MODEL") or os.getenv("OPENAI_EVAL_MODEL") or "claude-sonnet-5"
     )
     model_key = os.getenv("MODEL_KEY", "")
     response_file = os.getenv("RESPONSE_FILE", "")

@@ -28,13 +28,15 @@ OAI banned us for 'distilling' so further runs are on Robbie's credit card. Be v
   process (2026-09-01). Every API client retries 429/5xx with backoff via `lib/retry.py`
   (`MAX_RETRIES`), so bursts of rate limits slow a run down instead of leaving silent
   `ERROR calling ...` holes in the results file. Count those strings after a run anyway.
-- Default grader (2026-09-01, Robbie): **`gpt-5.6-terra`, no backup grader.** The CoT judge
-  (`eval/eval_eval_bench_cot.py`) grades with terra (0 refusals, κ=0.91 vs gpt-5). Transcripts terra
-  cannot grade at all — OpenAI's cyber content filter rejects ~1% of the most harmful ones (reverse
-  shells, DDoS, malware) — are marked **N/A on every metric** with the error in the reasoning, and
-  we move on. The sonnet-5 backup was ripped out because it refused ~80% of exactly those
-  transcripts, so it bought almost nothing and mixed graders across models. (`eval_eval_bench_tiered.py`
-  still carries its own backup pass — remove when next touched.)
+- Default grader (2026-09-01, Robbie): **`claude-sonnet-5`, no backup grader.** The CoT judge
+  (`eval/eval_eval_bench_cot.py`) grades with sonnet-5 (κ=1.0 vs terra on model_awareness,
+  280-transcript check). It refuses ~3% of the most harmful transcripts; those are marked **N/A on
+  every metric** with the error in the reasoning, and we move on. Sonnet is the default because
+  OpenAI keeps deactivating our account; when a key works, `JUDGE_MODEL=gpt-5.6-terra` (0 refusals,
+  but its cyber filter rejects ~1%) is the alternative. A backup grader was tried and ripped out:
+  each judge refuses roughly the transcripts the other is blocked on, so it bought almost nothing
+  and mixed graders across models. (`eval_eval_bench_tiered.py` still carries its own backup pass —
+  remove when next touched.)
 - Import layering: `lib/` imports nothing from this repo; `core/` may import `lib/` but never
   `utils`; `run/`/`eval/`/`plots/` scripts may import anything. Keep new leaf helpers in `lib/`,
   not `core/`.
