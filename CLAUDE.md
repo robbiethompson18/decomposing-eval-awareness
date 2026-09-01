@@ -62,6 +62,16 @@ using these.
 - When you wake up in a fresh session, pull latest main and then make a branch directly off of it.
 - Before giving Robbie a PR to review, make sure it's rebased off of latest main (or that main is
   max 5 minutes ahead of you)
+- Whenever you make a new graph give Robbie full filepath in chat so that he can click it.
+
+### Default 'test new feature' (eg F15) setup:
+
+- _PLEASE_ concurrency 500
+- all models (14 as of now)
+- 250 examples per model
+- compare against a nice baseline if we have one. If too much is in flux, just make your own fresh
+  baseline
+- vary only the F you just did vs the 'maximally realistic/deployment-like' baseline
 
 ## Notes
 
