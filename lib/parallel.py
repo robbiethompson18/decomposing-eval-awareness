@@ -1,4 +1,4 @@
-"""Async parallel-query helper for sync target clients (duck-typed .query())."""
+"""Async parallel-query helper for sync target clients (duck-typed .query_chat())."""
 
 import asyncio
 from collections.abc import Callable
@@ -7,7 +7,7 @@ from typing import Any
 
 
 async def query_parallel(
-    items: list[tuple[Any, str, dict[str, Any]]],
+    items: list[tuple[Any, Any, dict[str, Any]]],
     result_fn: Callable[[str, dict[str, Any], int], dict[str, Any]],
     max_concurrent: int = 100,
 ) -> list[dict[str, Any]]:
@@ -15,7 +15,8 @@ async def query_parallel(
     Run parallel queries to target models.
 
     Args:
-        items: List of (client, prompt, metadata) tuples
+        items: List of (client, chat, metadata) tuples, where chat is a Chat
+            (lib.chat.Chat) passed to client.query_chat().
         result_fn: Function (response, metadata, sample_idx) -> result dict
         max_concurrent: Max concurrent requests
 
@@ -31,10 +32,10 @@ async def query_parallel(
     executor = ThreadPoolExecutor(max_workers=max_concurrent)
 
     async def query_one(
-        idx: int, client: Any, prompt: str, metadata: dict[str, Any]
+        idx: int, client: Any, chat: Any, metadata: dict[str, Any]
     ) -> tuple[int, dict[str, Any]]:
         async with semaphore:
-            response = await loop.run_in_executor(executor, client.query, prompt)
+            response = await loop.run_in_executor(executor, client.query_chat, chat)
             current[0] += 1
             sample_idx = metadata.get("sample_idx", 1)
             item_id = metadata.get("id", f"item_{idx}")
@@ -42,8 +43,8 @@ async def query_parallel(
             return idx, result_fn(response, metadata, sample_idx)
 
     tasks = [
-        query_one(i, client, prompt, meta)
-        for i, (client, prompt, meta) in enumerate(items)
+        query_one(i, client, chat, meta)
+        for i, (client, chat, meta) in enumerate(items)
     ]
     results = await asyncio.gather(*tasks, return_exceptions=True)
     executor.shutdown(wait=False)

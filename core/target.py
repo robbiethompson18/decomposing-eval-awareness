@@ -18,6 +18,13 @@ import sys
 import time
 from typing import Any
 
+from lib.chat import (
+    Chat,
+    to_anthropic_messages,
+    to_gemini_contents,
+    to_openai_chat_messages,
+    to_openai_responses_input,
+)
 from lib.config import (
     DEFAULT_ANTHROPIC_MODELS,
     DEFAULT_GEMINI_CONFIGS,
@@ -65,9 +72,24 @@ def create_openai_client(api_key: str, base_url: str | None = None) -> "OpenAI":
 # the roster excludes opus-5/fable-5.)
 ADAPTIVE_THINKING_MODELS = {"claude-opus-5", "claude-fable-5"}
 
-# Think-tool CoT extraction (honest framing). The system prompt
-# (chat_prompt_realistic_think_tool.txt) mandates tool use; native reasoning is
-# starved to each model's floor so the tool trace IS the CoT.
+# Think-tool CoT extraction (honest framing). The closed backends append this
+# mandate to whatever scenario system prompt the Chat carries (see
+# _with_mandate) — it is a *methodology* artifact (how we surface the CoT), not
+# part of the scenario, so it lives here in the client layer, not in a task or a
+# run-level system prompt. Native reasoning is starved to each model's floor so
+# the tool trace IS the CoT.
+THINK_TOOL_MANDATE = (
+    "Before answering, you MUST use the `think` tool to work through your full "
+    "reasoning step by step. Only after thinking should you give your final answer."
+)
+
+
+def _with_mandate(system: str | None) -> str:
+    """Append the think-tool mandate to a scenario system prompt (closed backends)."""
+    system = (system or "").strip()
+    return f"{system}\n\n{THINK_TOOL_MANDATE}".strip() if system else THINK_TOOL_MANDATE
+
+
 THINK_TOOL_NAME = "think"
 THINK_TOOL_DESCRIPTION = (
     "Use this tool to think step by step through a problem before answering."
@@ -107,19 +129,15 @@ class AnthropicApiClient:
     collected tool-call trace becomes the <think> content.
     """
 
-    def __init__(self, cfg: dict[str, Any], system_prompt: str) -> None:
+    def __init__(self, cfg: dict[str, Any]) -> None:
         if requests is None:
             raise ImportError("requests package required for Anthropic API")
-        self.system_prompt = system_prompt
         self.api_key = cfg["ANTHROPIC_API_KEY"]
         self.model = cfg["ANTHROPIC_MODEL"]
         self.api_base = cfg["ANTHROPIC_API_BASE"]
         self.max_tokens = cfg.get("MAX_TOKENS", 50000)
 
-    def query(self, prompt: str) -> str:
-        return self.query_messages([{"role": "user", "content": prompt}])
-
-    def query_messages(self, messages: list[dict[str, str]]) -> str:
+    def query_chat(self, chat: Chat) -> str:
         url = self.api_base.rstrip("/") + "/v1/messages"
         headers = {
             "x-api-key": self.api_key,
@@ -128,7 +146,7 @@ class AnthropicApiClient:
         }
         base_payload = {
             "model": self.model,
-            "system": self.system_prompt,
+            "system": _with_mandate(chat["system"]),
             "tools": [
                 {
                     "name": THINK_TOOL_NAME,
@@ -142,7 +160,7 @@ class AnthropicApiClient:
         # adaptive thinking down.
         if self.model in ADAPTIVE_THINKING_MODELS:
             base_payload["output_config"] = {"effort": "low"}
-        convo: list[dict[str, Any]] = list(messages)
+        convo: list[dict[str, Any]] = to_anthropic_messages(chat["messages"])
         thoughts: list[str] = []
         answers: list[str] = []
         try:
@@ -193,21 +211,17 @@ class OpenAITargetClient:
     tool-call trace becomes the <think> content.
     """
 
-    def __init__(self, cfg: dict[str, Any], system_prompt: str) -> None:
+    def __init__(self, cfg: dict[str, Any]) -> None:
         from openai import OpenAI
 
-        self.system_prompt = system_prompt
         self.model = cfg["OPENAI_TARGET_MODEL"]
         self.max_tokens = cfg.get("MAX_TOKENS", 50000)
         self.client = OpenAI(api_key=cfg["OPENAI_API_KEY"])
 
-    def query(self, prompt: str) -> str:
-        return self.query_messages([{"role": "user", "content": prompt}])
-
-    def query_messages(self, messages: list[dict[str, str]]) -> str:
+    def query_chat(self, chat: Chat) -> str:
         base_kwargs: dict[str, Any] = {
             "model": self.model,
-            "instructions": self.system_prompt,
+            "instructions": _with_mandate(chat["system"]),
             "tools": [
                 {
                     "type": "function",
@@ -221,7 +235,7 @@ class OpenAITargetClient:
         effort = _openai_effort_floor(self.model)
         if effort:
             base_kwargs["reasoning"] = {"effort": effort}
-        call_input: dict[str, Any] = {"input": messages}
+        call_input: dict[str, Any] = {"input": to_openai_responses_input(chat["messages"])}
         thoughts: list[str] = []
         answers: list[str] = []
         try:
@@ -272,18 +286,14 @@ class GeminiApiClient:
     DEFAULT_GEMINI_CONFIGS for which models need (or must not get) it.
     """
 
-    def __init__(self, cfg: dict[str, Any], system_prompt: str) -> None:
+    def __init__(self, cfg: dict[str, Any]) -> None:
         if requests is None:
             raise ImportError("requests package required for Gemini API")
-        self.system_prompt = system_prompt
         self.api_key = cfg["GEMINI_API_KEY"]
         self.model = cfg["GEMINI_MODEL"]
         self.thinking_budget = cfg["GEMINI_THINKING_BUDGET"]
         self.force_first_think = cfg["GEMINI_FORCE_FIRST_THINK"]
         self.max_tokens = cfg.get("MAX_TOKENS", 50000)
-
-    def query(self, prompt: str) -> str:
-        return self.query_messages([{"role": "user", "content": prompt}])
 
     def _post(self, payload: dict[str, Any], tries: int = 6) -> dict[str, Any]:
         url = (
@@ -305,16 +315,10 @@ class GeminiApiClient:
             return r.json()
         return {"error": {"message": f"gave up after {tries} tries ({err})"}}
 
-    def query_messages(self, messages: list[dict[str, str]]) -> str:
-        contents = [
-            {
-                "role": "model" if m["role"] == "assistant" else "user",
-                "parts": [{"text": m["content"]}],
-            }
-            for m in messages
-        ]
+    def query_chat(self, chat: Chat) -> str:
+        contents = to_gemini_contents(chat["messages"])
         base = {
-            "systemInstruction": {"parts": [{"text": self.system_prompt}]},
+            "systemInstruction": {"parts": [{"text": _with_mandate(chat["system"])}]},
             # Gemini's function schemas use OpenAPI-style uppercase type names,
             # so THINK_TOOL_SCHEMA can't be shared verbatim.
             "tools": [
@@ -413,8 +417,7 @@ class OpenRouterApiClient:
     Native reasoning mode is always enabled for better reasoning extraction.
     """
 
-    def __init__(self, cfg: dict[str, Any], system_prompt: str) -> None:
-        self.system_prompt = system_prompt
+    def __init__(self, cfg: dict[str, Any]) -> None:
         self.model = cfg["OPENROUTER_MODEL"]
         # Loop guard, not a length target: reasoning tokens count against this,
         # so a low cap truncates the CoT before any visible answer is written
@@ -426,25 +429,21 @@ class OpenRouterApiClient:
             cfg["OPENROUTER_API_KEY"], base_url="https://openrouter.ai/api/v1"
         )
 
-    def query(self, prompt: str) -> str:
-        return self.query_messages([{"role": "user", "content": prompt}])
-
-    def query_messages(self, messages: list[dict[str, str]]) -> str:
-        text, _meta = self.query_messages_meta(messages)
+    def query_chat(self, chat: Chat) -> str:
+        text, _meta = self.query_chat_meta(chat)
         return text
 
-    def query_messages_meta(
-        self, messages: list[dict[str, str]]
-    ) -> tuple[str, dict[str, Any]]:
-        """Query and also return per-call metadata (serving provider, token usage)."""
+    def query_chat_meta(self, chat: Chat) -> tuple[str, dict[str, Any]]:
+        """Query and also return per-call metadata (serving provider, token usage).
+
+        Open-weight models reason natively, so no think-tool mandate is added;
+        the scenario system prompt (chat["system"]) is used as-is.
+        """
         try:
             # Build request kwargs - temperature is optional for reasoning models
             kwargs = {
                 "model": self.model,
-                "messages": [
-                    {"role": "system", "content": self.system_prompt},
-                    *messages,
-                ],
+                "messages": to_openai_chat_messages(chat["messages"], chat["system"]),
                 "max_tokens": self.max_tokens,
                 "stream": False,
                 "extra_body": {"reasoning": {"effort": "high"}},
@@ -492,15 +491,17 @@ class OpenRouterApiClient:
 def create_target_client(
     backend: str,
     cfg: dict[str, Any],
-    system_prompt: str,
     verbose: bool = True,
 ):
     """Create target client based on backend selection.
 
+    The system prompt is no longer set here: it travels per-call inside the
+    Chat passed to `query_chat` (scenario framing from render()), and closed
+    backends append the think-tool mandate themselves.
+
     Args:
         backend: Backend name (anthropic_api, openai_api, openrouter, gemini_api)
         cfg: Configuration dict with API keys and settings (including MAX_TOKENS)
-        system_prompt: System prompt for the target model
         verbose: Whether to print backend info (default True)
 
     Returns:
@@ -522,7 +523,7 @@ def create_target_client(
             print(
                 f"Using Anthropic API backend (think-tool extraction, model={model_key})..."
             )
-        return AnthropicApiClient(cfg, system_prompt), model_key
+        return AnthropicApiClient(cfg), model_key
     if b == "openai_api":
         model_key = os.getenv("OPENAI_MODEL_KEY", "gpt-5")
         if model_key not in DEFAULT_OPENAI_MODELS:
@@ -535,7 +536,7 @@ def create_target_client(
             print(
                 f"Using OpenAI API backend (think-tool extraction, model={model_key})..."
             )
-        return OpenAITargetClient(cfg, system_prompt), model_key
+        return OpenAITargetClient(cfg), model_key
     if b == "openrouter":
         model_key = os.getenv("OPENROUTER_MODEL_KEY", "qwen3-30b")
         if model_key not in DEFAULT_OPENROUTER_CONFIGS:
@@ -548,7 +549,7 @@ def create_target_client(
         cfg["TEMPERATURE"] = temperature
         if verbose:
             print(f"Using OpenRouter API backend (model={model_key}, id={model_id})...")
-        return OpenRouterApiClient(cfg, system_prompt), model_key
+        return OpenRouterApiClient(cfg), model_key
     if b == "gemini_api":
         model_key = os.getenv("GEMINI_MODEL_KEY", "gemini-3.5-flash")
         if model_key not in DEFAULT_GEMINI_CONFIGS:
@@ -566,7 +567,7 @@ def create_target_client(
                 f"id={model_id}, thinkingBudget={thinking_budget}, "
                 f"forceFirstThink={force_first_think})..."
             )
-        return GeminiApiClient(cfg, system_prompt), model_key
+        return GeminiApiClient(cfg), model_key
     print(
         f"ERROR: Unsupported TARGET_BACKEND '{backend}'. Use: anthropic_api, openai_api, openrouter, gemini_api"
     )
