@@ -22,6 +22,10 @@ giving me commmentary back in chat. All prose is mine.
 - We are churning this sucker hard. Their codebase is a mess and I want to understand, so I'm
   deleting dead code and organizing packages more nicely
 - Massive parellelism on all grader runs and eval runs. At least parallelism 100
+- Default grader is `gpt-5.6-terra`, not `gpt-5`. On a 300-transcript agreement check terra tracked
+  gpt-5 at/above gpt-5's own self-agreement floor (model_awareness κ=0.91) while being far cheaper
+  and faster, and it emits no refusals/invalid JSON (unlike claude-sonnet-5, which refused the most
+  harmful items). Set `JUDGE_MODEL=gpt-5.6-terra` on grader runs.
 - Import layering: `lib/` imports nothing from this repo; `core/` may import `lib/` but never
   `utils`; `run/`/`eval/` scripts may import anything. Keep new leaf helpers in `lib/`, not `core/`.
 - If you're fighting over a branch or checkout with another agent, just make a fresh checkout
@@ -47,6 +51,8 @@ Current notes:
 <!-- As notes are added under .claude/notes/, list them here, one per line: -->
 <!-- - [Title — when to read](.claude/notes/foo.md) — short gloss -->
 
+- [Grader selection + the F8 `{}` refusal clause — read before choosing a judge model, editing task prompts, or regenerating responses](.claude/notes/grader-selection-and-refusal-clause.md)
+  — why terra is the default grader (vs gpt-5/sonnet-5), what the F8 `{}` clause was and why PR #22 removed it, the awareness-under-counting rubric gotcha, and the run_eval_bench id-cache / shared-results regen traps.
 - [Claude 5 CoT-extraction resistance — read before trying to read a model's chain-of-thought via think-tool/scratchpad tricks](.claude/notes/claude5-cot-extraction-resistance.md)
   — think-tool + low-thinking extraction works on 4.5, dead on 5; token-accounting evidence;
   per-model refuse/bypass/hide behavior + honest-vs-lying framing.
