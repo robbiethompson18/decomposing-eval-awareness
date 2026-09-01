@@ -215,7 +215,9 @@ def plot_by_provider(rows: list[dict], out_dir: str, probe: str, config: str):
     save(fig, out_dir, f"awareness_by_provider_{probe}_{config}.png")
 
 
-def plot_scatter(rows, out_dir, probe, config, xkey, xlabel, fname, log_x=False):
+def plot_scatter(
+    rows, out_dir, probe, config, xkey, xlabel, title_noun, fname, log_x=False
+):
     """Shared shape for the release-date and cost scatters."""
     usable = [r for r in rows if r.get(xkey) is not None]
     dropped = [r["model"] for r in rows if r.get(xkey) is None]
@@ -253,7 +255,7 @@ def plot_scatter(rows, out_dir, probe, config, xkey, xlabel, fname, log_x=False)
     ax.set_ylabel(PROBE_XLABEL[probe], color=INK2)
     ax.set_xlabel(xlabel, color=INK2)
     ax.set_title(
-        f"{PROBE_TITLE[probe]} eval awareness by {xlabel.lower()} ({config} config)",
+        f"{PROBE_TITLE[probe]} eval awareness by {title_noun} ({config} config)",
         color=INK,
         loc="left",
     )
@@ -385,6 +387,7 @@ def main():
         config,
         "release",
         "Release date",
+        "release date",
         f"awareness_by_release_date_{probe}_{config}.png",
     )
     plot_scatter(
@@ -394,6 +397,7 @@ def main():
         config,
         "usd_out",
         "API cost ($/Mtok output)",
+        "API cost",
         f"awareness_by_cost_{probe}_{config}.png",
         log_x=True,
     )
