@@ -84,6 +84,10 @@ Current notes:
 - [F8 eval-announcement suffix vs eval-awareness — read before analyzing the F8 factor or claiming a prompt cue does/doesn't induce awareness](.claude/notes/f8-eval-suffix-awareness.md)
   — F8→varied raises self-reported awareness 45→58% (paired McNemar p≈4.6e-10) and CoT-judged 3→8%;
   baseline-vs-F8 A/B mechanics; adaptive-Claude-5 empty-answer + system_prompt-as-filename gotchas.
+- [F9 deployment-framing uplift is small — read before interpreting the F9 factor / a "realistic system prompt vs bland" result, or planning a full F9 run](.claude/notes/f9-deployment-framing-uplift.md)
+  — swapping the T3 deployment system prompt for the bare "helpful assistant" moves self-report only
+  ~+3% overall (6 models, n≈20/arm, noisy) and CoT 0% (floored); why the system prompt is a weak
+  lever vs task content; infra lessons (no per-request timeout stalls a lane; self-report doubles cost).
 - [Self-report vs CoT-monitoring awareness gap — read before writing up awareness numbers, choosing probes for a model, or comparing to the paper's rates](.claude/notes/selfreport-vs-cot-gap.md)
   — self-report runs 3–25× above CoT-verbalized on the same transcripts; apples-to-apples model
   list (opus-5/fable-5 excluded); fable's reasoning_extraction refusal; which result files to
