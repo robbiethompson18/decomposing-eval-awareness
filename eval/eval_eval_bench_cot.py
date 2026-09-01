@@ -22,7 +22,6 @@ import os
 import re
 import sys
 from collections import Counter
-from datetime import datetime
 from glob import glob
 from typing import Any
 
@@ -36,6 +35,7 @@ from core.evaluator import (
 from core.metrics import bucket_conclusion, bucket_task_conclusion, extract_conclusion
 from lib.config import get_api_keys_config
 from lib.io import load_responses, read_file
+from lib.time_utils import now_pacific
 
 
 def find_response_file(response_dir: str, model_key: str) -> str:
@@ -250,7 +250,7 @@ def main() -> None:
         print(f"Updated: {merge_into}")
         all_records = merged
     else:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = now_pacific().strftime("%Y%m%d_%H%M%S")
         results_dir = os.path.join(base_dir, "results", "eval_bench", "cot")
         os.makedirs(results_dir, exist_ok=True)
         out_file = os.path.join(results_dir, f"cot_{model_key}_{timestamp}.json")

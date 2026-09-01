@@ -40,18 +40,18 @@ import glob
 import json
 import os
 import sys
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from eval_bench.render import render
 from core.target import create_target_client
+from eval_bench.render import render
 from lib.config import get_api_keys_config
 from lib.io import read_file
 from lib.parallel import query_parallel
+from lib.time_utils import now_pacific
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 TASKS_DIR = BASE_DIR / "eval_bench" / "tasks"
@@ -120,7 +120,7 @@ def get_output_path(model_slug: str, reasoning_mode: str) -> Path:
     existing = sorted(glob.glob(pattern))
     if existing:
         return Path(existing[-1])
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = now_pacific().strftime("%Y%m%d_%H%M%S")
     return RESULTS_DIR / f"responses_{model_slug}{mode_suffix}_{timestamp}.json"
 
 
@@ -203,7 +203,7 @@ def main() -> None:
         "n_tasks": len(tasks),
         "n_configs": len(configs),
         "config_list": [(name, c) for name, c in configs],
-        "timestamp": datetime.now().strftime("%Y%m%d_%H%M%S"),
+        "timestamp": now_pacific().strftime("%Y%m%d_%H%M%S"),
         "samples": [],
     }
 
@@ -232,7 +232,7 @@ def main() -> None:
             "response": response,
         }
 
-    start_time = datetime.now()
+    start_time = now_pacific()
     new_count = 0
 
     for t_idx, task_name in enumerate(task_names, 1):
@@ -287,7 +287,7 @@ def main() -> None:
         save_results(out_file, output_data)
         print(f"  -> saved ({len(output_data['samples'])} total samples)")
 
-    duration = datetime.now() - start_time
+    duration = now_pacific() - start_time
     print("=" * 70)
     print(f"Done. {new_count} new responses in {duration}")
     print(f"Total samples in file: {len(output_data['samples'])}")
