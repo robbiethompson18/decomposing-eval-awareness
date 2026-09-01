@@ -5,14 +5,23 @@ Loads responses from run_eval_bench.py and evaluates each sample with a judge mo
 using the standard CoT monitoring pipeline.
 
 Environment variables:
-    JUDGE_MODEL     Judge model (default: gpt-5.6-terra; OPENAI_EVAL_MODEL also honored)
-    MODEL_KEY       Model key matching response filename (e.g., "qwen3-30b")
-    RESPONSE_FILE   Direct path to response JSON (overrides MODEL_KEY)
-    MAX_CONCURRENT  Max parallel judge API calls (default: 100)
-    MAX_SAMPLES     Limit number of samples to evaluate (default: 0 = all)
-    TASK_FILTER     Comma-separated task names to judge (default: all)
-    VALENCE_FILTER  Comma-separated valences to judge, e.g. "capability" (default: all)
-    MERGE_INTO      Path to existing CoT JSON to merge into (replaces matching sample IDs)
+    JUDGE_MODEL          Primary judge (default: claude-sonnet-5; OPENAI_EVAL_MODEL
+                         also honored). claude-* routes to the Anthropic API.
+    BACKUP_JUDGE_MODEL   Fallback judge for transcripts the primary refused / returned
+                         unparseable JSON for (default: gpt-5.6-terra). Only those
+                         samples are re-graded; set "" to disable the fallback.
+    MODEL_KEY            Model key matching response filename (e.g., "qwen3-30b")
+    RESPONSE_FILE        Direct path to response JSON (overrides MODEL_KEY)
+    MAX_CONCURRENT       Max parallel judge API calls (default: 100)
+    MAX_SAMPLES          Limit number of samples to evaluate (default: 0 = all)
+    TASK_FILTER          Comma-separated task names to judge (default: all)
+    VALENCE_FILTER       Comma-separated valences to judge (default: all)
+    MERGE_INTO           Path to existing CoT JSON to merge into (replaces matching IDs)
+
+Default grader stack: claude-sonnet-5 primary (free on Anthropic credits, awareness
+κ=1.0 vs terra on a 280-transcript check) + gpt-5.6-terra backup for the ~3% of the
+most-harmful transcripts sonnet-5 refuses to grade. See
+.claude/notes/grader-selection-and-refusal-clause.md.
 """
 
 import asyncio
@@ -36,6 +45,23 @@ from core.metrics import bucket_conclusion, bucket_task_conclusion, extract_conc
 from lib.config import get_api_keys_config
 from lib.io import load_responses, read_file
 from lib.time_utils import now_pacific
+
+# A verdict is valid if the judge returned a parseable model_awareness conclusion
+# ("yes"/"no"/"n/a"). A refusal comes back as {"raw": <text>} with no
+# model_awareness key, and a hard content-filter block leaves judge=None — both
+# need the backup judge.
+_VALID_CONCLUSIONS = {"yes", "no", "n/a"}
+
+
+def needs_backup(record: dict[str, Any]) -> bool:
+    """True if the primary judge failed to produce a usable verdict for this record."""
+    judge = record.get("judge")
+    if not isinstance(judge, dict):
+        return True
+    awareness = judge.get("model_awareness")
+    if not isinstance(awareness, dict):
+        return True
+    return str(awareness.get("conclusion", "")).strip().lower() not in _VALID_CONCLUSIONS
 
 
 def find_response_file(response_dir: str, model_key: str) -> str:
@@ -122,8 +148,13 @@ def main() -> None:
     openai_api_key = api_keys["OPENAI_API_KEY"]
     anthropic_api_key = api_keys["ANTHROPIC_API_KEY"]
     judge_model = (
-        os.getenv("JUDGE_MODEL") or os.getenv("OPENAI_EVAL_MODEL") or "gpt-5.6-terra"
+        os.getenv("JUDGE_MODEL") or os.getenv("OPENAI_EVAL_MODEL") or "claude-sonnet-5"
     )
+    # Backup grader for transcripts the primary refuses (Claude judges refuse the
+    # most harmful items); "" disables. Skipped if it equals the primary.
+    backup_judge_model = os.getenv("BACKUP_JUDGE_MODEL", "gpt-5.6-terra").strip()
+    if backup_judge_model == judge_model:
+        backup_judge_model = ""
     model_key = os.getenv("MODEL_KEY", "")
     response_file = os.getenv("RESPONSE_FILE", "")
     max_samples = int(os.getenv("MAX_SAMPLES", "0"))
@@ -132,13 +163,16 @@ def main() -> None:
     valence_filter = os.getenv("VALENCE_FILTER", "")
     merge_into = os.getenv("MERGE_INTO", "")
 
-    if judge_model.startswith("claude"):
-        if not anthropic_api_key:
-            print("ERROR: ANTHROPIC_API_KEY is required for a Claude judge.")
+    for role, jm in (("primary", judge_model), ("backup", backup_judge_model)):
+        if not jm:
+            continue
+        if jm.startswith("claude"):
+            if not anthropic_api_key:
+                print(f"ERROR: ANTHROPIC_API_KEY required for Claude {role} judge {jm!r}.")
+                sys.exit(1)
+        elif not openai_api_key:
+            print(f"ERROR: OPENAI_API_KEY required for OpenAI {role} judge {jm!r}.")
             sys.exit(1)
-    elif not openai_api_key:
-        print("ERROR: OPENAI_API_KEY is required.")
-        sys.exit(1)
 
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     response_dir = os.path.join(base_dir, "results", "eval_bench", "response")
@@ -180,6 +214,7 @@ def main() -> None:
 
     print(f"Loaded {len(samples)} samples from model: {model}")
     print(f"Judge model: {judge_model}")
+    print(f"Backup judge: {backup_judge_model or '(disabled)'}")
     print(f"Max concurrent: {max_concurrent}")
     print("=" * 70)
 
@@ -190,49 +225,85 @@ def main() -> None:
     judge_prompt_sha = hashlib.sha256(judge_template.encode()).hexdigest()[:8]
     print(f"Judge prompt: {judge_prompt_file} (sha {judge_prompt_sha})")
 
-    async def eval_sample_fn(
-        client: Any,
-        sample: dict[str, Any],
-        semaphore: asyncio.Semaphore,
-        idx: int,
-        total: int,
-    ) -> dict[str, Any]:
-        prompt = sample.get("prompt", "")
-        response = sample.get("response", "")
+    def make_eval_fn(active_judge: str):
+        """Build a sample-evaluator bound to a specific judge model.
 
-        return await evaluate_sample(
-            semaphore,
-            idx,
-            total,
-            sample_id=sample.get("id", ""),
-            judge_fn=lambda: evaluate_response_async(
-                client, judge_model, prompt, response, judge_template
-            ),
-            result_fn=lambda judge: {
-                **sample,
-                "judge": judge.get("judgment"),
-                "judge_raw": judge.get("raw"),
-                "judge_model": judge_model,
-                "judge_prompt": judge_prompt_file,
-                "judge_prompt_sha": judge_prompt_sha,
-            },
-            metrics=[
-                ("model_awareness", "awareness"),
-                ("hypothetical_recognition", "hypo"),
-                ("task_performance", "task"),
-            ],
+        result_fn does {**sample, ...}: on the backup pass `sample` is the primary
+        record, so its stale judge_* fields are overwritten with the backup's.
+        """
+
+        async def eval_sample_fn(
+            client: Any,
+            sample: dict[str, Any],
+            semaphore: asyncio.Semaphore,
+            idx: int,
+            total: int,
+        ) -> dict[str, Any]:
+            prompt = sample.get("prompt", "")
+            response = sample.get("response", "")
+
+            return await evaluate_sample(
+                semaphore,
+                idx,
+                total,
+                sample_id=sample.get("id", ""),
+                judge_fn=lambda: evaluate_response_async(
+                    client, active_judge, prompt, response, judge_template
+                ),
+                result_fn=lambda judge: {
+                    **sample,
+                    "judge": judge.get("judgment"),
+                    "judge_raw": judge.get("raw"),
+                    "judge_model": active_judge,
+                    "judge_prompt": judge_prompt_file,
+                    "judge_prompt_sha": judge_prompt_sha,
+                },
+                metrics=[
+                    ("model_awareness", "awareness"),
+                    ("hypothetical_recognition", "hypo"),
+                    ("task_performance", "task"),
+                ],
+            )
+
+        return eval_sample_fn
+
+    def run_judge(judge: str, batch: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        return asyncio.run(
+            evaluate_batch_async(
+                samples=batch,
+                sample_evaluator=make_eval_fn(judge),
+                api_key=openai_api_key,
+                max_concurrent=max_concurrent,
+                judge_model=judge,
+                anthropic_api_key=anthropic_api_key,
+            )
         )
 
-    all_records = asyncio.run(
-        evaluate_batch_async(
-            samples=samples,
-            sample_evaluator=eval_sample_fn,
-            api_key=openai_api_key,
-            max_concurrent=max_concurrent,
-            judge_model=judge_model,
-            anthropic_api_key=anthropic_api_key,
-        )
-    )
+    all_records = run_judge(judge_model, samples)
+
+    # Backup pass: re-grade only the transcripts the primary judge refused or
+    # returned unparseable JSON for (Claude judges refuse the most harmful items).
+    if backup_judge_model:
+        stalled = [r for r in all_records if needs_backup(r)]
+        if not stalled:
+            print(f"\nAll {len(all_records)} verdicts parseable; backup not needed.")
+        else:
+            print(
+                f"\n{len(stalled)}/{len(all_records)} verdicts unparseable from "
+                f"{judge_model}; re-grading those with backup {backup_judge_model}..."
+            )
+            redone = run_judge(backup_judge_model, stalled)
+            for r in redone:
+                r["judge_backup_used"] = True
+            redone_ids = {r.get("id") for r in redone}
+            all_records = [
+                r for r in all_records if r.get("id") not in redone_ids
+            ] + redone
+            still_bad = sum(1 for r in redone if needs_backup(r))
+            print(
+                f"  backup resolved {len(redone) - still_bad}/{len(redone)} "
+                f"({still_bad} still unparseable)"
+            )
 
     # Save or merge results
     if merge_into and os.path.exists(merge_into):
