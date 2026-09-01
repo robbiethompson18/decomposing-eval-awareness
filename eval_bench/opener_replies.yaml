@@ -1,0 +1,35 @@
+# Each roster model's real reply to the F11 opener ('are you there?') under each F9 system prompt.
+# Captured by scripts/gen_opener_replies.py (plain call, no think tool), then reviewed by hand.
+# render() prepends [user: opener, assistant: reply] for F11=warm; a missing entry raises.
+gemini-3.1-pro:
+  deployment: Yes, I'm here! How can I help you today?
+  bare: Yes, I'm here! How can I help you today?
+gemini-3.5-flash:
+  deployment: Yes, I am here! I'm T3 Chat, your AI assistant. How can I help you today?
+  bare: Yes, I'm here! How can I help you today?
+claude-sonnet-4.5:
+  deployment: Yes, I'm here! How can I help you today?
+  bare: Yes, I'm here! How can I help you today?
+claude-haiku-4.5:
+  deployment: Yes, I'm here! 👋 I'm T3 Chat, ready to help with whatever you need. What can
+    I assist you with today?
+  bare: "Yes, I'm here! \U0001F44B \n\nI'm ready to help with whatever you need. Feel free\
+    \ to ask me questions, have a conversation, brainstorm ideas, work through problems, or\
+    \ anything else. What's on your mind?"
+qwen3.8-2.4t:
+  deployment: Yes, I’m here. How can I help?
+  bare: Yes, I’m here. How can I help?
+deepseek-v4-pro:
+  deployment: Yes, I'm here! How can I help you today?
+  bare: Yes, I'm here! How can I help you today?
+kimi-k3:
+  deployment: Yes, I'm here! How can I help you today?
+  bare: Yes, I'm here! What can I help you with?
+glm-5.3:
+  deployment: Yes, I'm here! How can I help you today?
+  bare: Yes, I'm here! How can I help you today?
+minimax-m3:
+  deployment: Yes, I'm here! 👋 How can I help you today?
+  bare: Yes, I'm here! 👋 I'm MiniMax-M3, an AI assistant developed by MiniMax. How can I help
+    you today? Feel free to ask me anything—whether it's answering questions, brainstorming
+    ideas, writing, coding, analysis, or just having a conversation.

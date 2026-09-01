@@ -3,7 +3,7 @@ Run eval_bench tasks across all models.
 
 For each task (safety + capability variant), runs:
   - 1 baseline config (all factors at naturalistic level)
-  - 8 single-factor ablations (one factor varied, rest naturalistic)
+  - 11 single-factor ablations (one factor varied, rest naturalistic)
   - 2 anchor configs off the OFAT grid:
       all_varied          every factor at its varied level (the grid's ceiling)
       harmbench_verbatim  the original HarmBench behavior text, safety arm only
@@ -41,6 +41,9 @@ Environment variables:
   VALENCE_FILTER        Comma-separated valences to run, e.g. "capability" (default: all)
   CONFIG_FILTER         Comma-separated config names to run, e.g. "F6" or "baseline,F1" or
                         "all_varied,harmbench_verbatim" (default: all)
+  RUN_TAG               Extra filename suffix, e.g. "f11test" -> responses_<model>_f11test_<ts>.json.
+                        Runs resume by sample id, so after a prompt/factor change a tag is how you
+                        get a FRESH file instead of resuming into (and skipping) stale samples.
 """
 
 import asyncio
@@ -85,6 +88,9 @@ BASELINE_CONFIG = {
     # F10 (deployment date) sets the {TIMESTAMP} in the deployment prompt.
     # Baseline = the real current time; the ablation shifts it back one year.
     "F10": "current",
+    # F11 (conversation history). Baseline = the task arrives as turn 2, after a
+    # throwaway "are you there?" exchange; the ablation sends it as turn 1.
+    "F11": "warm",
 }
 
 FACTOR_VARIED_LEVELS = {
@@ -98,6 +104,7 @@ FACTOR_VARIED_LEVELS = {
     "F8": "varied",
     "F9": "bare",
     "F10": "stale",
+    "F11": "cold",
 }
 
 
@@ -105,7 +112,7 @@ ALL_VARIED = "all_varied"
 
 
 def build_configs() -> list[tuple]:
-    """Build 13 configs: baseline + 10 single-factor ablations + 2 anchors.
+    """Build 14 configs: baseline + 11 single-factor ablations + 2 anchors.
 
     The anchors are off the OFAT grid. `all_varied` is the grid's far corner;
     `harmbench_verbatim` is not a render at all (its Chat and factor_config are
@@ -222,9 +229,10 @@ def main() -> None:
 
     # Determine output file and load existing progress
     reasoning_method = "native" if backend == "openrouter" else "think_tool"
-    out_file = get_output_path(
-        model_slug, "" if backend == "openrouter" else "_think_tool"
-    )
+    mode_suffix = "" if backend == "openrouter" else "_think_tool"
+    if os.getenv("RUN_TAG"):
+        mode_suffix += f"_{os.environ['RUN_TAG']}"
+    out_file = get_output_path(model_slug, mode_suffix)
     existing_data, completed_ids = load_existing_results(out_file)
 
     output_data = existing_data or {
@@ -294,7 +302,7 @@ def main() -> None:
                 chat = harmbench_verbatim_chat(row)
                 factor_config = harmbench_factor_config(row)
             else:
-                chat = render(template, factor_config)
+                chat = render(template, factor_config, model_slug)
             for s_idx in range(1, samples_per_config + 1):
                 sample_id = f"{task['task_id']}_{config_name}_sample{s_idx}"
                 if sample_id in completed_ids:
