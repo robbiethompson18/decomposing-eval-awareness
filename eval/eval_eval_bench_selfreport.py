@@ -135,7 +135,17 @@ def main() -> None:
     model = data.get("model", "unknown")
     backend = data.get("backend", "")
     reasoning_mode = data.get("reasoning_mode", "summary")
+    # Response files store the prompt *filename* in "system_prompt", not the
+    # prompt text (the gotcha in .claude/notes/f8-eval-suffix-awareness.md);
+    # resolve it so the replay client gets the real system prompt.
     system_prompt = data.get("system_prompt", "")
+    if system_prompt.endswith(".txt"):
+        prompt_path = os.path.join(base_dir, "prompts", os.path.basename(system_prompt))
+        if os.path.exists(prompt_path):
+            system_prompt = read_file(prompt_path).strip()
+        else:
+            print(f"ERROR: system_prompt file {system_prompt!r} not found in prompts/")
+            sys.exit(1)
     if not samples or backend not in BACKEND_MODEL_ENV:
         print(f"ERROR: No samples or unknown backend {backend!r} in response file.")
         sys.exit(1)
