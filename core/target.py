@@ -158,7 +158,7 @@ class AnthropicApiClient:
             if thinking_text:
                 return f"<think>{thinking_text}</think>{answer_text}".strip()
             return answer_text.strip()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 -- never crash a long parallel run; ERROR string is the convention downstream
             return f"ERROR calling Anthropic API: {e}"
 
 
@@ -242,7 +242,7 @@ class OpenAITargetClient:
             if reasoning_summary:
                 return f"<think>{reasoning_summary}</think>{answer}".strip()
             return answer.strip()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 -- never crash a long parallel run; ERROR string is the convention downstream
             return f"ERROR calling OpenAI API target: {e}"
 
 
@@ -321,7 +321,7 @@ class OpenRouterApiClient:
                 f"reasoning_tokens={meta['reasoning_tokens']}, content_len={len(content)})"
             )
             return f"<think>{reasoning}</think>{content}".strip(), meta
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 -- never crash a long parallel run; ERROR string is the convention downstream
             return f"ERROR calling OpenRouter API: {e}", {"error": str(e)}
 
 
