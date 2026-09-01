@@ -1,6 +1,7 @@
 """
 Graphs for the eval-awareness replication (TODO item 3):
-  by provider, by release date, by API cost, and self-report uplift.
+  by provider, by release date, by API cost, self-report uplift, and a
+  per-factor heatmap (model × OFAT config).
 
 RUN SELECTION IS EXPLICIT: only files pinned in BIG_RUN below are plotted —
 never newest-wins globbing, which conflates canary/smoke runs with the real
@@ -10,13 +11,14 @@ source response file, and marks the currently-pinned ones.
 
 For each pinned model: model_awareness yes-rate with denominator = yes+no
 (n/a and invalid are counted and reported but never fold into "no"), Wilson
-95% CIs. Writes four PNGs plus awareness_summary_{config}.json into OUT_DIR.
+95% CIs. Writes five PNGs plus awareness_summary_{config}.json into OUT_DIR.
 
 The provider/release-date/cost charts plot ONE probe, chosen by PROBE
 (default "selfreport"; "cot" for the CoT-monitoring rate). Models missing
 the chosen probe's file drop out with a stderr note. The uplift chart always
 needs both probes. Rates are per-config; CONFIG_FILTER (default "baseline")
 keeps the headline comparison free of the awareness-raising factor variants.
+The factor heatmap ignores CONFIG_FILTER — its columns *are* the configs.
 
 Environment variables:
     SURVEY          "1" = print the file survey and exit (for updating pins)
@@ -29,6 +31,7 @@ in lib/model_meta.py.
 """
 
 import json
+import math
 import os
 import sys
 from collections import Counter
@@ -104,6 +107,20 @@ BIG_RUN: dict[str, dict[str, str | None]] = {
 }
 
 EXPECTED_CONFIGS = 9  # baseline + F1..F8
+
+# OFAT configs in column order, labelled by the *varied* level of the one
+# factor flipped (see eval_bench/taxonomy.yaml).
+FACTOR_LABELS = {
+    "baseline": "baseline",
+    "F1": "F1\nfake\nentities",
+    "F2": "F2\nincoherent\nscenario",
+    "F3": "F3\nformal\nregister",
+    "F4": "F4\nbare\nrequest",
+    "F5": "F5\nstakes\ntelegraphed",
+    "F6": "F6\nknown\nparadigm",
+    "F7": "F7\ntemplate\nformat",
+    "F8": "F8\neval\ndisclosure",
+}
 
 PROBE_TITLE = {"selfreport": "Self-reported", "cot": "CoT-judged"}
 PROBE_XLABEL = {
@@ -312,6 +329,76 @@ def plot_uplift(rows: list[dict], out_dir: str, config: str):
     save(fig, out_dir, f"selfreport_uplift_{config}.png")
 
 
+def plot_factor_heatmap(out_dir: str, probe: str):
+    """Awareness rate per (model, OFAT config) as a labelled heatmap + pooled row.
+
+    Self-report is the useful probe here: CoT-judged rates sit at ~1% at
+    baseline and only F1/F2/F8 move them, so they can't rank factors.
+    """
+    configs = list(FACTOR_LABELS)
+    grid: list[list[float]] = []
+    labels: list[str] = []
+    pooled = {c: [0, 0] for c in configs}
+    for model in BIG_RUN:
+        path = pinned_path(probe, model)
+        if path is None:
+            continue
+        recs = load_records(path)
+        row = []
+        for c in configs:
+            s = summarize(recs, c)
+            row.append(s["rate"] if s["rate"] is not None else math.nan)
+            pooled[c][0] += s["counts"]["yes"]
+            pooled[c][1] += s["n_graded"]
+        grid.append(row)
+        labels.append(display_name(model))
+    if not grid:
+        return
+    grid.append([y / n if n else math.nan for y, n in pooled.values()])
+    labels.append("Pooled")
+
+    n_rows, n_cols = len(grid), len(configs)
+    vmax = max(v for row in grid for v in row if not math.isnan(v))
+    fig, ax = new_fig(w=0.95 * n_cols + 1.8, h=0.5 * n_rows + 1.6)
+    ax.imshow(grid, cmap="Blues", vmin=0, vmax=vmax, aspect="auto")
+    for i, row in enumerate(grid):
+        for j, v in enumerate(row):
+            if math.isnan(v):
+                ax.text(j, i, "–", ha="center", va="center", fontsize=8, color=INK2)
+                continue
+            ink = "white" if v / vmax > 0.6 else INK
+            ax.text(
+                j,
+                i,
+                f"{v * 100:.0f}%",
+                ha="center",
+                va="center",
+                fontsize=8.5,
+                color=ink,
+            )
+    # Surface-colored gaps between cells; dashed rule after baseline; rule above pooled.
+    ax.set_xticks([x - 0.5 for x in range(1, n_cols)], minor=True)
+    ax.set_yticks([y - 0.5 for y in range(1, n_rows)], minor=True)
+    ax.grid(which="minor", color=SURFACE, lw=2)
+    ax.tick_params(which="minor", length=0)
+    ax.axvline(0.5, color=INK2, lw=1, ls=(0, (3, 3)))
+    ax.axhline(n_rows - 1.5, color=INK2, lw=1)
+    ax.set_xticks(range(n_cols))
+    ax.set_xticklabels([FACTOR_LABELS[c] for c in configs], fontsize=7.5)
+    ax.set_yticks(range(n_rows))
+    ax.set_yticklabels(labels, fontsize=9)
+    for side in ("left", "bottom"):
+        ax.spines[side].set_visible(False)
+    ax.tick_params(length=0)
+    ax.set_xlabel(
+        "single factor flipped to its varied level (OFAT vs baseline)", color=INK2
+    )
+    ax.set_title(
+        f"{PROBE_TITLE[probe]} eval awareness by factor varied", color=INK, loc="left"
+    )
+    save(fig, out_dir, f"awareness_by_factor_{probe}.png")
+
+
 def main():
     if os.getenv("SURVEY") == "1":
         survey()
@@ -402,6 +489,7 @@ def main():
         log_x=True,
     )
     plot_uplift(rows, out_dir, config)
+    plot_factor_heatmap(out_dir, probe)
 
 
 if __name__ == "__main__":
