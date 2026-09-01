@@ -268,6 +268,13 @@ class OpenRouterApiClient:
         return self.query_messages([{"role": "user", "content": prompt}])
 
     def query_messages(self, messages: list[dict[str, str]]) -> str:
+        text, _meta = self.query_messages_meta(messages)
+        return text
+
+    def query_messages_meta(
+        self, messages: list[dict[str, str]]
+    ) -> tuple[str, dict[str, Any]]:
+        """Query and also return per-call metadata (serving provider, token usage)."""
         try:
             # Build request kwargs - temperature is optional for reasoning models
             kwargs = {
@@ -288,14 +295,31 @@ class OpenRouterApiClient:
             choice = resp.choices[0] if resp.choices else None
             content = (choice.message.content or "") if choice else ""
 
-            reasoning = getattr(choice.message, "reasoning", "") if choice else ""
-            has_reasoning = "yes" if reasoning else "no"
-            print(
-                f"    [OpenRouter] API call successful (model={self.model}, reasoning={has_reasoning}, content_len={len(content)})"
+            # `reasoning` can exist but be None (provider returned no reasoning);
+            # without `or ""` that f-strings into a literal "<think>None</think>"
+            reasoning = (
+                (getattr(choice.message, "reasoning", None) or "") if choice else ""
             )
-            return f"<think>{reasoning}</think>{content}".strip()
+            provider = getattr(resp, "provider", None)
+            usage = getattr(resp, "usage", None)
+            details = getattr(usage, "completion_tokens_details", None)
+            meta = {
+                "provider": provider,
+                "reasoning_chars": len(reasoning),
+                "reasoning_tokens": getattr(details, "reasoning_tokens", None),
+                "completion_tokens": getattr(usage, "completion_tokens", None),
+                "finish_reason": getattr(choice, "finish_reason", None)
+                if choice
+                else None,
+            }
+            print(
+                f"    [OpenRouter] API call successful (model={self.model}, "
+                f"provider={provider}, reasoning_chars={len(reasoning)}, "
+                f"reasoning_tokens={meta['reasoning_tokens']}, content_len={len(content)})"
+            )
+            return f"<think>{reasoning}</think>{content}".strip(), meta
         except Exception as e:
-            return f"ERROR calling OpenRouter API: {e}"
+            return f"ERROR calling OpenRouter API: {e}", {"error": str(e)}
 
 
 # ============================================================================
