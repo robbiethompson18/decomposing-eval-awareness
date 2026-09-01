@@ -98,6 +98,9 @@ class AnthropicApiClient:
             self.thinking_budget = max(1024, int(self.max_tokens * 0.6))
 
     def query(self, prompt: str) -> str:
+        return self.query_messages([{"role": "user", "content": prompt}])
+
+    def query_messages(self, messages: list[dict[str, str]]) -> str:
         url = self.api_base.rstrip("/") + "/v1/messages"
         headers = {
             "x-api-key": self.api_key,
@@ -107,7 +110,7 @@ class AnthropicApiClient:
         payload = {
             "model": self.model,
             "system": self.system_prompt,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": messages,
             "max_tokens": self.max_tokens,
         }
         if self.scratchpad:
@@ -181,6 +184,9 @@ class OpenAITargetClient:
         self.client = OpenAI(api_key=cfg["OPENAI_API_KEY"])
 
     def query(self, prompt: str) -> str:
+        return self.query_messages([{"role": "user", "content": prompt}])
+
+    def query_messages(self, messages: list[dict[str, str]]) -> str:
         try:
             if self.scratchpad:
                 # Standard Chat Completions API (not Responses API)
@@ -189,7 +195,7 @@ class OpenAITargetClient:
                     model=self.model,
                     messages=[
                         {"role": "system", "content": self.system_prompt},
-                        {"role": "user", "content": prompt},
+                        *messages,
                     ],
                     max_completion_tokens=self.max_tokens,
                 )
@@ -205,7 +211,7 @@ class OpenAITargetClient:
                 model=self.model,
                 input=[
                     {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": prompt},
+                    *messages,
                 ],
                 reasoning={
                     "effort": "high",
@@ -259,13 +265,16 @@ class OpenRouterApiClient:
         )
 
     def query(self, prompt: str) -> str:
+        return self.query_messages([{"role": "user", "content": prompt}])
+
+    def query_messages(self, messages: list[dict[str, str]]) -> str:
         try:
             # Build request kwargs - temperature is optional for reasoning models
             kwargs = {
                 "model": self.model,
                 "messages": [
                     {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": prompt},
+                    *messages,
                 ],
                 "max_tokens": self.max_tokens,
                 "stream": False,
