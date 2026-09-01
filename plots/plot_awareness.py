@@ -60,55 +60,68 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RESULTS = os.path.join(ROOT, "results", "eval_bench")
 TASKS = os.path.join(ROOT, "eval_bench", "tasks")
 
-# The 2026-08-31→09-01 giant run: responses generated 20260901_005920 (Pacific),
-# selfreport probes replayed from the same response files. CoT grader: prefer
-# the gpt-5.6-terra-judged file (the default grader, see CLAUDE.md); fall back
-# to the claude-sonnet-5-judged file where terra hasn't been run yet (~150
-# records per sonnet file are terra via id-cache reuse). One row per roster
-# model; None = that leg hadn't finished when pins were last updated (rerun
-# SURVEY=1 and fill in).
+# The 2026-08-31→09-01 giant run: responses generated 20260901_005920 (Pacific;
+# gemini 010911), selfreport probes replayed from the same response files.
+# CoT grader: every cot pin is the 2026-09-01 ~14:25 gpt-5.6-terra sweep over
+# the completed response files (no backup grader; transcripts OpenAI's cyber
+# filter blocks are N/A rows, ~1%/model — see the grader note). The OpenAI
+# legs were regenerated after the corp account was restored (PR #47 fixed the
+# selfreport probe; files dated 14:00–14:40). One row per roster model.
 BIG_RUN: dict[str, dict[str, str | None]] = {
     "claude-sonnet-4.5": {
-        "cot": "cot_claude-sonnet-4.5_20260901_025642.json",  # terra
-        # sonnet-judged alternate from the same responses: ..._20260901_095322.json
+        "cot": "cot_claude-sonnet-4.5_20260901_142454.json",
         "selfreport": "selfreport_claude-sonnet-4.5_20260901_033516.json",
     },
     "claude-haiku-4.5": {
-        "cot": "cot_claude-haiku-4.5_20260901_032213.json",  # terra
-        # sonnet-judged alternate: ..._20260901_095331.json
+        "cot": "cot_claude-haiku-4.5_20260901_142524.json",
         "selfreport": "selfreport_claude-haiku-4.5_20260901_034056.json",
     },
-    # Everything below is sonnet-judged (no terra run yet). gpt cot files are
-    # final but short of 5400 (failed samples); no gpt selfreport leg has run
-    # yet as of 2026-09-01 11:15am.
-    "gpt-5": {"cot": "cot_gpt-5_20260901_102007.json", "selfreport": None},
-    "gpt-5.1": {"cot": "cot_gpt-5.1_20260901_101924.json", "selfreport": None},
-    "gpt-5.2": {"cot": "cot_gpt-5.2_20260901_102115.json", "selfreport": None},
-    "gpt-5.4": {"cot": "cot_gpt-5.4_20260901_102144.json", "selfreport": None},
-    "gpt-5.6-sol": {"cot": "cot_gpt-5.6-sol_20260901_102920.json", "selfreport": None},
-    "gemini-3.1-pro": {"cot": None, "selfreport": None},  # only 4-sample canary so far
+    "gpt-5": {
+        "cot": "cot_gpt-5_20260901_142448.json",
+        "selfreport": "selfreport_gpt-5_20260901_141533.json",
+    },
+    "gpt-5.1": {
+        "cot": "cot_gpt-5.1_20260901_142738.json",
+        "selfreport": "selfreport_gpt-5.1_20260901_143914.json",
+    },
+    "gpt-5.2": {
+        "cot": "cot_gpt-5.2_20260901_142502.json",
+        "selfreport": "selfreport_gpt-5.2_20260901_140000.json",
+    },
+    "gpt-5.4": {
+        "cot": "cot_gpt-5.4_20260901_142611.json",
+        "selfreport": "selfreport_gpt-5.4_20260901_140552.json",
+    },
+    "gpt-5.6-sol": {
+        "cot": "cot_gpt-5.6-sol_20260901_142546.json",
+        "selfreport": "selfreport_gpt-5.6-sol_20260901_142348.json",
+    },
+    "gemini-3.1-pro": {
+        "cot": "cot_gemini-3.1-pro_20260901_142317.json",
+        "selfreport": None,  # selfreport leg running as of 2026-09-01 15:00
+    },
     "gemini-3.5-flash": {
-        "cot": "cot_gemini-3.5-flash_20260901_100742.json",
+        "cot": "cot_gemini-3.5-flash_20260901_142512.json",
         "selfreport": "selfreport_gemini-3.5-flash_20260901_094919.json",
     },
     "qwen3.8-2.4t": {
-        "cot": "cot_qwen3.8-2.4t_20260901_100727.json",  # 085001 is a superseded duplicate
+        "cot": "cot_qwen3.8-2.4t_20260901_142510.json",
         "selfreport": "selfreport_qwen3.8-2.4t_20260901_081110.json",
     },
     "deepseek-v4-pro": {
-        "cot": "cot_deepseek-v4-pro_20260901_101000.json",
+        "cot": "cot_deepseek-v4-pro_20260901_142806.json",
         "selfreport": "selfreport_deepseek-v4-pro_20260901_091928.json",
     },
     "kimi-k3": {
-        "cot": "cot_kimi-k3_20260901_100843.json",
+        "cot": "cot_kimi-k3_20260901_142534.json",
         "selfreport": "selfreport_kimi-k3_20260901_085934.json",
     },
     "glm-5.3": {
-        "cot": "cot_glm-5.3_20260901_095305.json",
+        "cot": "cot_glm-5.3_20260901_142520.json",
         "selfreport": "selfreport_glm-5.3_20260901_055442.json",
     },
     "minimax-m3": {
-        "cot": "cot_minimax-m3_20260901_095346.json",
+        "cot": "cot_minimax-m3_20260901_142554.json",
         "selfreport": "selfreport_minimax-m3_20260901_074409.json",
     },
 }
