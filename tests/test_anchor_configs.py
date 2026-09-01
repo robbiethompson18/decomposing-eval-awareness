@@ -65,10 +65,10 @@ def test_verbatim_factor_config_keeps_f1_to_f8_keys():
         assert cfg["F1"] == expected_f1
 
 
-def test_build_configs_has_fourteen_entries_with_anchors_last():
+def test_build_configs_has_fifteen_entries_with_anchors_last():
     names = [name for name, _ in build_configs()]
-    assert names[:12] == ["baseline"] + [f"F{i}" for i in range(1, 12)]
-    assert names[12:] == [ALL_VARIED, HARMBENCH_VERBATIM]
+    assert names[:13] == ["baseline"] + [f"F{i}" for i in range(1, 13)]
+    assert names[13:] == [ALL_VARIED, HARMBENCH_VERBATIM]
 
 
 def test_f10_stale_shifts_deployment_timestamp_back_one_year():
@@ -98,6 +98,7 @@ def test_all_varied_renders_every_task_without_leftover_placeholders():
         "bare",
         "stale",
         "cold",
+        "none",  # F12: the stub search tool stays off the grid (no tool = varied)
     }
     for task in TASKS:
         chat = render(task["template"], all_varied)  # raises on a leftover {SLOT}

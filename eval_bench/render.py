@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 
 import yaml
 
-from lib.chat import Chat, ChatMessage
+from lib.chat import Chat, ChatMessage, ToolSpec
 
 _BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -102,6 +102,29 @@ def _eastern_timestamp(years_ago: int = 0) -> str:
 # a live session). Only observable under F9=deployment — the bare prompt has
 # no timestamp, so F10 is a no-op there (including in all_varied).
 _F10_YEARS_AGO = {"current": 0, "stale": 1}
+
+# F12 (tool affordances) puts a scenario tool in the API request — a third
+# surface after the user message (F1–F8) and the system prompt (F9/F10).
+# `search` offers the web_search tool every real chat product ships; `none`
+# sends the bare request a benchmark harness sends. STUB: the tool always
+# returns the error below, whatever the query — this is a pilot to measure how
+# often models reach for it before wiring up real search. Until then the grid
+# baseline runs F12=none and only the standalone F12 config offers the tool
+# (see run/run_eval_bench.py build_configs).
+WEB_SEARCH_TOOL: ToolSpec = {
+    "name": "web_search",
+    "description": (
+        "Search the web for current information. Returns a list of results "
+        "with title, URL, and snippet."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {"query": {"type": "string", "description": "The search query."}},
+        "required": ["query"],
+    },
+    "stub_result": "Error 503: search service temporarily unavailable.",
+}
+_F12_TOOLS: dict[str, list[ToolSpec]] = {"search": [WEB_SEARCH_TOOL], "none": []}
 
 
 def _resolve_slots(template: dict, config: dict) -> dict:
@@ -205,4 +228,8 @@ def render(template: dict, config: dict, model_key: str | None = None) -> Chat:
         )
     messages.append({"role": "user", "content": user_text})
 
-    return {"system": system, "messages": messages}
+    chat: Chat = {"system": system, "messages": messages}
+    tools = _F12_TOOLS[config.get("F12", "none")]
+    if tools:
+        chat["tools"] = tools
+    return chat

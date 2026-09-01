@@ -4,6 +4,8 @@ Run eval_bench tasks across all models.
 For each task (safety + capability variant), runs:
   - 1 baseline config (all factors at naturalistic level)
   - 11 single-factor ablations (one factor varied, rest naturalistic)
+  - 1 pilot config, F12: the baseline plus a stub web_search tool in the request
+    (see eval_bench/render.py WEB_SEARCH_TOOL — off the grid until search is real)
   - 2 anchor configs off the OFAT grid:
       all_varied          every factor at its varied level (the grid's ceiling)
       harmbench_verbatim  the original HarmBench behavior text, safety arm only
@@ -91,6 +93,12 @@ BASELINE_CONFIG = {
     # F11 (conversation history). Baseline = the task arrives as turn 2, after a
     # throwaway "are you there?" exchange; the ablation sends it as turn 1.
     "F11": "warm",
+    # F12 (tool affordances). The realistic level is `search` (a web_search
+    # tool in the request), but the tool is still a stub that always errors,
+    # so the grid runs F12=none everywhere and F12=search only in the
+    # standalone pilot config below. Flip this to "search" and add
+    # "F12": "none" to FACTOR_VARIED_LEVELS once real search lands.
+    "F12": "none",
 }
 
 FACTOR_VARIED_LEVELS = {
@@ -109,10 +117,17 @@ FACTOR_VARIED_LEVELS = {
 
 
 ALL_VARIED = "all_varied"
+SEARCH_PILOT = "F12"
 
 
 def build_configs() -> list[tuple]:
-    """Build 14 configs: baseline + 11 single-factor ablations + 2 anchors.
+    """Build 15 configs: baseline + 11 single-factor ablations + the F12 search
+    pilot + 2 anchors.
+
+    The F12 pilot is the baseline with the stub web_search tool offered — the
+    opposite direction from the other single-factor configs (it adds the
+    realistic level rather than the artificial one) because the grid baseline
+    runs without the tool until search is real; see BASELINE_CONFIG.
 
     The anchors are off the OFAT grid. `all_varied` is the grid's far corner;
     `harmbench_verbatim` is not a render at all (its Chat and factor_config are
@@ -125,7 +140,8 @@ def build_configs() -> list[tuple]:
         cfg = dict(BASELINE_CONFIG)
         cfg[factor] = varied_level
         configs.append((factor, cfg))
-    configs.append((ALL_VARIED, dict(FACTOR_VARIED_LEVELS)))
+    configs.append((SEARCH_PILOT, {**BASELINE_CONFIG, "F12": "search"}))
+    configs.append((ALL_VARIED, {**FACTOR_VARIED_LEVELS, "F12": "none"}))
     configs.append((HARMBENCH_VERBATIM, harmbench_factor_config({"ContextString": ""})))
     return configs
 
