@@ -19,7 +19,10 @@ Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min
 
 3. [ ] Replicate their results
 
-- [] graphs: by provider, by release date, by API cost. SHow uplift from asking model itself.
+- [x] graphs: by provider, by release date, by API cost. SHow uplift from asking model itself.
+- [] look at by question type
+- [] rerun OAI
+- [] surely we need 10 ablits and not 9, the full eval-y one should show up
 
 4. add my flavor
 
