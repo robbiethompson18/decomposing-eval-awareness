@@ -181,12 +181,21 @@ class AnthropicApiClient:
         answers: list[str] = []
         try:
             for _ in range(THINK_TOOL_MAX_ROUNDS):
-                resp = requests.post(
-                    url,
-                    headers=headers,
-                    json=dict(base_payload, messages=convo),
-                    timeout=600,
-                )
+                # Retry rate limits / overload (429, 529, 5xx) with backoff,
+                # honoring retry-after; otherwise a 429 storm at high concurrency
+                # lands as stored "ERROR calling" samples.
+                for attempt in range(8):
+                    resp = requests.post(
+                        url,
+                        headers=headers,
+                        json=dict(base_payload, messages=convo),
+                        timeout=600,
+                    )
+                    if resp.status_code not in (429, 500, 502, 503, 529):
+                        break
+                    time.sleep(
+                        float(resp.headers.get("retry-after", 5 * (attempt + 1)))
+                    )
                 resp.raise_for_status()
                 blocks = resp.json().get("content") or []
                 tool_uses = []
@@ -233,7 +242,8 @@ class OpenAITargetClient:
         self.model = cfg["OPENAI_TARGET_MODEL"]
         self.max_tokens = cfg.get("MAX_TOKENS", 50000)
         self.think_tool = cfg.get("THINK_TOOL", True)
-        self.client = OpenAI(api_key=cfg["OPENAI_API_KEY"])
+        # SDK retries 429/5xx with exponential backoff (honors retry-after).
+        self.client = OpenAI(api_key=cfg["OPENAI_API_KEY"], max_retries=8)
 
     def query_chat(self, chat: Chat) -> str:
         base_kwargs: dict[str, Any] = {

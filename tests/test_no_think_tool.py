@@ -81,6 +81,8 @@ def test_anthropic_no_think_tool_sends_bare_request(monkeypatch):
     def fake_post(url, headers, json, timeout):
         seen.update(json)
         return SimpleNamespace(
+            status_code=200,
+            headers={},
             raise_for_status=lambda: None,
             json=lambda: {"content": [{"type": "text", "text": "hello"}]},
         )

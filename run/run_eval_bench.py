@@ -180,12 +180,26 @@ def get_output_path(model_slug: str, mode_suffix: str) -> Path:
 
 
 def load_existing_results(out_file: Path) -> tuple[dict[str, Any], set[str]]:
-    """Load existing results file and return (data_dict, set_of_completed_ids)."""
+    """Load existing results file and return (data_dict, set_of_completed_ids).
+
+    Samples whose response is an "ERROR calling ..." string (API failure) are
+    dropped so a resume regenerates them instead of treating them as done.
+    """
     if out_file.exists():
         with open(out_file, "r", encoding="utf-8") as f:
             data = json.load(f)
-        completed_ids = {s["id"] for s in data.get("samples", [])}
-        return data, completed_ids
+        samples = data.get("samples", [])
+        kept = [
+            s
+            for s in samples
+            if not str(s.get("response", "")).startswith("ERROR calling")
+        ]
+        if len(kept) < len(samples):
+            print(
+                f"Dropping {len(samples) - len(kept)} errored samples for regeneration"
+            )
+        data["samples"] = kept
+        return data, {s["id"] for s in kept}
     return None, set()
 
 
@@ -236,12 +250,6 @@ def main() -> None:
         allowed_configs = {c.strip() for c in config_filter.split(",")}
         configs = [(name, c) for name, c in configs if name in allowed_configs]
 
-    # Group tasks by task_name for incremental saving
-    tasks_by_name = {}
-    for t in tasks:
-        tasks_by_name.setdefault(t["task_name"], []).append(t)
-    task_names = sorted(tasks_by_name.keys())
-
     # Determine output file and load existing progress. The suffix encodes
     # every run-level choice that changes what a sample id means, so a run
     # never resumes into a file generated under a different harness.
@@ -279,7 +287,7 @@ def main() -> None:
     )
     n_grid_configs = sum(1 for name, _ in configs if name != HARMBENCH_VERBATIM)
     total_calls = (len(tasks) * n_grid_configs + n_verbatim_tasks) * samples_per_config
-    print(f"\nTasks loaded: {len(tasks)} ({len(task_names)} task sets x 2 valences)")
+    print(f"\nTasks loaded: {len(tasks)} (task sets x valences)")
     print(f"Configs: {len(configs)} ({', '.join(name for name, _ in configs)})")
     print(f"Samples per config: {samples_per_config}")
     print(f"Model: {model_slug} (backend: {backend})")
@@ -304,65 +312,55 @@ def main() -> None:
         }
 
     start_time = now_pacific()
-    new_count = 0
 
-    for t_idx, task_name in enumerate(task_names, 1):
-        task_group = tasks_by_name[task_name]
-
-        # Build items for this task, skipping completed
-        items = []
-        expected = 0
-        for task in task_group:
-            template = task["template"]
-            for config_name, factor_config in configs:
-                if config_name == HARMBENCH_VERBATIM:
-                    if task["valence"] != "safety":
-                        continue
-                    row = harmbench_rows[task["task_name"]]
-                    chat = harmbench_verbatim_chat(row)
-                    factor_config = harmbench_factor_config(row)
-                else:
-                    chat = render(template, factor_config)
-                for s_idx in range(1, samples_per_config + 1):
-                    expected += 1
-                    sample_id = f"{task['task_id']}_{config_name}_sample{s_idx}"
-                    if sample_id in completed_ids:
-                        continue
-                    items.append(
-                        (
-                            client,
-                            chat,
-                            {
-                                "id": sample_id,
-                                "task_id": task["task_id"],
-                                "task_name": task["task_name"],
-                                "valence": task["valence"],
-                                "config_name": config_name,
-                                "factor_config": factor_config,
-                                "chat": chat,
-                                "sample_idx": s_idx,
-                            },
-                        )
+    # Build every pending item up front, then run them in MAX_CONCURRENT-sized
+    # chunks (saving after each) so the concurrency cap is actually reached even
+    # for narrow runs like CONFIG_FILTER=baseline, where a single task has only
+    # 2 valences x SAMPLES_PER_CONFIG calls.
+    items = []
+    for task in tasks:
+        template = task["template"]
+        for config_name, factor_config in configs:
+            if config_name == HARMBENCH_VERBATIM:
+                if task["valence"] != "safety":
+                    continue
+                row = harmbench_rows[task["task_name"]]
+                chat = harmbench_verbatim_chat(row)
+                factor_config = harmbench_factor_config(row)
+            else:
+                chat = render(template, factor_config)
+            for s_idx in range(1, samples_per_config + 1):
+                sample_id = f"{task['task_id']}_{config_name}_sample{s_idx}"
+                if sample_id in completed_ids:
+                    continue
+                items.append(
+                    (
+                        client,
+                        chat,
+                        {
+                            "id": sample_id,
+                            "task_id": task["task_id"],
+                            "task_name": task["task_name"],
+                            "valence": task["valence"],
+                            "config_name": config_name,
+                            "factor_config": factor_config,
+                            "chat": chat,
+                            "sample_idx": s_idx,
+                        },
                     )
+                )
 
-        if not items:
-            print(
-                f"[{t_idx}/{len(task_names)}] {task_name}: already complete, skipping"
-            )
-            continue
-
-        print(
-            f"[{t_idx}/{len(task_names)}] {task_name}: {len(items)} calls ({expected - len(items)} cached)"
-        )
-
+    chunk_size = cfg["MAX_CONCURRENT"]
+    chunks = [items[i : i + chunk_size] for i in range(0, len(items), chunk_size)]
+    new_count = 0
+    for c_idx, chunk in enumerate(chunks, 1):
+        print(f"[chunk {c_idx}/{len(chunks)}] {len(chunk)} calls")
         batch_results = asyncio.run(
-            query_parallel(items, build_result, cfg["MAX_CONCURRENT"])
+            query_parallel(chunk, build_result, cfg["MAX_CONCURRENT"])
         )
-
         output_data["samples"].extend(batch_results)
         completed_ids.update(r["id"] for r in batch_results)
         new_count += len(batch_results)
-
         save_results(out_file, output_data)
         print(f"  -> saved ({len(output_data['samples'])} total samples)")
 
