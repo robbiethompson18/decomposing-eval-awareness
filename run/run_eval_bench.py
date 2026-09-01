@@ -279,12 +279,15 @@ def main() -> None:
     start_time = now_pacific()
     new_count = 0
 
-    for t_idx, task_name in enumerate(task_names, 1):
+    # Build every pending call across ALL task sets up front, then run them in
+    # MAX_CONCURRENT-sized batches. Batching per task set (as this used to do)
+    # capped effective parallelism at one task set's worth of calls —
+    # n_configs x 2 valences x samples_per_config, often just 4 — so a
+    # MAX_CONCURRENT of 500 bought nothing and a 14-model run took hours.
+    all_items = []
+    expected = 0
+    for task_name in task_names:
         task_group = tasks_by_name[task_name]
-
-        # Build items for this task, skipping completed
-        items = []
-        expected = 0
         for task in task_group:
             template = task["template"]
             for config_name, factor_config in configs:
@@ -301,7 +304,7 @@ def main() -> None:
                     sample_id = f"{task['task_id']}_{config_name}_sample{s_idx}"
                     if sample_id in completed_ids:
                         continue
-                    items.append(
+                    all_items.append(
                         (
                             client,
                             chat,
@@ -318,24 +321,22 @@ def main() -> None:
                         )
                     )
 
-        if not items:
-            print(
-                f"[{t_idx}/{len(task_names)}] {task_name}: already complete, skipping"
-            )
-            continue
+    max_concurrent = cfg["MAX_CONCURRENT"]
+    n_batches = (len(all_items) + max_concurrent - 1) // max_concurrent
+    print(f"Pending calls: {len(all_items)} ({expected - len(all_items)} cached)")
+    print(f"Batches: {n_batches} x up to {max_concurrent} concurrent")
 
-        print(
-            f"[{t_idx}/{len(task_names)}] {task_name}: {len(items)} calls ({expected - len(items)} cached)"
-        )
+    for b_idx, start in enumerate(range(0, len(all_items), max_concurrent), 1):
+        batch = all_items[start : start + max_concurrent]
+        print(f"[batch {b_idx}/{n_batches}] {len(batch)} calls")
 
-        batch_results = asyncio.run(
-            query_parallel(items, build_result, cfg["MAX_CONCURRENT"])
-        )
+        batch_results = asyncio.run(query_parallel(batch, build_result, max_concurrent))
 
         output_data["samples"].extend(batch_results)
         completed_ids.update(r["id"] for r in batch_results)
         new_count += len(batch_results)
 
+        # Saved after every batch so a crashed run resumes from the last batch.
         save_results(out_file, output_data)
         print(f"  -> saved ({len(output_data['samples'])} total samples)")
 
