@@ -12,30 +12,31 @@ For each pinned model: model_awareness yes-rate with denominator = yes+no
 (n/a and invalid are counted and reported but never fold into "no"), Wilson
 95% CIs. Writes four PNGs plus awareness_summary_{config}.json into OUT_DIR.
 
-Rates are per-config; plots use CONFIG_FILTER (default "baseline") so the
-headline model comparison isn't polluted by the awareness-raising factor
-variants.
+The provider/release-date/cost charts plot ONE probe, chosen by PROBE
+(default "selfreport"; "cot" for the CoT-monitoring rate). Models missing
+the chosen probe's file drop out with a stderr note. The uplift chart always
+needs both probes. Rates are per-config; CONFIG_FILTER (default "baseline")
+keeps the headline comparison free of the awareness-raising factor variants.
 
 Environment variables:
     SURVEY          "1" = print the file survey and exit (for updating pins)
+    PROBE           "selfreport" (default) or "cot"
     CONFIG_FILTER   Config to plot (default: "baseline"; "ALL" pools everything)
     OUT_DIR         Output directory (default: results/eval_bench/plots)
 
-Model metadata (release date, output $/Mtok) lives in MODEL_META below.
-None = unknown at sketch time; models with missing metadata are dropped from
-the affected plot and listed on stderr. #@robbie fill in the None cells
-(esp. post-Jan-2026 releases and OpenRouter prices).
+Model metadata (provider, release date, output $/Mtok, display names) lives
+in lib/model_meta.py.
 """
 
 import json
 import os
 import sys
 from collections import Counter
-from datetime import date
 from glob import glob
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.metrics import bucket_conclusion, extract_conclusion
+from lib.model_meta import MODEL_META, display_name
 from lib.stats import wilson_ci
 from plots.style import (
     GRID,
@@ -104,113 +105,10 @@ BIG_RUN: dict[str, dict[str, str | None]] = {
 
 EXPECTED_CONFIGS = 9  # baseline + F1..F8
 
-# provider = color group; lab = fine-grained attribution kept for the summary.
-# release: month-precision dates use day=15. usd_out = $ per Mtok output.
-# None = unknown at sketch time (post-cutoff model or unchecked OpenRouter price).
-MODEL_META: dict[str, dict] = {
-    "claude-sonnet-4.5": {
-        "provider": "Anthropic",
-        "lab": "Anthropic",
-        "release": date(2025, 9, 29),
-        "usd_out": 15.0,
-    },
-    "claude-haiku-4.5": {
-        "provider": "Anthropic",
-        "lab": "Anthropic",
-        "release": date(2025, 10, 1),
-        "usd_out": 5.0,
-    },
-    "gpt-5": {
-        "provider": "OpenAI",
-        "lab": "OpenAI",
-        "release": date(2025, 8, 7),
-        "usd_out": 10.0,
-    },
-    "gpt-5.1": {
-        "provider": "OpenAI",
-        "lab": "OpenAI",
-        "release": date(2025, 11, 15),
-        "usd_out": 10.0,
-    },
-    "gpt-5.2": {
-        "provider": "OpenAI",
-        "lab": "OpenAI",
-        "release": None,
-        "usd_out": None,
-    },
-    "gpt-5.4": {
-        "provider": "OpenAI",
-        "lab": "OpenAI",
-        "release": None,
-        "usd_out": None,
-    },
-    "gpt-5.6-sol": {
-        "provider": "OpenAI",
-        "lab": "OpenAI",
-        "release": None,
-        "usd_out": None,
-    },
-    "gemini-3.1-pro": {
-        "provider": "Google",
-        "lab": "Google",
-        "release": None,
-        "usd_out": None,
-    },
-    "gemini-3.5-flash": {
-        "provider": "Google",
-        "lab": "Google",
-        "release": None,
-        "usd_out": None,
-    },
-    "qwen3.8-2.4t": {
-        "provider": "Open-weight",
-        "lab": "Alibaba",
-        "release": date(2026, 8, 15),
-        "usd_out": None,
-    },
-    "deepseek-v4-pro": {
-        "provider": "Open-weight",
-        "lab": "DeepSeek",
-        "release": date(2026, 4, 15),
-        "usd_out": None,
-    },
-    "kimi-k3": {
-        "provider": "Open-weight",
-        "lab": "Moonshot",
-        "release": date(2026, 7, 15),
-        "usd_out": None,
-    },
-    "glm-5.3": {
-        "provider": "Open-weight",
-        "lab": "Z.ai",
-        "release": date(2026, 8, 15),
-        "usd_out": None,
-    },
-    "minimax-m3": {
-        "provider": "Open-weight",
-        "lab": "MiniMax",
-        "release": date(2026, 5, 15),
-        "usd_out": None,
-    },
-}
-
-# Self-contained display names (lib.config.MODEL_DISPLAY_NAMES is keyed by
-# target-client slugs, which sometimes differ from result-file model keys).
-DISPLAY_NAMES = {
-    "claude-sonnet-4.5": "Claude Sonnet 4.5",
-    "claude-haiku-4.5": "Claude Haiku 4.5",
-    "gpt-5": "GPT-5",
-    "gpt-5.1": "GPT-5.1",
-    "gpt-5.2": "GPT-5.2",
-    "gpt-5.4": "GPT-5.4",
-    "gpt-5.6-sol": "GPT-5.6",
-    "gemini-3.1-pro": "Gemini 3.1 Pro",
-    "gemini-3.5-flash": "Gemini 3.5 Flash",
-    "qwen3.8-2.4t": "Qwen3.8",
-    "deepseek-v4-pro": "DeepSeek V4 Pro",
-    "kimi-k3": "Kimi K3",
-    "glm-5.3": "GLM-5.3",
-    "minimax-m3": "MiniMax M3",
+PROBE_TITLE = {"selfreport": "Self-reported", "cot": "CoT-judged"}
+PROBE_XLABEL = {
+    "selfreport": "self-reported eval-awareness (% of graded samples)",
+    "cot": "CoT-judged eval-awareness (% of graded samples)",
 }
 
 # CoT channel is broken for these (adaptive thinking / probe refusals), so a
@@ -218,10 +116,6 @@ DISPLAY_NAMES = {
 # See .claude/notes/selfreport-vs-cot-gap.md. (Neither is in BIG_RUN today;
 # kept so re-adding them to a future sweep can't silently produce the plot.)
 UPLIFT_EXCLUDE = {"claude-opus-5", "claude-fable-5"}
-
-
-def name(model: str) -> str:
-    return DISPLAY_NAMES.get(model, model)
 
 
 def load_records(path: str) -> list[dict]:
@@ -290,7 +184,7 @@ def summarize(records: list[dict], config: str) -> dict:
     }
 
 
-def plot_by_provider(rows: list[dict], out_dir: str, config: str):
+def plot_by_provider(rows: list[dict], out_dir: str, probe: str, config: str):
     """Horizontal bars, grouped by provider, sorted by rate within group."""
     rows = sorted(rows, key=lambda r: (r["provider"], -r["rate"]))
     fig, ax = new_fig(h=0.42 * len(rows) + 1.2)
@@ -308,16 +202,20 @@ def plot_by_provider(rows: list[dict], out_dir: str, config: str):
             color=INK,
         )
     ax.set_yticks(list(ys))
-    ax.set_yticklabels([name(r["model"]) for r in rows], fontsize=9)
+    ax.set_yticklabels([display_name(r["model"]) for r in rows], fontsize=9)
     ax.invert_yaxis()
-    ax.set_xlabel("CoT-judged eval-awareness (% of graded samples)", color=INK2)
-    ax.set_title(f"Eval awareness by provider ({config} config)", color=INK, loc="left")
+    ax.set_xlabel(PROBE_XLABEL[probe], color=INK2)
+    ax.set_title(
+        f"{PROBE_TITLE[probe]} eval awareness by provider ({config} config)",
+        color=INK,
+        loc="left",
+    )
     ax.xaxis.grid(True, color=GRID, lw=0.7, zorder=0)
     provider_legend(ax, loc="lower right")
-    save(fig, out_dir, f"awareness_by_provider_{config}.png")
+    save(fig, out_dir, f"awareness_by_provider_{probe}_{config}.png")
 
 
-def plot_scatter(rows, out_dir, config, xkey, xlabel, fname, log_x=False):
+def plot_scatter(rows, out_dir, probe, config, xkey, xlabel, fname, log_x=False):
     """Shared shape for the release-date and cost scatters."""
     usable = [r for r in rows if r.get(xkey) is not None]
     dropped = [r["model"] for r in rows if r.get(xkey) is None]
@@ -345,17 +243,19 @@ def plot_scatter(rows, out_dir, config, xkey, xlabel, fname, log_x=False):
             zorder=3,
         )
         ax.annotate(
-            name(r["model"]),
+            display_name(r["model"]),
             (r[xkey], y),
             xytext=(5, 4),
             textcoords="offset points",
             fontsize=7.5,
             color=INK2,
         )
-    ax.set_ylabel("CoT-judged eval-awareness (%)", color=INK2)
+    ax.set_ylabel(PROBE_XLABEL[probe], color=INK2)
     ax.set_xlabel(xlabel, color=INK2)
     ax.set_title(
-        f"Eval awareness by {xlabel.lower()} ({config} config)", color=INK, loc="left"
+        f"{PROBE_TITLE[probe]} eval awareness by {xlabel.lower()} ({config} config)",
+        color=INK,
+        loc="left",
     )
     ax.yaxis.grid(True, color=GRID, lw=0.7, zorder=0)
     provider_legend(ax, marker=True)
@@ -363,11 +263,13 @@ def plot_scatter(rows, out_dir, config, xkey, xlabel, fname, log_x=False):
 
 
 def plot_uplift(rows: list[dict], out_dir: str, config: str):
-    """Dumbbell per model: CoT-judged rate -> self-report rate."""
+    """Dumbbell per model: CoT-judged rate -> self-report rate (probe-independent)."""
     rows = [
         r
         for r in rows
-        if r["model"] not in UPLIFT_EXCLUDE and r.get("self_rate") is not None
+        if r["model"] not in UPLIFT_EXCLUDE
+        and r.get("cot_rate") is not None
+        and r.get("self_rate") is not None
     ]
     if not rows:
         return
@@ -375,7 +277,7 @@ def plot_uplift(rows: list[dict], out_dir: str, config: str):
     fig, ax = new_fig(h=0.45 * len(rows) + 1.4)
     ys = range(len(rows))
     for y, r in zip(ys, rows):
-        cot, self_ = r["rate"] * 100, r["self_rate"] * 100
+        cot, self_ = r["cot_rate"] * 100, r["self_rate"] * 100
         ax.plot([cot, self_], [y, y], color=GRID, lw=2, zorder=2)
         ax.plot(
             cot,
@@ -397,7 +299,7 @@ def plot_uplift(rows: list[dict], out_dir: str, config: str):
             color=INK,
         )
     ax.set_yticks(list(ys))
-    ax.set_yticklabels([name(r["model"]) for r in rows], fontsize=9)
+    ax.set_yticklabels([display_name(r["model"]) for r in rows], fontsize=9)
     ax.set_xlabel(
         "eval-awareness (%): open = CoT-judged, filled = self-report", color=INK2
     )
@@ -413,79 +315,86 @@ def main():
         survey()
         return
 
+    probe = os.getenv("PROBE", "selfreport")
+    if probe not in PROBE_TITLE:
+        sys.exit(f"PROBE must be one of {sorted(PROBE_TITLE)}, got {probe!r}")
     config = os.getenv("CONFIG_FILTER", "baseline")
     out_dir = os.getenv("OUT_DIR", os.path.join(RESULTS, "plots"))
     os.makedirs(out_dir, exist_ok=True)
 
     rows, summary = [], {}
     for model in BIG_RUN:
-        cot_path = pinned_path("cot", model)
-        if cot_path is None:
-            print(f"[skip] {model}: no cot file pinned yet", file=sys.stderr)
+        stats = {}
+        for kind in ("cot", "selfreport"):
+            path = pinned_path(kind, model)
+            if path is None:
+                continue
+            records = load_records(path)
+            if kind == "cot":
+                n_cfgs = len({r.get("config_name") for r in records})
+                if n_cfgs != EXPECTED_CONFIGS:
+                    print(
+                        f"[warn] {model}: {n_cfgs}/{EXPECTED_CONFIGS} configs in "
+                        f"pinned cot file — incomplete run?",
+                        file=sys.stderr,
+                    )
+            s = summarize(records, config)
+            stats[kind] = s
+            summary.setdefault(model, {})[f"{kind}_file"] = os.path.basename(path)
+            summary[model][kind] = s
+        if not stats:
+            print(f"[skip] {model}: no files pinned yet", file=sys.stderr)
             continue
-        records = load_records(cot_path)
-        n_cfgs = len({r.get("config_name") for r in records})
-        if n_cfgs != EXPECTED_CONFIGS:
+        primary = stats.get(probe)
+        if primary is None or primary["rate"] is None:
             print(
-                f"[warn] {model}: {n_cfgs}/{EXPECTED_CONFIGS} configs in pinned "
-                f"cot file — incomplete run?",
+                f"[warn] {model}: no {probe} data for config {config} — "
+                f"dropped from single-probe charts",
                 file=sys.stderr,
             )
-        s = summarize(records, config)
-        if s["rate"] is None:
-            print(
-                f"[skip] {model}: no graded samples for config {config}",
-                file=sys.stderr,
-            )
-            continue
         row = {
             "model": model,
-            "rate": s["rate"],
-            "ci": s["ci"],
-            "n_graded": s["n_graded"],
+            "rate": primary["rate"] if primary else None,
+            "ci": primary["ci"] if primary else None,
+            "n_graded": primary["n_graded"] if primary else 0,
+            "cot_rate": stats.get("cot", {}).get("rate"),
+            "self_rate": stats.get("selfreport", {}).get("rate"),
             **MODEL_META[model],
         }
-        summary[model] = {"cot_file": os.path.basename(cot_path), "cot": s}
-        self_path = pinned_path("selfreport", model)
-        if self_path:
-            ss = summarize(load_records(self_path), config)
-            row["self_rate"] = ss["rate"]
-            summary[model]["selfreport_file"] = os.path.basename(self_path)
-            summary[model]["selfreport"] = ss
         rows.append(row)
 
     with open(os.path.join(out_dir, f"awareness_summary_{config}.json"), "w") as f:
         json.dump(summary, f, indent=2, default=str)
 
-    print(f"\n{'model':22} {'n':>5} {'cot%':>6} {'self%':>6}  na/inv (cot)")
+    print(f"\n{'model':22} {'cot%':>6} {'self%':>6}")
     for r in rows:
-        c = summary[r["model"]]["cot"]["counts"]
+        cot_pct = (
+            f"{r['cot_rate'] * 100:5.1f}" if r["cot_rate"] is not None else "    –"
+        )
         self_pct = (
-            f"{r['self_rate'] * 100:5.1f}"
-            if r.get("self_rate") is not None
-            else "    –"
+            f"{r['self_rate'] * 100:5.1f}" if r["self_rate"] is not None else "    –"
         )
-        print(
-            f"{r['model']:22} {r['n_graded']:>5} {r['rate'] * 100:5.1f} {self_pct:>6}"
-            f"  {c['n/a']}/{c['invalid']}"
-        )
+        print(f"{r['model']:22} {cot_pct:>6} {self_pct:>6}")
 
-    plot_by_provider(rows, out_dir, config)
+    plotted = [r for r in rows if r["rate"] is not None]
+    plot_by_provider(plotted, out_dir, probe, config)
     plot_scatter(
-        rows,
+        plotted,
         out_dir,
+        probe,
         config,
         "release",
         "Release date",
-        f"awareness_by_release_date_{config}.png",
+        f"awareness_by_release_date_{probe}_{config}.png",
     )
     plot_scatter(
-        rows,
+        plotted,
         out_dir,
+        probe,
         config,
         "usd_out",
         "API cost ($/Mtok output)",
-        f"awareness_by_cost_{config}.png",
+        f"awareness_by_cost_{probe}_{config}.png",
         log_x=True,
     )
     plot_uplift(rows, out_dir, config)
