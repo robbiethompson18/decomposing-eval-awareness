@@ -1,20 +1,26 @@
 Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min break so far
 
-1. [x] take a tour of the codebase, try to understand (30mins)
-   - still need to read the evaluator code - ugh it sucks going to clean up the codebase
-   - still need to figure out what type of evals will work for what models
-     - where does CoT work?
-     - where do we catch actual responses vs CoT?
-2. [ ] Replicate their results
+1. [x] take a tour of the codebase, try to understand
+   - ripped out a lot of shit
+2. Do what I need to do before trying to replicate:
+   - [] nail down the many ways we check for eval awareness and figure out what I'm checking rn (ask
+     the model, CoT transcript, tool transcript)
+   - [] Figure out which models we can actually go apples to apples on (not recent ANT models, they
+     don't do CoT)
+   - [] 10 responses that say you're in an eval... what to do?
+3. [ ] Replicate their results
    - [ ] see Sonnet getting higher eval awareness
    - [ ] do maybe 20% of the data and see what results we get
    - [ ] learn how parellelism works so we can do this real fast
-3. [x] replace grader with GPT 5.6, Fable, Opus5. Check agreement.
+4. [x] replace grader with GPT 5.6, Fable, Opus5. Check agreement.
    - they largely agree. Shoudl write this up.
-4. [ ] Extend their results to new models
+5. [ ] Extend their results to new models
    - [ ] plot eval awareness over time by model. I think this is just a done thing in other places?
-5. [ ] Start NLA work
-6. [ ] Dig into all the refusals from Opus and Fable... are they reasonable?
+6. [ ] Start NLA work
+7. [ ] Dig into all the refusals from Opus and Fable... are they reasonable?
+8. [ ] rig up the self-report probe on eval_bench (upstream `eval/eval_*_selfreport.py` +
+       `prompts/selfreport_awareness.txt` / `selfreport_hypothetical.txt`; never wired to eval_bench
+       upstream) — soon but not now
 
 Later:
 
@@ -22,7 +28,7 @@ Later:
       <think></think> trick
 - [ ] Try with other models instead of GPT5 as judge
 - [ ] Plot model eval awareness over time and by model size
-- [ ] Add my own flavor (NSFW content, throwing in 'like', throwing in slang)
+- [ ] Add my own flavor (NSFW content, throwing in 'like', throwing in slang, changing timestamps)
 
 ## Cleanup I am trying to resist:
 
@@ -35,10 +41,11 @@ Later:
 - [ ] maybe they wanted to use the vercel SDK?
 - [x] delete dead HF client code
 - [x] judge parser doesn't silently turn 'couldn't parse y/n result' into 'no'
-- [x] import direction being backwards... hate that utils depends on core
-      (resolved harder than planned: utils.py deleted entirely, #13; live helpers now in leaf lib/)
-- [x] clean evaluator.py so that we only have CoT grader in the generic one, other graders split by benchmark
-      (resolved by deletion: repo stripped to eval_bench, evaluator.py is CoT-only now, #9/#10)
+- [x] import direction being backwards... hate that utils depends on core (resolved harder than
+      planned: utils.py deleted entirely, #13; live helpers now in leaf lib/)
+- [x] clean evaluator.py so that we only have CoT grader in the generic one, other graders split by
+      benchmark (resolved by deletion: repo stripped to eval_bench, evaluator.py is CoT-only now,
+      #9/#10)
 
 ## Potpourri
 
@@ -51,8 +58,10 @@ Later:
 - I updated to catch unparseable responses from grader (not y/n) but this doesn't matter much
 - I updated to not grade empty CoT
 - There are all these hard-coded checks for specific scenarios! I at least printed a warn when these
-  trigger
--
+  trigger. Nvm I just deleted the non-eval-benchscenarios.
+- Why do we have some temp .3 areas?
+- The tasks that have {} if you don't know the answer are bad. We should fix those.
+- How did you decide temp .3?
 
 ## Notes to myself / things I learned:
 
@@ -65,3 +74,11 @@ Later:
     the tool
 - One drops the <think> blocks from previous turns
 - This codebase is uglier than expected
+
+## Ok let's think about what I actually want to get out of this:
+
+1. engagement from the author
+2. A great write-up
+3. engagement from the guy I did a SPAR interview with this morning
+
+So I should do both of those _right now_
