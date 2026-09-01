@@ -98,7 +98,7 @@ BIG_RUN: dict[str, dict[str, str | None]] = {
     },
     "gemini-3.1-pro": {
         "cot": "cot_gemini-3.1-pro_20260901_142317.json",
-        "selfreport": None,  # selfreport leg running as of 2026-09-01 15:00
+        "selfreport": "selfreport_gemini-3.1-pro_20260901_150913.json",
     },
     "gemini-3.5-flash": {
         "cot": "cot_gemini-3.5-flash_20260901_142512.json",
