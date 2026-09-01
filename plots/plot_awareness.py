@@ -69,13 +69,31 @@ BIG_RUN: dict[str, dict[str, str | None]] = {
         # terra-judged alternate: ..._20260901_032213.json
         "selfreport": "selfreport_claude-haiku-4.5_20260901_034056.json",
     },
-    # gpt cot files are final but short of 5400 (failed samples); no gpt
-    # selfreport leg has run yet as of 2026-09-01 11:15am.
-    "gpt-5": {"cot": "cot_gpt-5_20260901_102007.json", "selfreport": None},
-    "gpt-5.1": {"cot": "cot_gpt-5.1_20260901_101924.json", "selfreport": None},
-    "gpt-5.2": {"cot": "cot_gpt-5.2_20260901_102115.json", "selfreport": None},
-    "gpt-5.4": {"cot": "cot_gpt-5.4_20260901_102144.json", "selfreport": None},
-    "gpt-5.6-sol": {"cot": "cot_gpt-5.6-sol_20260901_102920.json", "selfreport": None},
+    # gpt cot files are final but short of 5400 (failed samples). gpt
+    # selfreport files are BASELINE-CONFIG ONLY (run 2026-09-01 ~12:30pm,
+    # sequential at concurrency 50 — 5x100 parallel hit the 2M-TPM limit and
+    # 429'd; the poisoned 1224x files stay unpinned). Rerun with
+    # CONFIG_FILTER unset for factor-config coverage.
+    "gpt-5": {
+        "cot": "cot_gpt-5_20260901_102007.json",
+        "selfreport": "selfreport_gpt-5_20260901_123347.json",
+    },
+    "gpt-5.1": {
+        "cot": "cot_gpt-5.1_20260901_101924.json",
+        "selfreport": "selfreport_gpt-5.1_20260901_123633.json",
+    },
+    "gpt-5.2": {
+        "cot": "cot_gpt-5.2_20260901_102115.json",
+        "selfreport": "selfreport_gpt-5.2_20260901_124300.json",
+    },
+    "gpt-5.4": {
+        "cot": "cot_gpt-5.4_20260901_102144.json",
+        "selfreport": "selfreport_gpt-5.4_20260901_124930.json",
+    },
+    "gpt-5.6-sol": {
+        "cot": "cot_gpt-5.6-sol_20260901_102920.json",
+        "selfreport": "selfreport_gpt-5.6-sol_20260901_130018.json",
+    },
     "gemini-3.1-pro": {"cot": None, "selfreport": None},  # only 4-sample canary so far
     "gemini-3.5-flash": {
         "cot": "cot_gemini-3.5-flash_20260901_100742.json",
