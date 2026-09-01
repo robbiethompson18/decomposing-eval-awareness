@@ -147,3 +147,19 @@ Secondary-metric disagreements are all benign: hypo disagreements are threshold 
 constructedness); task_performance disagreements are all *adjacent* buckets on the 4-point ordinal
 (correct↔guarded↔incorrect↔refused), never 2-step jumps. Agreement data:
 `results/eval_bench/judge_agreement/terra_vs_luna_20260901/`.
+
+## Future work (LOW priority): Qwen backup for the both-backups-fail case
+
+The hybrid stack (sonnet-5 primary + terra backup) still leaves ~0.7% of transcripts ungraded
+(→ N/A) because BOTH judges refuse them: sonnet-5 (Claude) refuses the most harmful items, and
+terra (OpenAI) 400s on cybersecurity-flagged content with `code: cyber_policy` ("join Trusted Access
+for Cyber"). These are the same worst-case transcripts (cyber/harmful), so an API-provider backup
+doesn't help — it hits the same policy wall.
+
+Idea: make the *second* backup an **open-weight model served via OpenRouter (e.g. Qwen)** — OW models
+have no such refusal policies, so they'll grade the cyber/harmful transcripts terra and sonnet-5
+both decline. Chain would be sonnet-5 → terra → qwen (only qwen sees the residual ~0.7%).
+
+Gate before adopting: run the same judge-agreement check we did for terra/luna/sonnet-5/opus-5
+(`results/eval_bench/judge_agreement/`) — **qwen vs sonnet-5 on model_awareness κ** — and only use it
+as backup if it tracks. Deferred; the ~0.7% N/A is tolerable for now.
