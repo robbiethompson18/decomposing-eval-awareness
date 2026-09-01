@@ -5,6 +5,7 @@ Loads responses from run_eval_bench.py and evaluates each sample with a judge mo
 using the standard CoT monitoring pipeline.
 
 Environment variables:
+    JUDGE_MODEL     Judge model (default: gpt-5.6-terra; OPENAI_EVAL_MODEL also honored)
     MODEL_KEY       Model key matching response filename (e.g., "qwen3-30b")
     RESPONSE_FILE   Direct path to response JSON (overrides MODEL_KEY)
     MAX_CONCURRENT  Max parallel judge API calls (default: 100)
@@ -38,7 +39,7 @@ from lib.time_utils import now_pacific
 
 
 def find_response_file(response_dir: str, model_key: str) -> str:
-    """Find the most recent eval_bench response file for a model."""
+    """Find the most recent eval_bench response file for a model ("*" = any model)."""
     pattern = os.path.join(response_dir, f"responses_{model_key}_*.json")
     matches = sorted(glob(pattern))
     matches = [m for m in matches if "_scratchpad_" not in os.path.basename(m)]
@@ -46,7 +47,14 @@ def find_response_file(response_dir: str, model_key: str) -> str:
 
 
 def print_stats(records: list[dict[str, Any]]) -> None:
-    """Print awareness statistics grouped by valence and config."""
+    """Print overall awareness plus statistics grouped by valence and config."""
+
+    aware = sum(
+        1
+        for r in records
+        if extract_conclusion(r.get("judge") or {}, "model_awareness") == "yes"
+    )
+    print(f"Overall awareness: {aware}/{len(records)} ({aware / len(records):.1%})")
 
     buckets = [
         bucket_conclusion(extract_conclusion(r.get("judge") or {}, "model_awareness"))
@@ -111,37 +119,32 @@ def print_stats(records: list[dict[str, Any]]) -> None:
 
 def main() -> None:
     api_keys = get_api_keys_config()
-    cfg = {
-        "OPENAI_API_KEY": api_keys["OPENAI_API_KEY"],
-        "ANTHROPIC_API_KEY": api_keys["ANTHROPIC_API_KEY"],
-        "JUDGE_MODEL": os.getenv("JUDGE_MODEL")
-        or os.getenv("OPENAI_EVAL_MODEL", "gpt-5"),
-        "MODEL_KEY": os.getenv("MODEL_KEY", ""),
-        "RESPONSE_FILE": os.getenv("RESPONSE_FILE", ""),
-        "MAX_SAMPLES": int(os.getenv("MAX_SAMPLES", "0")),
-        "MAX_CONCURRENT": int(os.getenv("MAX_CONCURRENT", "100")),
-    }
+    openai_api_key = api_keys["OPENAI_API_KEY"]
+    anthropic_api_key = api_keys["ANTHROPIC_API_KEY"]
+    judge_model = (
+        os.getenv("JUDGE_MODEL") or os.getenv("OPENAI_EVAL_MODEL") or "gpt-5.6-terra"
+    )
+    model_key = os.getenv("MODEL_KEY", "")
+    response_file = os.getenv("RESPONSE_FILE", "")
+    max_samples = int(os.getenv("MAX_SAMPLES", "0"))
+    max_concurrent = int(os.getenv("MAX_CONCURRENT", "100"))
+    task_filter = os.getenv("TASK_FILTER", "")
+    valence_filter = os.getenv("VALENCE_FILTER", "")
+    merge_into = os.getenv("MERGE_INTO", "")
 
-    if cfg["JUDGE_MODEL"].startswith("claude"):
-        if not cfg["ANTHROPIC_API_KEY"]:
+    if judge_model.startswith("claude"):
+        if not anthropic_api_key:
             print("ERROR: ANTHROPIC_API_KEY is required for a Claude judge.")
             sys.exit(1)
-    elif not cfg["OPENAI_API_KEY"]:
+    elif not openai_api_key:
         print("ERROR: OPENAI_API_KEY is required.")
         sys.exit(1)
 
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     response_dir = os.path.join(base_dir, "results", "eval_bench", "response")
 
-    model_key = cfg["MODEL_KEY"]
-    if cfg["RESPONSE_FILE"]:
-        response_file = cfg["RESPONSE_FILE"]
-    elif model_key:
-        response_file = find_response_file(response_dir, model_key)
-    else:
-        matches = sorted(glob(os.path.join(response_dir, "responses_*.json")))
-        matches = [m for m in matches if "_scratchpad_" not in os.path.basename(m)]
-        response_file = matches[-1] if matches else ""
+    if not response_file:
+        response_file = find_response_file(response_dir, model_key or "*")
 
     if not response_file or not os.path.exists(response_file):
         print(f"ERROR: No response file found in {response_dir}")
@@ -155,12 +158,12 @@ def main() -> None:
         print("ERROR: No samples found.")
         sys.exit(1)
 
-    if cfg["MAX_SAMPLES"] > 0:
-        samples = samples[: cfg["MAX_SAMPLES"]]
+    if not model_key:
+        match = re.search(
+            r"responses_([^_]+(?:-[^_]+)*)", os.path.basename(response_file)
+        )
+        model_key = match.group(1) if match else model.replace("/", "_")
 
-    # Apply task/valence filters
-    task_filter = os.getenv("TASK_FILTER", "")
-    valence_filter = os.getenv("VALENCE_FILTER", "")
     if task_filter:
         allowed = {t.strip() for t in task_filter.split(",")}
         samples = [s for s in samples if s.get("task_name", "") in allowed]
@@ -172,9 +175,12 @@ def main() -> None:
         print("ERROR: No samples match the given filters.")
         sys.exit(1)
 
+    if max_samples > 0:
+        samples = samples[:max_samples]
+
     print(f"Loaded {len(samples)} samples from model: {model}")
-    print(f"Judge model: {cfg['JUDGE_MODEL']}")
-    print(f"Max concurrent: {cfg['MAX_CONCURRENT']}")
+    print(f"Judge model: {judge_model}")
+    print(f"Max concurrent: {max_concurrent}")
     print("=" * 70)
 
     judge_prompt_file = "judgePromptEvidenceBoth.txt"
@@ -182,7 +188,6 @@ def main() -> None:
     # Stamped onto every record so results stay traceable to the exact judge
     # prompt that produced them (MERGE_INTO can mix records across runs).
     judge_prompt_sha = hashlib.sha256(judge_template.encode()).hexdigest()[:8]
-    judge_model = cfg["JUDGE_MODEL"]
     print(f"Judge prompt: {judge_prompt_file} (sha {judge_prompt_sha})")
 
     async def eval_sample_fn(
@@ -222,15 +227,14 @@ def main() -> None:
         evaluate_batch_async(
             samples=samples,
             sample_evaluator=eval_sample_fn,
-            api_key=cfg["OPENAI_API_KEY"],
-            max_concurrent=cfg["MAX_CONCURRENT"],
+            api_key=openai_api_key,
+            max_concurrent=max_concurrent,
             judge_model=judge_model,
-            anthropic_api_key=cfg["ANTHROPIC_API_KEY"],
+            anthropic_api_key=anthropic_api_key,
         )
     )
 
     # Save or merge results
-    merge_into = os.getenv("MERGE_INTO", "")
     if merge_into and os.path.exists(merge_into):
         with open(merge_into, "r", encoding="utf-8") as f:
             existing = json.load(f)
@@ -239,16 +243,13 @@ def main() -> None:
         merged = kept + all_records
         with open(merge_into, "w", encoding="utf-8") as f:
             json.dump(merged, f, ensure_ascii=False, indent=2)
-        print(f"\nMerged {len(all_records)} new records (replaced {len(new_ids)} IDs)")
+        print(
+            f"\nMerged {len(all_records)} new records "
+            f"(replaced {len(existing) - len(kept)} existing)"
+        )
         print(f"Updated: {merge_into}")
         all_records = merged
     else:
-        if not model_key:
-            match = re.search(
-                r"responses_([^_]+(?:-[^_]+)*)", os.path.basename(response_file)
-            )
-            model_key = match.group(1) if match else model.replace("/", "_")
-
         timestamp = now_pacific().strftime("%Y%m%d_%H%M%S")
         results_dir = os.path.join(base_dir, "results", "eval_bench", "cot")
         os.makedirs(results_dir, exist_ok=True)
@@ -258,27 +259,11 @@ def main() -> None:
             json.dump(all_records, f, ensure_ascii=False, indent=2)
         print(f"\nResults saved to: {out_file}")
 
-    # Print summary statistics
-    if not model_key:
-        match = re.search(
-            r"responses_([^_]+(?:-[^_]+)*)", os.path.basename(response_file)
-        )
-        model_key = match.group(1) if match else model.replace("/", "_")
-
     print("\n" + "=" * 70)
     print(f"EVAL BENCH COT RESULTS — {model_key} ({len(all_records)} samples)")
     print("=" * 70)
 
-    aware_count = sum(
-        1
-        for r in all_records
-        if r.get("judge", {}).get("model_awareness", {}).get("conclusion", "").lower()
-        == "yes"
-    )
     if all_records:
-        print(
-            f"Overall awareness: {aware_count}/{len(all_records)} ({aware_count / len(all_records):.1%})"
-        )
         print_stats(all_records)
     else:
         print("No successfully judged records to report.")

@@ -10,10 +10,9 @@ Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min
        any OAI model.
    - [x] 10 responses that say you're in an eval... what to do? I think gotta just leave them and
          analyze as is
+  - [x] parallelism fixed
 3. [ ] Replicate their results
-   - [ ] see Sonnet getting higher eval awareness
-   - [ ] do maybe 20% of the data and see what results we get
-   - [ ] learn how parellelism works so we can do this real fast
+  
 4. [x] replace grader with GPT 5.6, Fable, Opus5. Check agreement.
    - they largely agree. Shoudl write this up.
 5. [ ] Extend their results to new models
