@@ -4,6 +4,10 @@ Run eval_bench tasks across all models.
 For each task (safety + capability variant), runs:
   - 1 baseline config (all factors at naturalistic level)
   - 8 single-factor ablations (one factor varied, rest naturalistic)
+  - 2 anchor configs off the OFAT grid:
+      all_varied          every factor at its varied level (the grid's ceiling)
+      harmbench_verbatim  the original HarmBench behavior text, safety arm only
+                          (see eval_bench/harmbench.py)
 
 Each config is sampled SAMPLES_PER_CONFIG times per model.
 Results are saved incrementally after each task, so runs can be resumed.
@@ -35,7 +39,8 @@ Environment variables:
   MAX_TOKENS            Max tokens for model response (default: 50000)
   TASK_FILTER           Comma-separated task names to run (default: all tasks)
   VALENCE_FILTER        Comma-separated valences to run, e.g. "capability" (default: all)
-  CONFIG_FILTER         Comma-separated config names to run, e.g. "F6" or "baseline,F1" (default: all)
+  CONFIG_FILTER         Comma-separated config names to run, e.g. "F6" or "baseline,F1" or
+                        "all_varied,harmbench_verbatim" (default: all)
 """
 
 import asyncio
@@ -50,6 +55,12 @@ import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.target import create_target_client
+from eval_bench.harmbench import (
+    HARMBENCH_VERBATIM,
+    harmbench_factor_config,
+    harmbench_verbatim_chat,
+    load_harmbench_subset,
+)
 from eval_bench.render import render
 from lib.config import get_api_keys_config
 from lib.parallel import query_parallel
@@ -82,13 +93,25 @@ FACTOR_VARIED_LEVELS = {
 }
 
 
+ALL_VARIED = "all_varied"
+
+
 def build_configs() -> list[tuple]:
-    """Build 9 configs: 1 baseline + 8 single-factor ablations."""
+    """Build 11 configs: baseline + 8 single-factor ablations + 2 anchors.
+
+    The anchors are off the OFAT grid. `all_varied` is the grid's far corner;
+    `harmbench_verbatim` is not a render at all (its Chat and factor_config are
+    built per task from the vendored HarmBench row, safety arm only), so its
+    entry here carries the standard-behavior factor vector as a placeholder for
+    config_list and is special-cased in the item loop.
+    """
     configs = [("baseline", dict(BASELINE_CONFIG))]
     for factor, varied_level in FACTOR_VARIED_LEVELS.items():
         cfg = dict(BASELINE_CONFIG)
         cfg[factor] = varied_level
         configs.append((factor, cfg))
+    configs.append((ALL_VARIED, dict(FACTOR_VARIED_LEVELS)))
+    configs.append((HARMBENCH_VERBATIM, harmbench_factor_config({"ContextString": ""})))
     return configs
 
 
@@ -172,6 +195,7 @@ def main() -> None:
 
     tasks = load_all_tasks()
     configs = build_configs()
+    harmbench_rows = load_harmbench_subset()
 
     task_filter = os.getenv("TASK_FILTER", "")
     valence_filter = os.getenv("VALENCE_FILTER", "")
@@ -211,9 +235,17 @@ def main() -> None:
         "samples": [],
     }
 
-    total_calls = len(tasks) * len(configs) * samples_per_config
+    # harmbench_verbatim runs on the safety arm only, so it contributes one
+    # valence per task set rather than two.
+    n_verbatim_tasks = (
+        sum(1 for t in tasks if t["valence"] == "safety")
+        if any(name == HARMBENCH_VERBATIM for name, _ in configs)
+        else 0
+    )
+    n_grid_configs = sum(1 for name, _ in configs if name != HARMBENCH_VERBATIM)
+    total_calls = (len(tasks) * n_grid_configs + n_verbatim_tasks) * samples_per_config
     print(f"\nTasks loaded: {len(tasks)} ({len(task_names)} task sets x 2 valences)")
-    print(f"Configs: {len(configs)} (baseline + {len(configs) - 1} single-factor)")
+    print(f"Configs: {len(configs)} ({', '.join(name for name, _ in configs)})")
     print(f"Samples per config: {samples_per_config}")
     print(f"Model: {model_slug} (backend: {backend})")
     print(f"Total API calls needed: {total_calls}")
@@ -244,11 +276,20 @@ def main() -> None:
 
         # Build items for this task, skipping completed
         items = []
+        expected = 0
         for task in task_group:
             template = task["template"]
             for config_name, factor_config in configs:
-                chat = render(template, factor_config)
+                if config_name == HARMBENCH_VERBATIM:
+                    if task["valence"] != "safety":
+                        continue
+                    row = harmbench_rows[task["task_name"]]
+                    chat = harmbench_verbatim_chat(row)
+                    factor_config = harmbench_factor_config(row)
+                else:
+                    chat = render(template, factor_config)
                 for s_idx in range(1, samples_per_config + 1):
+                    expected += 1
                     sample_id = f"{task['task_id']}_{config_name}_sample{s_idx}"
                     if sample_id in completed_ids:
                         continue
@@ -275,7 +316,6 @@ def main() -> None:
             )
             continue
 
-        expected = len(task_group) * len(configs) * samples_per_config
         print(
             f"[{t_idx}/{len(task_names)}] {task_name}: {len(items)} calls ({expected - len(items)} cached)"
         )
