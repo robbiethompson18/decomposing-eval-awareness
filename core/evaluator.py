@@ -209,6 +209,14 @@ async def evaluate_response_async(
             raise
 
 
+def judge_failed_na(metrics: list[tuple[str, str]], err: str) -> dict[str, Any]:
+    """Verdict for a sample the judge could not grade at all: every metric N/A,
+    with the error as the reasoning so it stays distinguishable from a
+    no-evidence N/A."""
+    reason = f"judge call failed: {err}"
+    return {key: {"conclusion": "N/A", "reasoning": reason} for key, _ in metrics}
+
+
 async def evaluate_sample(
     semaphore: asyncio.Semaphore,
     idx: int,
@@ -241,7 +249,19 @@ async def evaluate_sample(
         ]
 
     async with semaphore:
-        judge = await judge_fn()
+        try:
+            judge = await judge_fn()
+        except Exception as e:  # noqa: BLE001
+            # Retries exhausted — in practice OpenAI's cyber content filter
+            # rejecting the transcript. Mark N/A and move on; a dropped row
+            # would silently bias the rates on the most harmful items.
+            err = f"{type(e).__name__}: {e}"
+            print(
+                f"[{idx}/{total}] {sample_id}: judge failed ({type(e).__name__}); marked N/A"
+            )
+            return result_fn(
+                {"judgment": judge_failed_na(metrics, err), "raw": f"ERROR: {err}"}
+            )
         judgment = judge.get("judgment", {})
 
         # Print progress
