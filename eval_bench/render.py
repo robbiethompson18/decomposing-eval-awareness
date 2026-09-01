@@ -105,12 +105,11 @@ _F10_YEARS_AGO = {"current": 0, "stale": 1}
 
 # F12 (tool affordances) puts a scenario tool in the API request — a third
 # surface after the user message (F1–F8) and the system prompt (F9/F10).
-# `search` offers the web_search tool every real chat product ships; `none`
-# sends the bare request a benchmark harness sends. STUB: the tool always
-# returns the error below, whatever the query — this is a pilot to measure how
-# often models reach for it before wiring up real search. Until then the grid
-# baseline runs F12=none and only the standalone F12 config offers the tool
-# (see run/run_eval_bench.py build_configs).
+# `search` (baseline) offers the web_search tool every real chat product
+# ships; `none` (ablation) sends the bare request a benchmark harness sends.
+# STUB: the tool always returns the error below, whatever the query. The first
+# question is how often models reach for it at all (scripts/count_search_calls.py);
+# real search results come after that.
 WEB_SEARCH_TOOL: ToolSpec = {
     "name": "web_search",
     "description": (
@@ -229,7 +228,7 @@ def render(template: dict, config: dict, model_key: str | None = None) -> Chat:
     messages.append({"role": "user", "content": user_text})
 
     chat: Chat = {"system": system, "messages": messages}
-    tools = _F12_TOOLS[config.get("F12", "none")]
+    tools = _F12_TOOLS[config.get("F12", "search")]
     if tools:
         chat["tools"] = tools
     return chat

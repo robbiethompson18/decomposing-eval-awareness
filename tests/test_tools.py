@@ -12,7 +12,7 @@ import core.target as target_mod
 from core.target import THINK_TOOL_NAME, AnthropicApiClient, _handle_call, tool_calls_in
 from eval_bench.render import WEB_SEARCH_TOOL, render
 from lib.chat import chat_to_transcript_text, to_gemini_tool
-from run.run_eval_bench import ALL_VARIED, SEARCH_PILOT, build_configs, load_all_tasks
+from run.run_eval_bench import ALL_VARIED, build_configs, load_all_tasks
 
 TASK = load_all_tasks()[0]["template"]
 CONFIGS = dict(build_configs())
@@ -23,19 +23,19 @@ def _cold(cfg: dict) -> dict:
     return {**cfg, "F11": "cold"}  # no opener reply needed
 
 
-def test_only_the_pilot_config_offers_the_search_tool():
-    assert CONFIGS[SEARCH_PILOT] == {**CONFIGS["baseline"], "F12": "search"}
-    assert CONFIGS["baseline"]["F12"] == "none"
+def test_baseline_offers_the_search_tool_and_the_f12_ablation_removes_it():
+    assert CONFIGS["baseline"]["F12"] == "search"
+    assert CONFIGS["F12"] == {**CONFIGS["baseline"], "F12": "none"}
     assert CONFIGS[ALL_VARIED]["F12"] == "none"
-    assert render(TASK, _cold(CONFIGS[SEARCH_PILOT]))["tools"] == [WEB_SEARCH_TOOL]
-    assert "tools" not in render(TASK, _cold(CONFIGS["baseline"]))
+    assert render(TASK, _cold(CONFIGS["baseline"]))["tools"] == [WEB_SEARCH_TOOL]
+    assert "tools" not in render(TASK, _cold(CONFIGS["F12"]))
     assert "tools" not in render(TASK, CONFIGS[ALL_VARIED])
 
 
 def test_judge_transcript_lists_offered_tools():
-    with_tool = chat_to_transcript_text(render(TASK, _cold(CONFIGS[SEARCH_PILOT])))
+    with_tool = chat_to_transcript_text(render(TASK, _cold(CONFIGS["baseline"])))
     assert "[tools available]\nweb_search: " in with_tool
-    without = chat_to_transcript_text(render(TASK, _cold(CONFIGS["baseline"])))
+    without = chat_to_transcript_text(render(TASK, _cold(CONFIGS["F12"])))
     assert "[tools available]" not in without
 
 
@@ -53,7 +53,7 @@ def test_gemini_adapter_uppercases_nested_schema_types():
 
 
 def test_handle_call_routes_think_stub_and_unknown_tools():
-    chat = render(TASK, _cold(CONFIGS[SEARCH_PILOT]))
+    chat = render(TASK, _cold(CONFIGS["baseline"]))
     thoughts: list[str] = []
     assert _handle_call(chat, THINK_TOOL_NAME, {"thought": "hmm"}, thoughts) == "noted"
     assert _handle_call(chat, "web_search", {"query": "x"}, thoughts) == STUB
@@ -69,7 +69,7 @@ def test_handle_call_routes_think_stub_and_unknown_tools():
 
 
 def test_anthropic_loop_answers_a_search_call_with_the_stub(monkeypatch):
-    chat = render(TASK, _cold(CONFIGS[SEARCH_PILOT]))
+    chat = render(TASK, _cold(CONFIGS["baseline"]))
     sent: list[dict] = []
     replies = [
         {

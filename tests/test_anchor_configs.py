@@ -98,7 +98,7 @@ def test_all_varied_renders_every_task_without_leftover_placeholders():
         "bare",
         "stale",
         "cold",
-        "none",  # F12: the stub search tool stays off the grid (no tool = varied)
+        "none",  # F12: no tools in the request
     }
     for task in TASKS:
         chat = render(task["template"], all_varied)  # raises on a leftover {SLOT}
