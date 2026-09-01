@@ -80,3 +80,7 @@ Current notes:
 - [CoT-extraction model roster — which models to use for honest-framing think-tool extraction](.claude/notes/cot-extraction-model-roster.md)
   — the chosen set: sonnet/haiku 4.5, any gpt-5.x, gemini-3.1-pro + 3.5-flash; per-model
   starvation configs and exclusion reasons.
+- [OW models: native CoT vs think-tool — read before choosing a CoT-capture method for open-weight models or adding a think-tool path to the openrouter backend](.claude/notes/ow-native-cot-vs-think-tool.md)
+  — A/B on 5 OW models: grades agree (awareness 82%, task 78%) but traces don't (Jaccard 0.19) and
+  the think tool captures less CoT; three per-provider reasoning-disable behaviors; stick with raw
+  native reasoning for OW.
