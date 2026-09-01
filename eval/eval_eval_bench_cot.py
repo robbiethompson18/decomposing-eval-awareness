@@ -42,6 +42,7 @@ from core.evaluator import (
     extract_think_tags,
 )
 from core.metrics import bucket_conclusion, bucket_task_conclusion, extract_conclusion
+from lib.chat import chat_to_transcript_text
 from lib.config import get_api_keys_config
 from lib.io import load_responses, read_file
 from lib.time_utils import now_pacific
@@ -239,7 +240,15 @@ def main() -> None:
             idx: int,
             total: int,
         ) -> dict[str, Any]:
-            prompt = sample.get("prompt", "")
+            # The judge's {task} slot gets a readable transcript of the whole
+            # scenario (system + prior turns + final request).
+            # TODO(cleanup): drop the legacy flat-"prompt" fallback once every
+            # pre-refactor response file is regenerated or retired — then this
+            # can just be chat_to_transcript_text(sample["chat"]).
+            chat = sample.get("chat")
+            prompt = (
+                chat_to_transcript_text(chat) if chat else sample.get("prompt", "")
+            )
             response = sample.get("response", "")
 
             return await evaluate_sample(

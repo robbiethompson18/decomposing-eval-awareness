@@ -35,6 +35,7 @@ from core.selfreport import (
     parse_selfreport_hypothetical,
 )
 from core.target import create_target_client
+from lib.chat import user_text_chat
 from lib.config import get_api_keys_config
 from lib.io import read_file
 from lib.time_utils import now_pacific
@@ -136,17 +137,14 @@ def main() -> None:
     model = data.get("model", "unknown")
     backend = data.get("backend", "")
     reasoning_mode = data.get("reasoning_mode", "summary")
-    # Response files store the prompt *filename* in "system_prompt", not the
-    # prompt text (the gotcha in .claude/notes/f8-eval-suffix-awareness.md);
-    # resolve it so the replay client gets the real system prompt.
-    system_prompt = data.get("system_prompt", "")
-    if system_prompt.endswith(".txt"):
-        prompt_path = os.path.join(base_dir, "prompts", os.path.basename(system_prompt))
-        if os.path.exists(prompt_path):
-            system_prompt = read_file(prompt_path).strip()
-        else:
-            print(f"ERROR: system_prompt file {system_prompt!r} not found in prompts/")
-            sys.exit(1)
+    # New response files carry a full Chat per sample (system + messages), so the
+    # replay uses that directly. Legacy fallback: pre-refactor files stored a
+    # run-level system-prompt *filename* here + a flat "prompt" per sample —
+    # resolve it to text so those files still replay faithfully.
+    legacy_system = data.get("system_prompt", "") or None
+    if legacy_system and legacy_system.endswith(".txt"):
+        prompt_path = os.path.join(base_dir, "prompts", os.path.basename(legacy_system))
+        legacy_system = read_file(prompt_path).strip() if os.path.exists(prompt_path) else None
     if not samples or backend not in BACKEND_MODEL_ENV:
         print(f"ERROR: No samples or unknown backend {backend!r} in response file.")
         sys.exit(1)
@@ -173,7 +171,7 @@ def main() -> None:
     # the original conversation.
     os.environ[BACKEND_MODEL_ENV[backend]] = model
     cfg = get_api_keys_config()
-    client, client_model_key = create_target_client(backend, cfg, system_prompt)
+    client, client_model_key = create_target_client(backend, cfg)
 
     awareness_prompt = read_file(
         os.path.join(base_dir, "prompts", "selfreport_awareness.txt")
@@ -202,20 +200,30 @@ def main() -> None:
                     "selfreport_responses": None,
                 }
 
-            base = [
-                {"role": "user", "content": sample.get("prompt", "")},
-                {"role": "assistant", "content": response},
+            # Replay the stored conversation, then append the (assistant) reply
+            # and one self-report question, as a fresh Chat per follow-up.
+            # TODO(cleanup): drop the legacy prompt/legacy_system fallback (and
+            # the resolution above) once pre-refactor response files are retired.
+            chat = sample.get("chat") or user_text_chat(
+                sample.get("prompt", ""), legacy_system
+            )
+            system = chat.get("system")
+            base = list(chat["messages"]) + [
+                {"role": "assistant", "content": response}
             ]
+
+            def _followup(question: str) -> dict:
+                return {
+                    "system": system,
+                    "messages": base + [{"role": "user", "content": question}],
+                }
+
             async with semaphore:
                 hypo_resp = await loop.run_in_executor(
-                    executor,
-                    client.query_messages,
-                    base + [{"role": "user", "content": hypothetical_prompt}],
+                    executor, client.query_chat, _followup(hypothetical_prompt)
                 )
                 aware_resp = await loop.run_in_executor(
-                    executor,
-                    client.query_messages,
-                    base + [{"role": "user", "content": awareness_prompt}],
+                    executor, client.query_chat, _followup(awareness_prompt)
                 )
 
             if aware_resp.startswith("ERROR calling"):

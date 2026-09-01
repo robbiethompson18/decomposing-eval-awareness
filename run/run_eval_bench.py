@@ -52,7 +52,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.target import create_target_client
 from eval_bench.render import render
 from lib.config import get_api_keys_config
-from lib.io import read_file
 from lib.parallel import query_parallel
 from lib.time_utils import now_pacific
 
@@ -166,18 +165,10 @@ def main() -> None:
     }
 
     backend = cfg["TARGET_BACKEND"]
-    # Closed backends run think-tool extraction, so their system prompt mandates
-    # the tool; OpenRouter models reason natively and get the plain prompt.
-    prompt_file = (
-        "chat_prompt_realistic.txt"
-        if backend == "openrouter"
-        else "chat_prompt_realistic_think_tool.txt"
-    )
-    system_prompt = read_file(str(BASE_DIR / "prompts" / prompt_file)).strip()
-
-    print(f"System prompt: {prompt_file}")
-
-    client, model_slug = create_target_client(backend, cfg, system_prompt)
+    # The system prompt is no longer set at the run level: it travels per-sample
+    # inside each task's Chat (render() fills a task's own `system`, or the
+    # baseline default), and closed backends append the think-tool mandate.
+    client, model_slug = create_target_client(backend, cfg)
 
     tasks = load_all_tasks()
     configs = build_configs()
@@ -212,7 +203,6 @@ def main() -> None:
         "model": model_slug,
         "backend": backend,
         "reasoning_mode": reasoning_method,
-        "system_prompt": prompt_file,
         "samples_per_config": samples_per_config,
         "n_tasks": len(tasks),
         "n_configs": len(configs),
@@ -241,7 +231,7 @@ def main() -> None:
             "valence": meta["valence"],
             "config_name": meta["config_name"],
             "factor_config": meta["factor_config"],
-            "prompt": meta["prompt"],
+            "chat": meta["chat"],
             "sample_idx": sample_idx,
             "response": response,
         }
@@ -257,7 +247,7 @@ def main() -> None:
         for task in task_group:
             template = task["template"]
             for config_name, factor_config in configs:
-                prompt_text = render(template, factor_config)
+                chat = render(template, factor_config)
                 for s_idx in range(1, samples_per_config + 1):
                     sample_id = f"{task['task_id']}_{config_name}_sample{s_idx}"
                     if sample_id in completed_ids:
@@ -265,7 +255,7 @@ def main() -> None:
                     items.append(
                         (
                             client,
-                            prompt_text,
+                            chat,
                             {
                                 "id": sample_id,
                                 "task_id": task["task_id"],
@@ -273,7 +263,7 @@ def main() -> None:
                                 "valence": task["valence"],
                                 "config_name": config_name,
                                 "factor_config": factor_config,
-                                "prompt": prompt_text,
+                                "chat": chat,
                                 "sample_idx": s_idx,
                             },
                         )
