@@ -14,6 +14,8 @@ There is a blog post I'm drafting for this for my personal website at
 for me. You can address my @claude comments by doing mechanical things (eg adding links) and by
 giving me commmentary back in chat. All prose is mine.
 
+OAI banned us for 'distilling' so further runs are on Robbie's credit card. Be very cautious about using these.
+
 ## Rules
 
 - Robbie reviews every change in this repo. **Never push to `main` or merge on your own** — commit
@@ -32,7 +34,8 @@ giving me commmentary back in chat. All prose is mine.
   `JUDGE_MODEL=` / `BACKUP_JUDGE_MODEL=` (set backup to `""` to disable). terra alone is still valid
   (κ=0.91 vs gpt-5, no refusals) if Anthropic credits aren't available.
 - Import layering: `lib/` imports nothing from this repo; `core/` may import `lib/` but never
-  `utils`; `run/`/`eval/` scripts may import anything. Keep new leaf helpers in `lib/`, not `core/`.
+  `utils`; `run/`/`eval/`/`plots/` scripts may import anything. Keep new leaf helpers in `lib/`,
+  not `core/`.
 - If you're fighting over a branch or checkout with another agent, just make a fresh checkout
   (`/extra-checkout decomposing-eval-awareness`; `-2`…`-5` exist already). In every extra checkout,
   symlink `results/` back to the main checkout
