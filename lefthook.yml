@@ -1,0 +1,25 @@
+# Git hooks via lefthook (https://lefthook.dev) — a single fast Go binary that
+# just runs the commands below in parallel. Chosen over the pre-commit framework
+# because it runs our existing `uvx` invocations directly instead of managing
+# its own duplicate tool environments.
+#
+# One-time setup per checkout:  brew install lefthook && lefthook install
+# (lefthook install writes .git/hooks; it is not shared across checkouts.)
+
+pre-commit:
+  parallel: true
+  commands:
+    ruff-lint:
+      glob: "*.py"
+      run: uvx ruff check {staged_files}
+    ruff-format:
+      glob: "*.py"
+      run: uvx ruff format --check {staged_files}
+    # ty needs whole-project import context, so it checks `.` rather than just
+    # staged files (still ~0.1s). NON-BLOCKING for now (`|| true`): the repo has
+    # a pre-existing baseline of ~11 findings living in files another branch is
+    # actively refactoring. Once that lands and the baseline is fixed, drop the
+    # `|| true` so ty gates commits like ruff does.
+    ty:
+      glob: "*.py"
+      run: uvx ty check . || true

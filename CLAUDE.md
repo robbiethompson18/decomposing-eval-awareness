@@ -47,6 +47,10 @@ giving me commmentary back in chat. All prose is mine.
     gpt-5.5 dropped (adjacent to 5.4, identical extraction behavior)
   - Open-weight tier-1 (newest flagship from each top-5 OW lab; OpenRouter keys in
     `lib/config.py`): `qwen3.8-2.4t`, `deepseek-v4-pro`, `kimi-k3`, `glm-5.3`, `minimax-m3`
+- Lint + typecheck: `uvx ruff check .` and `uvx ty check .` (ty config in `ty.toml`). Git hooks run
+  both via **lefthook** (`lefthook.yml`) — one-time per checkout: `brew install lefthook && lefthook
+  install`. ruff blocks commits; `ty` is currently non-blocking (`|| true` in `lefthook.yml`) because
+  of a pre-existing baseline of findings — drop the `|| true` once that baseline is clean.
 
 ## Notes
 

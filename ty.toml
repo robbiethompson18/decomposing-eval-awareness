@@ -1,0 +1,22 @@
+# Config for `ty`, Astral's type checker (same vendor as ruff).
+# Run: `uvx ty check .`   (fast: ~0.1s on this repo)
+#
+# ty is preview software (this repo pins nothing; uvx resolves latest). Config
+# keys may shift between releases — re-verify against `uvx ty check --help` if a
+# key stops applying.
+
+[environment]
+# Match the interpreter the .venv is built against.
+python-version = "3.13"
+
+[src]
+# Only check our own code. results/ is generated data; eval_bench/tasks is YAML;
+# .venv is vendored deps (their own type errors are not ours to fix).
+exclude = [".venv", "results", "eval_bench/tasks"]
+
+[rules]
+# False positive from splatting a dynamically-built `**kwargs` dict into the
+# OpenAI SDK's overloaded `chat.completions.create` (see core/target.py): once
+# the dict is `dict[str, Any]`, ty can't see `stream=False` as a literal and so
+# matches no overload. The call is correct at runtime.
+no-matching-overload = "ignore"
