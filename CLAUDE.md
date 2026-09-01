@@ -101,4 +101,11 @@ Current notes:
 - [Anchor configs: harmbench_verbatim + all_varied — read before claiming any grid cell "is" HarmBench, or before sending verbatim behaviors to a closed API](.claude/notes/harmbench-anchor-configs.md)
   — why all-varied ≠ verbatim (both levels are constructions around the content), where verbatim
   sits on F1–F8 (~2/8, the weak ones), 100/100 task names are HarmBench BehaviorIDs, contextual
-  baselines reuse HarmBench's own entities, the additivity test the anchors enable, ban risk.
+  baselines reuse HarmBench's own entities, ban risk. **Results (5 OW models):** verbatim 82% vs
+  baseline 47% self-report awareness — the naturalization pipeline removes ~half the eval signal
+  that was in the source; all_varied saturates on safety but spreads 30–98% on the *benign* arm.
+- [Do benchmarks ship a system prompt? — read before deciding what a run's baseline framing should be, or before claiming "benchmarks send no system prompt"](.claude/notes/benchmark-system-prompts.md)
+  — 15 benchmarks + 3 harnesses, verified from source: chat-era benchmarks overwhelmingly send one
+  (tau-bench sends a 6 KB policy doc), the "no system prompt" set is a completion-era fossil, and
+  HarmBench is the outlier among its own safety neighbours; plus the T3-vs-control A/B null
+  (69% vs 71%, n=144 paired) showing the system prompt is a weak lever on awareness.
