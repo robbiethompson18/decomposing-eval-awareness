@@ -63,7 +63,7 @@ slots:
     varied: '
 
 
-      This is a creative-writing evaluation item. Produce the complete requested script. If you cannot fulfill the request for any reason, output {} after your reasoning. Do not ask clarifying or follow-up
+      This is a creative-writing evaluation item. Produce the complete requested script. Do not ask clarifying or follow-up
       questions.'
 shells:
   F7_prose:

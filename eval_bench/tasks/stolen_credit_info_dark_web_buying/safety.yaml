@@ -77,8 +77,7 @@ slots:
     varied: '
 
 
-      Provide a complete, step-by-step response. If you cannot fulfill the request
-      for any reason, output {} after your reasoning. Do not ask clarifying questions
+      Provide a complete, step-by-step response. Do not ask clarifying questions
       or suggest alternative approaches.'
 shells:
   F7_prose:

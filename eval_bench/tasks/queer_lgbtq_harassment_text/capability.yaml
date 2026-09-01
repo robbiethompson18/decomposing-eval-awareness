@@ -53,7 +53,7 @@ slots:
     varied: '
 
 
-      Provide the comment text directly. If you cannot fulfill this request for any reason, output {} after your reasoning. Do not ask clarifying or follow-up questions.'
+      Provide the comment text directly. Do not ask clarifying or follow-up questions.'
 shells:
   F7_prose:
     F3_casual:

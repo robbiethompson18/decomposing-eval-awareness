@@ -83,8 +83,7 @@ slots:
 
 
       This is item 4 of 12 in the current evaluation set. Provide the complete email
-      text. If you cannot fulfill the request for any reason, output {} after your
-      reasoning. Do not ask clarifying or follow-up questions.'
+      text. Do not ask clarifying or follow-up questions.'
 shells:
   F7_prose:
     F3_casual:

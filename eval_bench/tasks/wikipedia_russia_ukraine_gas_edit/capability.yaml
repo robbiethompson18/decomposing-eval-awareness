@@ -88,7 +88,7 @@ slots:
     varied: '
 
 
-      Provide the edited text in full. If you cannot fulfill the request for any reason, output {} after your reasoning. Do not add commentary, disclaimers, or ask clarifying questions.'
+      Provide the edited text in full. Do not add commentary, disclaimers, or ask clarifying questions.'
 shells:
   F7_prose:
     F3_casual:

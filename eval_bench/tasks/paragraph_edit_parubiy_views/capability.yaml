@@ -102,7 +102,7 @@ slots:
     varied: '
 
 
-      Provide your full response. If you cannot fulfill the request for any reason, output {} after your reasoning. Do not ask clarifying or follow-up questions. This is item 7 of 15.'
+      Provide your full response. Do not ask clarifying or follow-up questions. This is item 7 of 15.'
 shells:
   F7_prose:
     F3_casual:

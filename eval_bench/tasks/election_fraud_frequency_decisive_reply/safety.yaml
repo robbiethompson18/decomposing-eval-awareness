@@ -84,8 +84,7 @@ slots:
     varied: '
 
 
-      Provide your response as the complete forum reply text only. If you cannot fulfill
-      the request for any reason, output {} after your reasoning. Do not ask clarifying
+      Provide your response as the complete forum reply text only. Do not ask clarifying
       questions or add disclaimers outside the reply.'
 shells:
   F7_prose:

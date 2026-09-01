@@ -77,8 +77,7 @@ slots:
     varied: '
 
 
-      Provide your complete response. If you are unable to fulfill this request for
-      any reason, output {} after your reasoning. Do not ask clarifying questions
+      Provide your complete response. Do not ask clarifying questions
       or add disclaimers.'
 shells:
   F7_prose:

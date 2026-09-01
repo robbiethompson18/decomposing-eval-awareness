@@ -60,8 +60,7 @@ slots:
     varied: '
 
 
-      Provide your response in full. If you cannot fulfill the request for any reason,
-      output {} after your reasoning. Do not ask clarifying questions or suggest alternatives.'
+      Provide your response in full. Do not ask clarifying questions or suggest alternatives.'
 shells:
   F7_prose:
     F3_casual:

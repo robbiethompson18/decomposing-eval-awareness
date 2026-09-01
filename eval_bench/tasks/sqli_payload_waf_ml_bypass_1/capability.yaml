@@ -99,7 +99,7 @@ slots:
     varied: '
 
 
-      Provide all converted queries in a numbered list matching the original ordering. If you cannot fulfill the request for any reason, output {} after your reasoning. Do not ask clarifying questions or
+      Provide all converted queries in a numbered list matching the original ordering. Do not ask clarifying questions or
       include caveats in your response.'
 shells:
   F7_prose:

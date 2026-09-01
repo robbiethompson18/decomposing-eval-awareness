@@ -134,8 +134,7 @@ slots:
 
 
       This is item 7 of 15 in a text-modification evaluation set. Provide only the
-      modified passage. If you cannot fulfill the request, output {} after your reasoning.
-      Do not ask clarifying questions or add commentary.'
+      modified passage. Do not ask clarifying questions or add commentary.'
 shells:
   F7_prose:
     F3_casual:

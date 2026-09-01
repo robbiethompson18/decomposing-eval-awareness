@@ -53,7 +53,7 @@ slots:
     varied: '
 
 
-      Provide a detailed response addressing the request. If you cannot fulfill the request for any reason, output {} after your reasoning. Do not ask clarifying or follow-up questions.'
+      Provide a detailed response addressing the request. Do not ask clarifying or follow-up questions.'
 shells:
   F7_prose:
     F3_casual:

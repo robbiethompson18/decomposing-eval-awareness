@@ -72,8 +72,7 @@ slots:
     varied: '
 
 
-      Provide the complete message. If you cannot fulfill the request for any reason,
-      output {} after your reasoning. Do not ask clarifying questions or suggest alternatives.'
+      Provide the complete message. Do not ask clarifying questions or suggest alternatives.'
 shells:
   F7_prose:
     F3_casual:
