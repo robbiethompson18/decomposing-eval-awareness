@@ -2,9 +2,10 @@
 Target model query functions and API clients.
 
 CoT capture is single-method by design:
-- anthropic_api / openai_api: think-tool extraction (honest framing, native
-  reasoning starved to the model's floor) — the tool-call trace IS the CoT.
-  See .claude/notes/cot-extraction-model-roster.md for the validation.
+- anthropic_api / openai_api / gemini_api: think-tool extraction (honest
+  framing, native reasoning starved to the model's floor) — the tool-call
+  trace IS the CoT. See .claude/notes/cot-extraction-model-roster.md for the
+  validation.
 - openrouter: open-weight models return their raw CoT natively; no tool needed.
 
 All clients return responses in the same <think>reasoning</think>answer shape
@@ -14,10 +15,12 @@ consumed by core.evaluator.extract_think_tags.
 import json
 import os
 import sys
+import time
 from typing import Any
 
 from lib.config import (
     DEFAULT_ANTHROPIC_MODELS,
+    DEFAULT_GEMINI_CONFIGS,
     DEFAULT_OPENAI_MODELS,
     DEFAULT_OPENROUTER_CONFIGS,
 )
@@ -257,6 +260,151 @@ class OpenAITargetClient:
             return f"ERROR calling OpenAI API target: {e}"
 
 
+class GeminiApiClient:
+    """Gemini API client: think-tool CoT extraction.
+
+    generateContent with a `think` function tool and native thinking starved to
+    the model's floor (thinkingBudget 0, or 128 where thinking is mandatory);
+    the collected tool-call trace becomes the <think> content.
+
+    force_first_think forces a round-1 tool call (toolConfig mode ANY) for
+    models that otherwise skip the tool on easy tasks — see
+    DEFAULT_GEMINI_CONFIGS for which models need (or must not get) it.
+    """
+
+    def __init__(self, cfg: dict[str, Any], system_prompt: str) -> None:
+        if requests is None:
+            raise ImportError("requests package required for Gemini API")
+        self.system_prompt = system_prompt
+        self.api_key = cfg["GEMINI_API_KEY"]
+        self.model = cfg["GEMINI_MODEL"]
+        self.thinking_budget = cfg["GEMINI_THINKING_BUDGET"]
+        self.force_first_think = cfg["GEMINI_FORCE_FIRST_THINK"]
+        self.max_tokens = cfg.get("MAX_TOKENS", 50000)
+
+    def query(self, prompt: str) -> str:
+        return self.query_messages([{"role": "user", "content": prompt}])
+
+    def _post(self, payload: dict[str, Any], tries: int = 6) -> dict[str, Any]:
+        url = (
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{self.model}:generateContent?key={self.api_key}"
+        )
+        err = "?"
+        for i in range(tries):
+            try:
+                r = requests.post(url, json=payload, timeout=300)
+            except requests.RequestException as e:
+                err = str(e)
+                time.sleep(2 * (i + 1))
+                continue
+            if r.status_code in (429, 500, 502, 503):
+                err = f"http {r.status_code}"
+                time.sleep(3 * (i + 1))
+                continue
+            return r.json()
+        return {"error": {"message": f"gave up after {tries} tries ({err})"}}
+
+    def query_messages(self, messages: list[dict[str, str]]) -> str:
+        contents = [
+            {
+                "role": "model" if m["role"] == "assistant" else "user",
+                "parts": [{"text": m["content"]}],
+            }
+            for m in messages
+        ]
+        base = {
+            "systemInstruction": {"parts": [{"text": self.system_prompt}]},
+            # Gemini's function schemas use OpenAPI-style uppercase type names,
+            # so THINK_TOOL_SCHEMA can't be shared verbatim.
+            "tools": [
+                {
+                    "functionDeclarations": [
+                        {
+                            "name": THINK_TOOL_NAME,
+                            "description": THINK_TOOL_DESCRIPTION,
+                            "parameters": {
+                                "type": "OBJECT",
+                                "properties": {"thought": {"type": "STRING"}},
+                                "required": ["thought"],
+                            },
+                        }
+                    ]
+                }
+            ],
+            "generationConfig": {
+                "maxOutputTokens": self.max_tokens,
+                "thinkingConfig": {"thinkingBudget": self.thinking_budget},
+            },
+        }
+        thoughts: list[str] = []
+        answers: list[str] = []
+        think_tok = 0
+        try:
+            for round_idx in range(THINK_TOOL_MAX_ROUNDS):
+                mode = "ANY" if round_idx == 0 and self.force_first_think else "AUTO"
+                r = self._post(
+                    {
+                        **base,
+                        "contents": contents,
+                        "toolConfig": {"functionCallingConfig": {"mode": mode}},
+                    }
+                )
+                if r.get("error"):
+                    return f"ERROR calling Gemini API: {r['error'].get('message', r['error'])}"
+                block = (r.get("promptFeedback") or {}).get("blockReason")
+                if block:
+                    return f"ERROR calling Gemini API: blocked ({block})"
+                um = r.get("usageMetadata") or {}
+                think_tok += um.get("thoughtsTokenCount", 0) or 0
+                cands = r.get("candidates") or []
+                if not cands:
+                    break
+                parts = (cands[0].get("content") or {}).get("parts") or []
+                calls = []
+                for p in parts:
+                    if (
+                        "functionCall" in p
+                        and p["functionCall"].get("name") == THINK_TOOL_NAME
+                    ):
+                        thoughts.append(
+                            str(
+                                (p["functionCall"].get("args") or {}).get("thought", "")
+                            )
+                        )
+                        calls.append(p["functionCall"])
+                    # skip native thought-summary parts (p["thought"] is True);
+                    # at the starved budget these should not appear
+                    elif "text" in p and not p.get("thought"):
+                        answers.append(p["text"])
+                if not calls:
+                    break
+                contents = contents + [
+                    {"role": "model", "parts": parts},
+                    {
+                        "role": "user",
+                        "parts": [
+                            {
+                                "functionResponse": {
+                                    "name": c["name"],
+                                    "response": {"result": "noted"},
+                                }
+                            }
+                            for c in calls
+                        ],
+                    },
+                ]
+            print(
+                f"    [Gemini] API call successful (model={self.model}, "
+                f"n_thoughts={len(thoughts)}, "
+                f"think_chars={sum(len(t) for t in thoughts)}, "
+                f"hidden_think_tok={think_tok})"
+            )
+            return _format_think_response(thoughts, answers)
+        except Exception as e:  # noqa: BLE001 -- never crash a long parallel run; ERROR string is the convention downstream
+            return f"ERROR calling Gemini API: {e}"
+
+
 class OpenRouterApiClient:
     """OpenRouter API client (OpenAI-compatible) for various models.
 
@@ -350,7 +498,7 @@ def create_target_client(
     """Create target client based on backend selection.
 
     Args:
-        backend: Backend name (anthropic_api, openai_api, openrouter)
+        backend: Backend name (anthropic_api, openai_api, openrouter, gemini_api)
         cfg: Configuration dict with API keys and settings (including MAX_TOKENS)
         system_prompt: System prompt for the target model
         verbose: Whether to print backend info (default True)
@@ -362,8 +510,14 @@ def create_target_client(
 
     if b == "anthropic_api":
         model_key = os.getenv("ANTHROPIC_MODEL_KEY", "claude-sonnet-4.5")
-        if model_key in DEFAULT_ANTHROPIC_MODELS:
-            cfg["ANTHROPIC_MODEL"] = DEFAULT_ANTHROPIC_MODELS[model_key]
+        if model_key not in DEFAULT_ANTHROPIC_MODELS:
+            # Hard error: falling through would silently query the default model
+            # while labeling results with this key.
+            print(
+                f"ERROR: Unknown ANTHROPIC_MODEL_KEY '{model_key}'. Available: {list(DEFAULT_ANTHROPIC_MODELS.keys())}"
+            )
+            sys.exit(1)
+        cfg["ANTHROPIC_MODEL"] = DEFAULT_ANTHROPIC_MODELS[model_key]
         if verbose:
             print(
                 f"Using Anthropic API backend (think-tool extraction, model={model_key})..."
@@ -371,8 +525,12 @@ def create_target_client(
         return AnthropicApiClient(cfg, system_prompt), model_key
     if b == "openai_api":
         model_key = os.getenv("OPENAI_MODEL_KEY", "gpt-5")
-        if model_key in DEFAULT_OPENAI_MODELS:
-            cfg["OPENAI_TARGET_MODEL"] = DEFAULT_OPENAI_MODELS[model_key]
+        if model_key not in DEFAULT_OPENAI_MODELS:
+            print(
+                f"ERROR: Unknown OPENAI_MODEL_KEY '{model_key}'. Available: {list(DEFAULT_OPENAI_MODELS.keys())}"
+            )
+            sys.exit(1)
+        cfg["OPENAI_TARGET_MODEL"] = DEFAULT_OPENAI_MODELS[model_key]
         if verbose:
             print(
                 f"Using OpenAI API backend (think-tool extraction, model={model_key})..."
@@ -391,7 +549,25 @@ def create_target_client(
         if verbose:
             print(f"Using OpenRouter API backend (model={model_key}, id={model_id})...")
         return OpenRouterApiClient(cfg, system_prompt), model_key
+    if b == "gemini_api":
+        model_key = os.getenv("GEMINI_MODEL_KEY", "gemini-3.5-flash")
+        if model_key not in DEFAULT_GEMINI_CONFIGS:
+            print(
+                f"ERROR: Unknown GEMINI_MODEL_KEY '{model_key}'. Available: {list(DEFAULT_GEMINI_CONFIGS.keys())}"
+            )
+            sys.exit(1)
+        model_id, thinking_budget, force_first_think = DEFAULT_GEMINI_CONFIGS[model_key]
+        cfg["GEMINI_MODEL"] = model_id
+        cfg["GEMINI_THINKING_BUDGET"] = thinking_budget
+        cfg["GEMINI_FORCE_FIRST_THINK"] = force_first_think
+        if verbose:
+            print(
+                f"Using Gemini API backend (think-tool extraction, model={model_key}, "
+                f"id={model_id}, thinkingBudget={thinking_budget}, "
+                f"forceFirstThink={force_first_think})..."
+            )
+        return GeminiApiClient(cfg, system_prompt), model_key
     print(
-        f"ERROR: Unsupported TARGET_BACKEND '{backend}'. Use: anthropic_api, openai_api, openrouter"
+        f"ERROR: Unsupported TARGET_BACKEND '{backend}'. Use: anthropic_api, openai_api, openrouter, gemini_api"
     )
     sys.exit(1)
