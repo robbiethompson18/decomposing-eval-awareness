@@ -51,6 +51,42 @@ DEFAULT_OPENROUTER_CONFIGS: dict[str, tuple[str, float | None]] = {
 }
 
 
+# Human-readable model names for the T3 Chat system prompt's identity line
+# (per-model identity: each target is told its own true name, not "Gemini 3
+# Flash"). Keyed by the model_slug that create_target_client returns (the
+# friendly model_key). Unmapped slugs fall back to the raw slug.
+MODEL_DISPLAY_NAMES: dict[str, str] = {
+    # Anthropic (native keys + raw ids)
+    "claude-sonnet-4.5": "Claude Sonnet 4.5",
+    "claude-sonnet-4-5-20250929": "Claude Sonnet 4.5",
+    "claude-haiku-4.5": "Claude Haiku 4.5",
+    "claude-haiku-4-5-20251001": "Claude Haiku 4.5",
+    "claude-opus-4.5": "Claude Opus 4.5",
+    "claude-opus-5": "Claude Opus 5",
+    "claude-fable-5": "Claude Fable 5",
+    # OpenAI
+    "gpt-5": "GPT-5",
+    "gpt-5.1": "GPT-5.1",
+    "gpt-5.2": "GPT-5.2",
+    "gpt-5.4": "GPT-5.4",
+    "gpt-5.6-sol": "GPT-5.6",
+    # Google
+    "gemini-3.1-pro-preview": "Gemini 3.1 Pro",
+    "gemini-3.5-flash": "Gemini 3.5 Flash",
+    # Open-weight tier-1
+    "qwen3.8-2.4t": "Qwen3.8",
+    "deepseek-v4-pro": "DeepSeek V4 Pro",
+    "kimi-k3": "Kimi K3",
+    "glm-5.3": "GLM-5.3",
+    "minimax-m3": "MiniMax M3",
+}
+
+
+def display_name(model_slug: str) -> str:
+    """Human-readable model name for the T3 identity line; falls back to slug."""
+    return MODEL_DISPLAY_NAMES.get(model_slug, model_slug)
+
+
 def get_api_keys_config() -> dict[str, Any]:
     """Get common API keys and model defaults from environment variables.
 
