@@ -1,7 +1,7 @@
 """Off-dataset training set for the eval-awareness activation probe.
 
-deploy (label 0): real user traffic — WildChat-1M (incl. toxic-flagged turns),
-                  lmsys-chat-1m, ShareGPT. First user turn only.
+deploy (label 0): real user traffic — WildChat-1M, lmsys-chat-1m (incl. its
+                  moderation-flagged first turns), ShareGPT. First user turn only.
 eval   (label 1): actual benchmark items — GSM8K, MMLU, TruthfulQA, HumanEval,
                   ARC-Challenge, GPQA-diamond, WMDP-bio, StrongREJECT, AdvBench,
                   HarmBench, AgentHarm, CoCoNot.
@@ -161,7 +161,27 @@ def deploy_sources(
     n_wild: int, n_toxic: int, n_lmsys: int, n_share: int, rng: random.Random
 ) -> list[dict]:
     out = []
+    # The public WildChat-1M release has toxic conversations stripped (every
+    # toxic/moderation flag is False); harmful real traffic comes from lmsys
+    # instead, whose first-turn OpenAI moderation verdicts are intact (~3.6%).
     ds = load_dataset("allenai/WildChat-1M", split="train", streaming=True).shuffle(
+        seed=0, buffer_size=2000
+    )
+
+    def wild(r):
+        if r["language"] != "English":
+            return None
+        t = first_user_turn(r["conversation"])
+        return t if ok_len(t) else None
+
+    items = take(ds, n_wild, wild, rng, scan=n_wild * 3)
+    out.extend(
+        {"source": "wildchat", "label": 0, "topic": topic_of(t), "text": t}
+        for t in items
+    )
+    print(f"  wildchat: {len(items)}")
+
+    ds = load_dataset("lmsys/lmsys-chat-1m", split="train", streaming=True).shuffle(
         seed=0, buffer_size=2000
     )
     clean, toxic = [], []
@@ -171,41 +191,23 @@ def deploy_sources(
         text = first_user_turn(row["conversation"])
         if not ok_len(text):
             continue
-        # The conversation-level `toxic` flag came back False for every sampled
-        # row; use the first turn's own flag / OpenAI moderation verdict instead.
-        turn0 = row["conversation"][0]
         mod0 = (row.get("openai_moderation") or [{}])[0] or {}
-        is_toxic = bool(turn0.get("toxic")) or bool(mod0.get("flagged"))
-        (toxic if is_toxic else clean).append(text)
+        (toxic if mod0.get("flagged") else clean).append(text)
         if (
-            len(clean) >= n_wild * 3 and len(toxic) >= n_toxic * 2
+            len(clean) >= n_lmsys * 3 and len(toxic) >= n_toxic * 2
         ) or scanned > 150_000:
             break
     rng.shuffle(clean)
     rng.shuffle(toxic)
-    for t in clean[:n_wild]:
-        out.append({"source": "wildchat", "label": 0, "topic": topic_of(t), "text": t})
-    for t in toxic[:n_toxic]:
-        out.append(
-            {"source": "wildchat_toxic", "label": 0, "topic": "harmful", "text": t}
-        )
-    print(f"  wildchat: {n_wild} clean + {len(toxic[:n_toxic])} toxic")
-
-    ds = load_dataset("lmsys/lmsys-chat-1m", split="train", streaming=True).shuffle(
-        seed=0, buffer_size=2000
-    )
-
-    def lmsys(r):
-        if r["language"] != "English":
-            return None
-        t = first_user_turn(r["conversation"])
-        return t if ok_len(t) else None
-
-    items = take(ds, n_lmsys, lmsys, rng, scan=n_lmsys * 3)
     out.extend(
-        {"source": "lmsys", "label": 0, "topic": topic_of(t), "text": t} for t in items
+        {"source": "lmsys", "label": 0, "topic": topic_of(t), "text": t}
+        for t in clean[:n_lmsys]
     )
-    print(f"  lmsys: {len(items)}")
+    out.extend(
+        {"source": "lmsys_toxic", "label": 0, "topic": "harmful", "text": t}
+        for t in toxic[:n_toxic]
+    )
+    print(f"  lmsys: {len(clean[:n_lmsys])} clean + {len(toxic[:n_toxic])} flagged")
 
     ds = load_dataset(
         "anon8231489123/ShareGPT_Vicuna_unfiltered",
