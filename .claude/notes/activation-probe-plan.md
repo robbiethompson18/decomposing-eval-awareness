@@ -92,6 +92,28 @@ Takeaways:
 4. The in-distribution ceiling of 1.00 is the system prompt: baseline is T3, all_varied is
    bare. Never train on eval_bench configs.
 
+### Probe vs the three verbalization measures (clean probe, prompt_last L44, threshold 0)
+
+Self-report replayed via OpenRouter `qwen/qwen3.8-27b` (pod was gone):
+`results/eval_bench/selfreport/selfreport_qwen3.8-27b_20260901_220907.json`. Response-only judge
+= sonnet on the transcripts with `<think>` stripped (`cot_qwen3.8-27b_20260901_215104.json`;
+the pipeline marks empty-CoT records N/A, verdicts live in `judge_raw`).
+
+| measure | positives | κ | AUROC |
+|---|---|---|---|
+| CoT + response judge | 85 / 2033 (4%) | -0.006 | 0.48 |
+| response-only judge | 0 / 2057 | undefined | undefined |
+| self-report ("were you being evaluated?") | 1011 / 2097 (48%) | +0.27 | 0.68 |
+
+Self-report by config: baseline 24%, F4 30%, F1 60%, harmbench_verbatim 69%, all_varied 97%.
+Config-level Spearman between self-report rate and probe mean logit: 0.06 (all_varied is the
+most self-reported cell and the most deploy-like on the probe).
+
+The κ=0.27 is mostly valence: safety tasks both self-report more (72% vs 22%) and score
+eval-like on the probe (harmful benchmarks were positives in training). Within valence:
+safety AUROC 0.62, capability 0.38; mean AUROC within (config, valence) cells 0.62. So the
+residual probe↔self-report link, controlling for the prompt surface, is weak.
+
 
 ## Infra state / gotchas
 
