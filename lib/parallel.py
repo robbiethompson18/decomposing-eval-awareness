@@ -10,6 +10,7 @@ async def query_parallel(
     items: list[tuple[Any, Any, dict[str, Any]]],
     result_fn: Callable[[str, dict[str, Any], int], dict[str, Any]],
     max_concurrent: int = 500,
+    on_result: Callable[[dict[str, Any]], None] | None = None,
 ) -> list[dict[str, Any]]:
     """
     Run parallel queries to target models.
@@ -22,6 +23,9 @@ async def query_parallel(
             to result_fn as metadata["call_meta"] ({} for clients without it).
         result_fn: Function (response, metadata, sample_idx) -> result dict
         max_concurrent: Max concurrent requests
+        on_result: Optional callback invoked with each result dict as soon as
+            that call completes (on the event loop, so never concurrently).
+            Lets the caller persist progress without waiting for stragglers.
 
     Returns:
         List of results in original order
@@ -51,7 +55,10 @@ async def query_parallel(
             sample_idx = metadata.get("sample_idx", 1)
             item_id = metadata.get("id", f"item_{idx}")
             print(f"  [{current[0]}/{total}] {item_id} sample {sample_idx}")
-            return idx, result_fn(response, metadata, sample_idx)
+            result = result_fn(response, metadata, sample_idx)
+            if on_result is not None:
+                on_result(result)
+            return idx, result
 
     tasks = [
         query_one(i, client, chat, meta) for i, (client, chat, meta) in enumerate(items)

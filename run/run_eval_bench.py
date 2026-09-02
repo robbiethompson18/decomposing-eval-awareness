@@ -489,24 +489,32 @@ def main() -> None:
 
     print(f"Pending: {len(items)} calls ({cached} cached)")
 
-    # Chunked so a crash loses at most one chunk, but each chunk is several times
-    # max_concurrent so the semaphore stays saturated as fast calls retire and
-    # we're not left idling on one straggler before the next save.
-    chunk_size = max(cfg["MAX_CONCURRENT"] * 4, 100)
-    for start in range(0, len(items), chunk_size):
-        chunk = items[start : start + chunk_size]
-        print(
-            f"[chunk {start // chunk_size + 1}/{-(-len(items) // chunk_size)}] "
-            f"{len(chunk)} calls, up to {cfg['MAX_CONCURRENT']} in flight"
-        )
+    # One dispatch for everything, saving as results stream in. This used to run
+    # in chunks of 4x max_concurrent with a save after each: one hung request
+    # (600 s timeout x 8 retries on the SDK clients) then held the whole chunk's
+    # completed-but-unsaved calls hostage — a 2,000-call Sonnet chunk sat at
+    # 1999/2000 for 25+ minutes. Now a straggler delays only itself, and a
+    # crash or kill loses at most SAVE_EVERY completed calls.
+    save_every = int(os.getenv("SAVE_EVERY", "100"))
+    since_save = [0]
+
+    def collect(result: dict[str, Any]) -> None:
+        output_data["samples"].append(result)
+        completed_ids.add(result["id"])
+        since_save[0] += 1
+        if since_save[0] >= save_every:
+            since_save[0] = 0
+            save_results(out_file, output_data)
+            print(f"  -> saved ({len(output_data['samples'])} total samples)")
+
+    print(f"Dispatching {len(items)} calls, up to {cfg['MAX_CONCURRENT']} in flight")
+    if items:
         batch_results = asyncio.run(
-            query_parallel(chunk, build_result, cfg["MAX_CONCURRENT"])
+            query_parallel(
+                items, build_result, cfg["MAX_CONCURRENT"], on_result=collect
+            )
         )
-
-        output_data["samples"].extend(batch_results)
-        completed_ids.update(r["id"] for r in batch_results)
-        new_count += len(batch_results)
-
+        new_count = len(batch_results)
         save_results(out_file, output_data)
         print(f"  -> saved ({len(output_data['samples'])} total samples)")
 
