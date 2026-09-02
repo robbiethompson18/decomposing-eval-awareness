@@ -43,6 +43,7 @@ Environment variables:
     TURN_TIMEOUT     Seconds per OpenClaw turn (default: 600)
 """
 
+import io
 import json
 import os
 import shutil
@@ -57,6 +58,7 @@ from typing import Any
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.selfreport import parse_selfreport_awareness, parse_selfreport_hypothetical
 from eval_bench.render import OPENER, render
+from lib.chat import Chat
 from lib.config import DEFAULT_OPENROUTER_CONFIGS
 from lib.io import read_file
 from lib.time_utils import now_pacific
@@ -101,21 +103,27 @@ SANDBOX_TOOLS_ALLOW = [
 def openclaw_config(
     model_id: str, workspace: Path, thinking: str, sandbox: str
 ) -> dict:
-    cfg: dict[str, Any] = {
-        "agents": {
-            "defaults": {
-                "model": {"primary": f"openrouter/{model_id}"},
-                "workspace": str(workspace),
-                "thinkingDefault": thinking,
-                "timeoutSeconds": int(os.getenv("TURN_TIMEOUT", "600")),
-                # memory_search needs an embedding provider; without one a turn
-                # that calls it answers fine but the process never exits (hangs
-                # to the timeout). Off = no memory_* tools and no "Memory Recall"
-                # prompt section, so the prompt stays coherent. MEMORY.md is still
-                # injected and memory/*.md are still readable with read/exec.
-                "memorySearch": {"enabled": False},
-            }
-        },
+    defaults: dict[str, Any] = {
+        "model": {"primary": f"openrouter/{model_id}"},
+        "workspace": str(workspace),
+        "thinkingDefault": thinking,
+        "timeoutSeconds": int(os.getenv("TURN_TIMEOUT", "600")),
+        # memory_search needs an embedding provider; without one a turn that
+        # calls it answers fine but the process never exits (hangs to the
+        # timeout). Off = no memory_* tools and no "Memory Recall" prompt
+        # section, so the prompt stays coherent. MEMORY.md is still injected
+        # and memory/*.md are still readable with read/exec.
+        "memorySearch": {"enabled": False},
+    }
+    if sandbox == "all":
+        defaults["sandbox"] = {
+            "mode": "all",
+            "scope": "session",
+            "workspaceAccess": "rw",
+            "docker": {"network": "none"},
+        }
+    return {
+        "agents": {"defaults": defaults},
         "tools": {
             "deny": TOOLS_DENY,
             # Perplexity Sonar rides on the OpenRouter key we already have.
@@ -126,14 +134,6 @@ def openclaw_config(
             "sandbox": {"tools": {"allow": SANDBOX_TOOLS_ALLOW}},
         },
     }
-    if sandbox == "all":
-        cfg["agents"]["defaults"]["sandbox"] = {
-            "mode": "all",
-            "scope": "session",
-            "workspaceAccess": "rw",
-            "docker": {"network": "none"},
-        }
-    return cfg
 
 
 class Worker:
@@ -354,9 +354,8 @@ def to_response(tx: dict[str, Any]) -> str:
 
 
 def main() -> None:
-    sys.stdout.reconfigure(
-        line_buffering=True
-    )  # progress lines reach the log as they happen
+    if isinstance(sys.stdout, io.TextIOWrapper):  # progress lines reach the log live
+        sys.stdout.reconfigure(line_buffering=True)
     model_key = os.environ["MODEL_KEY"]
     model_id = DEFAULT_OPENROUTER_CONFIGS[model_key][0]
     template = Path(os.getenv("WORKSPACE_DIR", OC_DIR / "workspace_klaus"))
@@ -434,7 +433,7 @@ def main() -> None:
     )
     print(f"state: {run_root}")
 
-    def run_one(t: dict, sid: str, chat: dict) -> tuple[dict, dict]:
+    def run_one(t: dict, sid: str, chat: Chat) -> tuple[dict, dict]:
         with lock:
             w = free.pop()
         try:

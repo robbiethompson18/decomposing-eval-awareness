@@ -103,6 +103,62 @@ Wall-clock: ~15 s/turn → 400 turns/model at parallelism 20 ≈ 5 min/model plu
   `agents.defaults.workspace` is unset, even with `OPENCLAW_STATE_DIR` pointed elsewhere. Always
   set the workspace explicitly. (The smoke test did this once; the scaffold was deleted.)
 
+## Build log (2026-09-01 evening) — what Phase 1 actually is
+
+Built on branch `openclaw/phase1`: `run/run_eval_bench_openclaw.py` (harness arm),
+`openclaw_prompt` anchor config in `run/run_eval_bench.py` (prompt-only control),
+`scripts/dump_openclaw_prompt.py`, `scripts/openclaw_phase1_launch.sh`,
+`scripts/analyze_openclaw_phase1.py`. Design calls that differ from the sketch above:
+
+- **Workspace is the real one, reconstructed.** Robbie's tarball was session transcripts only, but
+  the daily-memory-consolidation cron `write`s and `read`s inside them contain the workspace files
+  verbatim: MEMORY.md, 90 daily `memory/YYYY-MM-DD.md` (Apr 20 – Jul 24 2026), `memory/topics/*`.
+  Rebuilt into `results/eval_bench/openclaw/workspace_klaus/` (gitignored — never commit it, the
+  mirror is public), phones/emails/keys regex-scrubbed (68/36/43 hits). IDENTITY.md (Klaus 🦞),
+  USER.md, TOOLS.md hand-written from what the logs say; stock AGENTS.md/SOUL.md/HEARTBEAT.md;
+  no BOOTSTRAP.md. Real memory logs go to 7 model providers via OpenRouter — Robbie okayed the
+  tarball for this, but it's his personal data, so keep it in results/.
+- **F11 warm is live**, not a captured reply: turn 0 is a real "are you there?" exchange.
+- **Both probes are in-session**: fork by copying the session JSONL, awareness on the original,
+  hypothetical on the copy. Verified the copy carries full context.
+- **Thinking = high** for every model, matching the OpenRouter baseline's reasoning effort.
+- **Closed models (sonnet-4.5, gemini-3.5-flash) get a bare-API baseline re-run via OpenRouter**
+  (`*_p1base_*`) so the comparison shares a provider route; OW models compare against the pinned
+  BIG_RUN baselines, which were OpenRouter already.
+
+### Gotchas that cost time (all fixed in the runner)
+
+- **The workspace path is printed into the system prompt** ("Your working directory is: …" plus one
+  `## <path>/FILE.md` header per injected file). A path under `results/eval_bench/…` is a
+  giant eval cue. State dirs therefore live at `~/.openclaw-klaus`, `~/.openclaw-klaus-2`, …
+  (OpenClaw's own `--profile` naming); session JSONLs are archived into results/ afterwards.
+- **`OPENCLAW_WORKSPACE_DIR` alone is not enough** — with only `OPENCLAW_STATE_DIR` set,
+  `openclaw agent --local` still scaffolds `~/.openclaw/workspace`. Set
+  `agents.defaults.workspace` in the state dir's `openclaw.json`.
+- **BOOTSTRAP.md gets seeded** into any workspace whose IDENTITY/USER are the stock templates and
+  that has no `memory/`, `MEMORY.md` or `.git` (dist `agent-scope-*.js`). A filled workspace
+  passes; OpenClaw then writes `.openclaw/workspace-state.json` with `onboardingCompletedAt`.
+  The missing file still shows up as a `[MISSING] Expected at: …/BOOTSTRAP.md` stub in the prompt
+  — that's real OpenClaw behaviour for every onboarded user, so it stays.
+- **Sandboxed sessions get a narrow tool allow-list by default** (exec/process/read/write/edit/
+  sessions_*/session_status): web_search/web_fetch silently vanished while the prompt still
+  described them. Fix: `tools.sandbox.tools.allow`. Final tool set: read, edit, write, exec,
+  process, session_status, web_search, web_fetch, image.
+- **memory_search hangs the process.** Without an embedding provider the tool returns
+  `fts-only`/`database is not open`, the model answers fine, and then the `openclaw` process never
+  exits (both timed-out smoke turns were exactly the ones that called it). Disabling
+  `agents.defaults.memorySearch.enabled` removes the tools AND the "Memory Recall" prompt section,
+  so the prompt stays coherent. Cost: Klaus can't semantically search his memory; he can still
+  `read`/`exec` the files.
+- **Docker truncates the session id in container names**, so clean up by matching the container's
+  bind-mounted workspace path (unique per worker), not the name.
+- **This OpenClaw build (2026.3.2) has `--message` only**, no `--message-file`; the prompt goes
+  through argv (fine at a few KB).
+- `openclaw agent --json` prints log lines before the envelope: take the last `{…}` block.
+- usage.cost is populated for Anthropic models via OpenRouter but comes back 0 for qwen.
+- Throughput: ~110 s per sample (4 turns) at thinking=high on OW models; 10 workers/lane, two
+  lanes ≈ 22 openclaw processes ≈ 11 GB RSS. ~40 min/model.
+
 ## Files from the smoke test
 
 Scratch only (not in results/): `<scratchpad>/oc-state/agents/main/sessions/smoke1.jsonl`,
