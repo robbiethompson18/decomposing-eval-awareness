@@ -471,6 +471,13 @@ class OpenRouterApiClient:
         # VLLM_BASE_URL points this same client at a self-hosted vLLM server
         # (TARGET_BACKEND=vllm); vLLM ignores OpenRouter's reasoning extra_body.
         self.is_vllm = bool(cfg.get("VLLM_BASE_URL"))
+        # Activation steering (vllm-lens server): STEER_XARGS_FILE points at a JSON
+        # dict sent as `vllm_xargs` on every request, e.g. {"apply_steering_vectors":
+        # "<json list of serialized SteeringVector>"}. Built by scripts/make_steer_payloads.py.
+        self.vllm_xargs = None
+        if self.is_vllm and os.getenv("STEER_XARGS_FILE"):
+            with open(os.environ["STEER_XARGS_FILE"], encoding="utf-8") as f:
+                self.vllm_xargs = json.load(f)
         self.base_url = cfg.get("VLLM_BASE_URL") or "https://openrouter.ai/api/v1"
         self.client = create_openai_client(
             cfg.get("OPENROUTER_API_KEY") or "EMPTY", base_url=self.base_url
@@ -497,6 +504,8 @@ class OpenRouterApiClient:
             }
             if not self.is_vllm:
                 kwargs["extra_body"] = {"reasoning": {"effort": "high"}}
+            elif self.vllm_xargs:
+                kwargs["extra_body"] = {"vllm_xargs": self.vllm_xargs}
             if self.temperature is not None:
                 kwargs["temperature"] = self.temperature
             tools = _tool_defs(chat, to_openai_chat_tool, think=False)

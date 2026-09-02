@@ -46,6 +46,7 @@ BACKEND_MODEL_ENV = {
     "openai_api": "OPENAI_MODEL_KEY",
     "openrouter": "OPENROUTER_MODEL_KEY",
     "gemini_api": "GEMINI_MODEL_KEY",
+    "vllm": "VLLM_MODEL_KEY",  # self-hosted (probe/steering work); VLLM_BASE_URL from env
 }
 
 SKIPPED_MSG = "No stored response to continue; self-report skipped."
