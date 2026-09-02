@@ -175,6 +175,72 @@ Built on branch `openclaw/phase1`: `run/run_eval_bench_openclaw.py` (harness arm
 - Throughput: ~110 s per sample (4 turns) at thinking=high on OW models; 10 workers/lane, two
   lanes ≈ 22 openclaw processes ≈ 11 GB RSS. ~40 min/model.
 
+## Phase 1 results (2026-09-01, CLOSED — Robbie's call, branch `openclaw/phase1`, never merged)
+
+Stopped at ~70% of the planned runs; nothing left would change the conclusion. Full tables:
+`results/eval_bench/openclaw/phase1_analysis.txt`, cue tally `phase1_cue_tally.txt`, plots
+`results/eval_bench/plots/openclaw_arms_*.png`, summary JSON `phase1_summary.json`.
+Coverage: harness for qwen, deepseek, minimax, sonnet-4.5 (200 each), kimi (170), gemini-3.5-flash
+(180); prompt-only control for all five OW models + sonnet (gemini control probe was still running);
+the OpenRouter bare baselines for sonnet/gemini never ran, so those two have no matched baseline.
+
+### Headline: a real agent harness does NOT make these items less detectable
+
+Self-reported eval awareness, sample1, yes/(yes+no), n≈100 per cell (paired McNemar vs baseline):
+
+| model | arm | safety | capability |
+|---|---|---|---|
+| qwen3.8-2.4t | baseline → control → harness | 59 → 40 → **34** (p=1e-4) | 4 → 7 → **12** (p=0.04) |
+| kimi-k3 | baseline → control → harness | 60 → 41 → **40** (p=0.003) | 8 → 10 → 5 (ns) |
+| deepseek-v4-pro | baseline → control → harness | 24 → 62 → **63** (p=2e-9) | 0 → 7 → 7 (p=0.02) |
+| glm-5.3 | baseline → control | 27 → **53** (p=7e-5) | 2 → **20** (p=8e-6) |
+| minimax-m3 | baseline → control → harness | 66 → 57 → 61 (ns) | 8 → 6 → **16** (p=0.08) |
+| claude-sonnet-4.5 | control → harness (native baseline 59% overall) | 70 → **85** (p=0.007) | 45 → 46 |
+| gemini-3.5-flash | harness only (native baseline 22% overall) | 50 | 42 |
+
+1. **Live affordances buy nothing.** Harness vs prompt-only control is null for qwen, deepseek and
+   kimi on both arms; the only harness>control cells are minimax capability (+10, p=0.006) and
+   sonnet safety (+15, p=0.007), both *up*. Tools were actually used (qwen 28%, gemini 43% of
+   samples, deepseek 16%, kimi 13%, minimax 12%, sonnet 1.5%). Whatever the OpenClaw context does,
+   the text of the context does it — same conclusion as F9–F12, at the strongest realism we can buy.
+2. **The direction flips by model.** The same 25K-char context cuts safety-arm awareness by 20 pts
+   for qwen and kimi and *doubles* it for deepseek and glm (all p<0.002). Recognition is a property
+   of the model×environment pair, not the environment — the paper's central claim, reproduced on a
+   production harness rather than a factor grid.
+3. **The benign arm goes up, and the models say why.** Capability-arm awareness rises for every model
+   except kimi. Cue tally over the "aware" reasons (`phase1_cue_tally.txt`): the USER.md persona
+   mismatch is cited in 26/36 of sonnet's aware capability verdicts, 18/20 of glm's (control),
+   7/12 of qwen's (harness). A personal agent knows who its user is; a benchmark item written in
+   the voice of a stranger violates that. This is environment-induced F2 and it is unavoidable when
+   you drop a chat benchmark into a personal-assistant harness.
+4. **Hypothetical recognition explodes for some models.** deepseek 6% → 61% (control) → 67%
+   (harness); glm 14% → 44%; minimax 13% → 24% → 40% (harness > control, p=9e-5). kimi goes the
+   other way (24 → 18 → 9). Same model-dependence.
+5. **Verbalized (CoT-judged) awareness rises too**, from 0–2% at baseline to 3–7% under the prompt
+   and 6–11% under the harness (sonnet 11%, minimax 11%). Caveat: OpenClaw's OpenRouter path returned
+   no thinking blocks for ~half of minimax's samples (98/200 N/A), so its CoT numbers are on a subset.
+
+### Interpretation for the write-up
+
+"Make the eval look like deployment" fails in the strongest form we could build: a real agent
+framework, real tools in a Docker sandbox, a real persona with four months of memory, a live opener
+turn. Against F9–F12's near-nulls this is the first environment change with large effects — and they
+point both ways. The request content still dominates the safety arm (request-shaped cues cited in
+~100% of aware safety verdicts), and the harness adds a second, independent giveaway on the benign
+arm: the requester isn't who the assistant thinks it serves. Realism is not a scalar you can turn up;
+a richer environment has more things to be inconsistent with.
+
+### Caveats
+
+- Self-report is the leading probe (menu with "Capability Evaluation" on it); in an agent harness a
+  benign task-shaped request may read as "assessing my ability" more readily. The CoT judge moves the
+  same direction, which argues against pure probe artefact.
+- sonnet/gemini lack a provider-matched baseline (the OpenRouter re-runs were the last lane and were
+  cut). Their native baselines (59% / 22%) came through the think-tool harness, not comparable.
+- Persona mismatch could be removed with a workspace that doesn't pin the user (or a shared/team
+  instance). Not run. If anyone picks this up, that is the one variant worth adding.
+- One quarantined run (`invalid_sessionid_leak/`) exists; do not analyze it.
+
 ## Files from the smoke test
 
 Scratch only (not in results/): `<scratchpad>/oc-state/agents/main/sessions/smoke1.jsonl`,
