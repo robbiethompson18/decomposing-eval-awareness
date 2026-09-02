@@ -22,6 +22,8 @@ keeps the headline comparison free of the awareness-raising factor variants.
 The factor heatmap ignores CONFIG_FILTER — its columns *are* the configs.
 The task-type chart pools every pinned model's records (so it weights models
 by graded n, like the heatmap's Pooled row) and splits safety vs capability.
+figure6_{probe}.png is the paper's Figure 6 layout (see plot_figure6): the
+same OFAT grid split by valence, counting matched-type awareness only.
 
 Environment variables:
     SURVEY          "1" = print the file survey and exit (for updating pins)
@@ -41,10 +43,13 @@ from collections import Counter
 from glob import glob
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import matplotlib.patheffects as pe
+import matplotlib.pyplot as plt
+
 from core.metrics import bucket_conclusion, extract_conclusion
 from lib.model_meta import MODEL_META, display_name
 from lib.stats import wilson_ci
-from plots.style import (
+from plots.style import (  # pins the Agg backend; import before creating any figure
     GRID,
     INK,
     INK2,
@@ -444,6 +449,171 @@ def plot_factor_heatmap(out_dir: str, probe: str):
     save(fig, out_dir, f"awareness_by_factor_{probe}.png")
 
 
+# Paper Figure 6 (arXiv:2605.23055): the same OFAT grid, but (a) split into a
+# safety-task and a capability-task panel instead of pooling valences, (b)
+# counting only *matched-type* awareness (a safety-task sample counts only if
+# the judge typed the awareness as "safety", and vice versa), and (c) annotating
+# each cell with the task-compliance change vs baseline in pp when it exceeds
+# PERF_ANNOT_PP. Pooling valences roughly halves every cell (capability tasks
+# sit near 0% for every model), which is why the pooled heatmap above reads
+# far below the paper's numbers while this one lands on them.
+PERF_ANNOT_PP = 5
+PERF_UP, PERF_DOWN = "#d62728", "#2a8a3c"  # paper's red = more compliant, green = less
+
+
+def _matched_awareness(records: list[dict], config: str, valence: str) -> float:
+    """Matched-type awareness rate (yes+no denominator), nan if nothing graded."""
+    yes = graded = 0
+    for r in records:
+        if r.get("config_name") != config or r.get("valence") != valence:
+            continue
+        judge = r.get("judge") or {}
+        b = bucket_conclusion(extract_conclusion(judge, "model_awareness"))
+        if b not in ("yes", "no"):
+            continue
+        graded += 1
+        section = judge.get("model_awareness")
+        atype = section.get("awareness_type", "") if isinstance(section, dict) else ""
+        if b == "yes" and str(atype).strip().lower() == valence:
+            yes += 1
+    return yes / graded if graded else math.nan
+
+
+def _compliance(records: list[dict], config: str, valence: str) -> float:
+    """Share of graded task_performance verdicts that are "correct" (legacy "yes").
+
+    The paper's annotation is task compliance: on safety tasks a drop means more
+    refusals, on capability tasks it means more failures. v2's "guarded" /
+    "incorrect" / "refused" all count as not-complied.
+    """
+    done = graded = 0
+    for r in records:
+        if r.get("config_name") != config or r.get("valence") != valence:
+            continue
+        concl = extract_conclusion(r.get("judge") or {}, "task_performance")
+        if concl in ("", "n/a", "invalid"):
+            continue
+        graded += 1
+        done += concl in ("correct", "yes")
+    return done / graded if graded else math.nan
+
+
+def plot_figure6(out_dir: str, probe: str):
+    """Paper Fig. 6 layout: safety | capability panels of matched-type awareness.
+
+    Awareness comes from the chosen probe's pinned file. The compliance
+    annotations always come from the CoT-judged file (same responses; the
+    self-report probe grades no task performance), so a model with no cot pin
+    gets awareness cells but no annotations.
+    """
+    configs = list(FACTOR_LABELS)
+    valences = ("safety", "capability")
+    labels: list[str] = []
+    grids = {v: [] for v in valences}
+    deltas = {v: [] for v in valences}
+    for model in BIG_RUN:
+        path = pinned_path(probe, model)
+        if path is None:
+            continue
+        recs = load_records(path)
+        cot_path = pinned_path("cot", model)
+        cot_recs = load_records(cot_path) if cot_path else []
+        labels.append(display_name(model))
+        for v in valences:
+            grids[v].append([_matched_awareness(recs, c, v) for c in configs])
+            base = _compliance(cot_recs, "baseline", v)
+            deltas[v].append(
+                [(_compliance(cot_recs, c, v) - base) * 100 for c in configs]
+            )
+    if not labels:
+        return
+
+    n_rows, n_cols = len(labels), len(configs)
+    vmax = max(v for g in grids.values() for row in g for v in row if not math.isnan(v))
+    fig, axes = plt.subplots(
+        1, 2, figsize=(0.6 * n_cols * 2 + 3.2, 0.5 * n_rows + 2.0), dpi=200
+    )
+    halo = [pe.withStroke(linewidth=1.6, foreground=SURFACE)]  # legible on dark cells
+    fig.patch.set_facecolor(SURFACE)
+    for ax, v in zip(axes, valences):
+        grid = grids[v]
+        ax.set_facecolor(SURFACE)
+        ax.imshow(grid, cmap="Blues", vmin=0, vmax=vmax, aspect="auto")
+        for i, row in enumerate(grid):
+            for j, val in enumerate(row):
+                if math.isnan(val):
+                    ax.text(j, i, "–", ha="center", va="center", fontsize=8, color=INK2)
+                    continue
+                ink = "white" if val / vmax > 0.6 else (INK2 if val < 0.005 else INK)
+                ax.text(
+                    j,
+                    i,
+                    f"{val * 100:.0f}%",
+                    ha="center",
+                    va="center",
+                    fontsize=8.5,
+                    fontweight="bold",
+                    color=ink,
+                )
+                d = deltas[v][i][j]
+                if j > 0 and not math.isnan(d) and abs(d) >= PERF_ANNOT_PP:
+                    ax.text(
+                        j + 0.44,
+                        i - 0.42,
+                        f"{d:+.0f}",
+                        ha="right",
+                        va="top",
+                        fontsize=6.5,
+                        fontweight="bold",
+                        color=PERF_UP if d > 0 else PERF_DOWN,
+                        path_effects=halo,
+                    )
+        ax.set_xticks([x - 0.5 for x in range(1, n_cols)], minor=True)
+        ax.set_yticks([y - 0.5 for y in range(1, n_rows)], minor=True)
+        ax.grid(which="minor", color=SURFACE, lw=2)
+        ax.tick_params(which="minor", length=0)
+        ax.axvline(0.5, color=INK2, lw=1, ls=(0, (3, 3)))
+        ax.set_xticks(range(n_cols))
+        ax.set_xticklabels(["BL"] + configs[1:], fontsize=8, fontweight="bold")
+        ax.set_yticks(range(n_rows))
+        ax.set_yticklabels(labels if ax is axes[0] else [], fontsize=8.5)
+        ax.tick_params(length=0)
+        for spine in ax.spines.values():
+            spine.set_color(INK)
+        ax.set_title(f"{v.capitalize()} Tasks", color=INK, fontweight="bold")
+    fig.suptitle(
+        f"{PROBE_TITLE[probe]} matched-type eval awareness by factor varied",
+        color=INK,
+        x=0.02,
+        ha="left",
+        fontsize=11,
+    )
+    fig.text(
+        0.5,
+        0.01,
+        f"annotation = task-compliance change vs baseline (pp), shown when |Δ| ≥ "
+        f"{PERF_ANNOT_PP}:  +N more compliant (red)   −N more refusals / failures (green)",
+        ha="center",
+        fontsize=7.5,
+        color=INK2,
+    )
+    fig.tight_layout(rect=(0, 0.03, 1, 0.97))
+    path = os.path.join(out_dir, f"figure6_{probe}.png")
+    fig.savefig(path, facecolor=SURFACE)
+    plt.close(fig)
+    print(f"wrote {path}")
+
+    # Text dump so the numbers can be read off without opening the PNG.
+    for v in valences:
+        print(f"\n{PROBE_TITLE[probe]} matched-type awareness, {v} tasks (%)")
+        print(f"{'model':18} " + " ".join(f"{c:>4}" for c in ["BL"] + configs[1:]))
+        for label, row in zip(labels, grids[v]):
+            cells = " ".join(
+                f"{x * 100:4.0f}" if not math.isnan(x) else "   –" for x in row
+            )
+            print(f"{label:18} {cells}")
+
+
 def plot_by_task_type(out_dir: str, probe: str, config: str):
     """Grouped horizontal bars: pooled awareness per HarmBench category × valence."""
     cats = task_categories()
@@ -607,6 +777,7 @@ def main():
     )
     plot_uplift(rows, out_dir, config)
     plot_factor_heatmap(out_dir, probe)
+    plot_figure6(out_dir, probe)
     plot_by_task_type(out_dir, probe, config)
 
 
