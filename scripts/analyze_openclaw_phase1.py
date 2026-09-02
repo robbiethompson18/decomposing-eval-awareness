@@ -57,6 +57,33 @@ def latest(pattern: str) -> Path | None:
     return Path(hits[-1]) if hits else None
 
 
+def selfreport_for(model: str, run_tag: str) -> Path | None:
+    """eval_eval_bench_selfreport.py names its output by model only, so find the
+    probe file for a tagged response run through its source_response_file."""
+    resp = sorted(
+        glob(
+            str(
+                ROOT
+                / "results/eval_bench/response"
+                / f"responses_{model}_{run_tag}_*.json"
+            )
+        )
+    )
+    if not resp:
+        return None
+    src = Path(resp[-1]).name
+    for p in sorted(glob(str(SR / f"selfreport_{model}_*.json")), reverse=True):
+        try:
+            head = json.loads(
+                p.read_text() if isinstance(p, Path) else Path(p).read_text()
+            )
+        except json.JSONDecodeError:
+            continue
+        if isinstance(head, dict) and head.get("source_response_file") == src:
+            return Path(p)
+    return None
+
+
 def by_pair(records: list[dict], config: str, metric: str) -> dict[tuple, str]:
     """(task_id, valence) -> yes/no/other for sample1 of the given config."""
     out = {}
@@ -173,13 +200,13 @@ def main() -> None:
         for model in MODELS:
             arms: dict[str, dict] = {}
             if model in OPENROUTER_BASELINE:
-                f = latest(f"selfreport_{model}_{TAG}base_*.json")
+                f = selfreport_for(model, f"{TAG}base")
             else:
                 pinned = BIG_RUN.get(model, {}).get("selfreport")
                 f = SR / pinned if pinned else None
             if f and f.exists():
                 arms["baseline"] = by_pair(load(f), "baseline", metric)
-            f = latest(f"selfreport_{model}_{TAG}ctl_*.json")
+            f = selfreport_for(model, f"{TAG}ctl")
             if f:
                 arms["control"] = by_pair(load(f), "openclaw_prompt", metric)
             f = latest(f"selfreport_{model}_openclaw_{TAG}_*.json")
