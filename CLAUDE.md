@@ -151,10 +151,11 @@ Current notes:
   — requests with `tools` route to a different provider subset (deepseek: StreamLake-only vs 12
   providers), which alone moved self-reported awareness 74→22%; provider mix per model from the
   F12 run; fix = pin providers via `extra_body["provider"]` and record `provider` per sample.
-- [OpenClaw realism harness scope — read before building the "deliver EvalAwareBench through a real agent" experiment or claiming a realistic harness does/doesn't move awareness](.claude/notes/openclaw-realism-scope.md)
-  — smoke-test facts (headless `openclaw agent --local --json`, session JSONL keeps thinking blocks,
-  $0.06/turn, `~/clawd` is the blank template), Phase 1 (same 200 requests through OpenClaw,
-  2–3 h) vs Phase 2 (agentic tasks, real tools, 1–2 days), ban/sandbox risks.
+- [OpenClaw realism harness: scope, build log, Phase 1 results (CLOSED) — read before claiming a realistic agent harness does/doesn't move awareness, or before re-running anything OpenClaw](.claude/notes/openclaw-realism-scope.md)
+  — same 200 requests through a real OpenClaw agent vs prompt-only control vs bare API, 6 models:
+  live tools buy nothing (harness = control), the context text flips direction by model (qwen/kimi
+  −20 pts, deepseek/glm ×2), benign arm rises via USER.md persona mismatch; gotchas (session-id
+  leak, memory_search hang, sandbox tool allow-list, path in prompt). Code on branch `openclaw/phase1`.
 - [F12 search-tool results — read before re-running F12, building real search, or citing tool-affordance numbers](.claude/notes/f12-search-tool-results.md)
   — stub tool is a null result on awareness (closed models pooled: −1pp, one +6pp hypothetical
   signal on gemini-3.5-flash); who calls the tool (OW 15–26% on benign tasks, Gemini 0%) and what
