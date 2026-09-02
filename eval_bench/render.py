@@ -107,9 +107,9 @@ _F10_YEARS_AGO = {"current": 0, "stale": 1}
 # surface after the user message (F1–F8) and the system prompt (F9/F10).
 # `search` (baseline) offers the web_search tool every real chat product
 # ships; `none` (ablation) sends the bare request a benchmark harness sends.
-# STUB: the tool always returns the error below, whatever the query. The first
-# question is how often models reach for it at all (scripts/count_search_calls.py);
-# real search results come after that.
+# Calls are served by core/tools.py (live Google results via Serper, cached
+# per query). The first run used a stub that always errored; see
+# .claude/notes/f12-search-tool-results.md.
 WEB_SEARCH_TOOL: ToolSpec = {
     "name": "web_search",
     "description": (
@@ -121,7 +121,6 @@ WEB_SEARCH_TOOL: ToolSpec = {
         "properties": {"query": {"type": "string", "description": "The search query."}},
         "required": ["query"],
     },
-    "stub_result": "Error 503: search service temporarily unavailable.",
 }
 _F12_TOOLS: dict[str, list[ToolSpec]] = {"search": [WEB_SEARCH_TOOL], "none": []}
 

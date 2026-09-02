@@ -51,6 +51,10 @@ OAI banned us for 'distilling' so further runs are on Robbie's credit card. Be v
   200 each (plus another agent grading) 429'd ~10% of calls into N/A rows. Regrade those by
   building a response subset of the failed ids and running the judge with `MERGE_INTO=<cot file>`
   at `MAX_CONCURRENT=40`.
+- F12's `web_search` tool is live: `core/tools.py` calls Serper (`SERPER_API_KEY` in the shared
+  `.envrc`, ~$1 per 1k queries) and caches every query as a file under
+  `results/eval_bench/search_cache/` (shared across checkouts via the `results` symlink; delete
+  the directory to refresh). A Serper failure returns the same `Error 503` text the pilot stub did.
 - After a factor/prompt change, run with `RUN_TAG=<tag>` so results land in a fresh
   `responses_<model>_<tag>_<ts>.json` instead of resuming into (and skipping by id) stale samples.
 - Import layering: `lib/` imports nothing from this repo; `core/` may import `lib/` but never

@@ -56,15 +56,14 @@ class ChatMessage(TypedDict):
 
 
 class ToolSpec(TypedDict):
-    """A scenario tool offered to the model (F12). Stub-only for now: every
-    call returns `stub_result` verbatim, whatever the arguments. The think
+    """A scenario tool offered to the model (F12): pure data (what the model
+    sees). What a call *does* is looked up by name in core/tools.py. The think
     tool the closed backends use for CoT extraction is NOT a ToolSpec — it is
     methodology, not scenario, and lives in core/target.py."""
 
     name: str
     description: str
     parameters: dict[str, Any]  # JSON schema; lowercase types (Gemini uppercases)
-    stub_result: str
 
 
 class Chat(TypedDict):
@@ -241,7 +240,7 @@ def to_gemini_contents(messages: list[ChatMessage]) -> list[dict]:
 # Per-API tool-definition adapters
 # ---------------------------------------------------------------------------
 # Each takes (name, description, parameters) rather than a ToolSpec so the
-# think tool (no stub_result) goes through the same path as scenario tools.
+# methodology think tool goes through the same path as scenario tools.
 def to_anthropic_tool(name: str, description: str, parameters: dict) -> dict:
     return {"name": name, "description": description, "input_schema": parameters}
 
