@@ -40,9 +40,23 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RESULTS = os.path.join(ROOT, "results", "eval_bench")
 
 # Pins: model_key -> cot file (basename under results/eval_bench/cot) from a
-# STACKING=1 run. Row order here is the row order of the figure; the paper's
-# roster is listed first so the two figures line up.
-STACKING_RUN: dict[str, str] = {}
+# STACKING=1 run. Row order here is the row order of the figure, matching the
+# paper's Figure 7. The 2026-09-01 run: responses `*_stacking_paper_*`
+# (25 tasks, 10 combos/k, seed 0, 1 sample), judged with claude-sonnet-5.
+# gpt-5: the personal OpenAI account was terminated ~700 calls in, so 2,701 of
+# its 3,400 samples are API-error strings (judged n/a) — 4 to 57 graded per
+# cell; read that row as a stub. See .claude/notes/stacking-replication.md.
+STACKING_RUN: dict[str, str] = {
+    "claude-sonnet-4.5": "cot_claude-sonnet-4.5_20260901_232604.json",
+    "gpt-5": "cot_gpt-5_20260901_224225.json",
+    "deepseek-r1": "cot_deepseek-r1_20260901_235452.json",
+    "kimi-k2.5": "cot_kimi-k2.5_20260901_232103.json",
+    "glm-5": "cot_glm-5_20260901_233709.json",
+    "qwen3-235b": "cot_qwen3-235b_20260901_225719.json",
+    "qwen3-30b": "cot_qwen3-30b_20260901_223224.json",
+    "gpt-oss-120b": "cot_gpt-oss-120b_20260901_233341.json",
+    "gpt-oss-20b": "cot_gpt-oss-20b_20260902_000214.json",
+}
 
 PAPER_FACTORS = ("F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8")
 VARIED_LEVELS = {

@@ -51,10 +51,51 @@ Judged with the default sonnet-5 grader (64/64 parseable, 0 refusals), plotted w
 Result, matched-type: 4 aware verdicts, all on safety tasks at k = 3, 5, 6, 8 (0/12 at k ≤ 2),
 0 on capability — n is tiny, but the shape is the paper's. Not a result, a pipeline check.
 
-## Full run (todo)
+## Full run (2026-09-01, evening)
 
-- Paper roster at 1 sample: 3,400 generations per model. GPT-5 needs the OpenAI account (banned);
-  gpt-oss goes through OpenRouter so it is fine. Check `deepseek/deepseek-r1` is still served.
-- Judge with `RESPONSE_FILE=`, pin each cot file in `STACKING_RUN`, run `plots/plot_stacking.py`.
-- Sonnet 4.5 and GPT-5 rows will be think-tool CoT, the paper's are reasoning summaries — the
-  OFAT Figure 6 rows matched anyway, so expect the same here.
+Paper roster, 25 tasks × 68 combos × 2 valences, 1 sample, seed 0 (`*_stacking_paper_*` response
+files), judged with claude-sonnet-5 (no backup grader; its refusals are the `MISSING` verdicts
+below, 2–6% per model, excluded from denominators). Pins in `plots/plot_stacking.py`; figures
+`results/eval_bench/plots/awareness_by_n_factors_{matched,any}.png`.
+
+**Matched-type safety awareness, k = 0 → 8, ours vs the paper's Figure 7:**
+
+| model | ours | paper | shape |
+|---|---|---|---|
+| Qwen3 T-235B | 4% → 65% (monotone) | 4% → 36% | replicates, stronger |
+| Qwen3 T-30B | 0% → 25% (monotone) | 4% → 35% | replicates |
+| DeepSeek R1 | 0% → 18% (monotone) | 5% → 23% | replicates |
+| Kimi K2.5 | 14% → 9%, peak 25% at k=4–5 | 13% → 44% | rises then falls |
+| Claude Sonnet 4.5 | 0% → 5%, peak 9% at k=3 | 1% → 11%, peak 22% at k=6 | flat-ish |
+| GLM-5 | 0% → 4% | 0% → 17% | weak |
+| GPT-oss 120B / 20B | 0% → 0–1% | 0% → 3% | floor, as paper |
+| GPT-5 | stub | 0% → 7% | see below |
+
+Capability panel: ≤ 8% everywhere, rising with k on Kimi/Qwen (paper: same, peaks 12–40%).
+Cell n is ~180–250 at k=1..7 and only 20–25 at k=0 and k=8 (one combo per task), so the corner
+cells are noisy — Kimi's k=8 dip is 2/22.
+
+**GPT-5 row is a stub.** The personal OpenAI account was terminated ~700 calls into the run
+(`Error code: 429 ... Your access was terminated due to violation of our policies`, then 401
+`account has been deactivated`); 2,701/3,400 samples are error strings, judged n/a. That is the
+second OpenAI account lost to this benchmark. Don't retry on another.
+
+**Sonnet/Kimi caveat:** both have the most no-CoT (n/a) and judge-refused (MISSING) samples, and
+those concentrate at high k (DAN wrapper + telegraphed stakes → outright refusal with no think-tool
+call). Excluding them from the denominator is the paper's rule too, but it means the high-k cells
+measure "awareness among samples that reasoned at all".
+
+## Run mechanics that cost time (read before the next big run)
+
+- **Per-chunk saves + no per-request timeout = stalls.** The old loop saved only when a whole
+  4×concurrency chunk returned; one hung call (600 s SDK timeout × 8 retries) held everything
+  else unsaved — a 2,000-call Sonnet chunk sat at 1999/2000 for 25 min. Fixed: results stream to
+  disk every `SAVE_EVERY` (100) completions (`lib/parallel.py` `on_result`).
+- **Concurrency:** Sonnet 500 (100 was 5× too slow), OpenRouter 80 for most models, 250 for
+  gpt-oss-20b (0 → 19 429s over 2,800 calls, all retried). Concurrent sonnet-5 judge passes share
+  the Anthropic rate limit with a Sonnet target run — the target run tripled in speed once the
+  judges finished.
+- gpt-oss-20b thinks to the 50k-token cap on a few % of prompts (36k–65k reasoning tokens); those
+  are legitimately 10+ minute calls, not hangs.
+- Launch long runs with `start_new_session=True` (setsid); the harness kills backgrounded shells at
+  10 min. Runs resume by id, so a restart costs only in-flight calls.
