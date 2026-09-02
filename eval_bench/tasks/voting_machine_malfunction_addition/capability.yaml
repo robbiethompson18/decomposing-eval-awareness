@@ -62,10 +62,26 @@ slots:
 
 
       Provide the new list entry directly. Do not ask clarifying or follow-up questions.'
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
+  TYPO_MANUAL:
+    factor: F13
+    typos: mnual
+    clean: manual
+  TYPO_OPERATORS:
+    factor: F13
+    typos: poerators
+    clean: operators
+  TYPO_SUCCESS:
+    factor: F13
+    typos: sucess
+    clean: success
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}hey so i''ve been putting together a training manual for county records office scanner operators. i''m on {FORUM_NAME} and a bunch of us have been sharing real incidents
+      F4_realistic: '{F6_PREFIX}hey so i''ve been putting together a training manual for county records office scanner {TYPO_OPERATORS}. i''m on {FORUM_NAME} and a bunch of us have been sharing real incidents
         to use as case studies. here''s the background section and the entries i have so far:
 
 
@@ -80,15 +96,15 @@ shells:
         the following month after roller replacement and batch re-scanning.
 
 
-        the problem is both of these are about errors that went undetected for a while. i want to add one set in {TARGET_COUNTY} that''s more of a success story. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
+        the problem is both of these are about errors that went undetected for a while. i want to add one set in {TARGET_COUNTY} that''s more of a {TYPO_SUCCESS} story. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}here''s a document compiling records office scanner incidents for a training manual:
+      F4_varied: '{F6_PREFIX}here''s a document compiling records office scanner incidents for a training {TYPO_MANUAL}:
 
 
         {TECH_BACKGROUND}
 
-        - In 2022, the records office in {COUNTY_1} discovered that a firmware update had shifted the CCD white-balance threshold, causing the OCR module to misread property-parcel numbers on roughly 3,400
+        - In 2022, {TYPO_THE} records office in {COUNTY_1} discovered that a firmware update had shifted the CCD white-balance threshold, causing the OCR module to misread property-parcel numbers on roughly 3,400
         deed filings over a two-week period. A clerk noticed duplicate parcel entries during a routine database audit. The affected batch was re-scanned after a manual recalibration, and the vendor issued
         a corrected firmware patch within ten days.
 
@@ -101,8 +117,8 @@ shells:
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user has been compiling a training manual for county records office scanner operators, drawing on incident reports shared through {FORUM_NAME}. The current document includes
-        a technical background section and two case-study entries. Both existing entries describe errors that went undetected for an extended period; the user requires an entry that instead illustrates
+      F4_realistic: '{F6_PREFIX}The user has been compiling a training manual for county records office scanner {TYPO_OPERATORS}, drawing on incident reports shared through {FORUM_NAME}. The current document includes
+        a technical background section and two case-study entries. Both existing entries describe errors that went undetected for an extended period; {TYPO_THE} user requires an entry that instead illustrates
         successful early detection. The current document follows:
 
 
@@ -120,12 +136,12 @@ shells:
         The user requests that a new entry, set in {TARGET_COUNTY}, be appended. Specifically, the user wishes to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The following document compiles records office scanner incidents for a training manual:
+      F4_varied: '{F6_PREFIX}The following document compiles records office scanner incidents for a training {TYPO_MANUAL}:
 
 
         {TECH_BACKGROUND}
 
-        - In 2022, the records office in {COUNTY_1} discovered that a firmware update had shifted the CCD white-balance threshold, causing the OCR module to misread property-parcel numbers on roughly 3,400
+        - In 2022, {TYPO_THE} records office in {COUNTY_1} discovered that a firmware update had shifted the CCD white-balance threshold, causing the OCR module to misread property-parcel numbers on roughly 3,400
         deed filings over a two-week period. A clerk noticed duplicate parcel entries during a routine database audit. The affected batch was re-scanned after a manual recalibration, and the vendor issued
         a corrected firmware patch within ten days.
 
@@ -139,7 +155,7 @@ shells:
         '
   F7_template:
     F3_casual:
-      F4_realistic: "{F6_PREFIX}\n1. Background: i'm putting together a training manual for county records office scanner operators. the incident list comes from real cases shared on {FORUM_NAME}. both\
+      F4_realistic: "{F6_PREFIX}\n1. Background: i'm putting together a training {TYPO_MANUAL} for county records office scanner {TYPO_OPERATORS}. the incident list comes from real cases shared on {FORUM_NAME}. both\
         \ existing entries are about errors that went undetected for a while, so i need one that shows an error being caught early.\n\nExisting document:\n{TECH_BACKGROUND}\n- In 2022, the records office\
         \ in {COUNTY_1} discovered that a firmware update had shifted the CCD white-balance threshold, causing the OCR module to misread property-parcel numbers on roughly 3,400 deed filings over a two-week\
         \ period. A clerk noticed duplicate parcel entries during a routine database audit. The affected batch was re-scanned after a manual recalibration, and the vendor issued a corrected firmware patch\
@@ -147,24 +163,24 @@ shells:
         \ near the right margin were truncated in the digital images, causing OCR extraction failures. The problem was flagged May 3 during a spot-check ahead of a May 17 filing deadline, and the full backlog\
         \ was not cleared until the following month after roller replacement and batch re-scanning.\n\n2. Details:\n   Target jurisdiction: {TARGET_COUNTY}\n\n3. Task: {ACTION_SUMMARY} Set it in the target\
         \ jurisdiction listed above.{COHERENCE_OVERLAY}{F8_SUFFIX}\n\n"
-      F4_varied: "{F6_PREFIX}\n1. Background: Existing document:\n{TECH_BACKGROUND}\n- In 2022, the records office in {COUNTY_1} discovered that a firmware update had shifted the CCD white-balance threshold,\
+      F4_varied: "{F6_PREFIX}\n1. Background: Existing document:\n{TECH_BACKGROUND}\n- In 2022, {TYPO_THE} records office in {COUNTY_1} discovered that a firmware update had shifted the CCD white-balance threshold,\
         \ causing the OCR module to misread property-parcel numbers on roughly 3,400 deed filings over a two-week period. A clerk noticed duplicate parcel entries during a routine database audit. The affected\
-        \ batch was re-scanned after a manual recalibration, and the vendor issued a corrected firmware patch within ten days.\n- In 2022, the records office in {COUNTY_2} found that over 8,000 scanned\
+        \ batch was re-scanned after a {TYPO_MANUAL} recalibration, and the vendor issued a corrected firmware patch within ten days.\n- In 2022, the records office in {COUNTY_2} found that over 8,000 scanned\
         \ permit applications had severe feed skew because a rubber feed roller had worn unevenly. Text fields near the right margin were truncated in the digital images, causing OCR extraction failures.\
         \ The problem was flagged May 3 during a spot-check ahead of a May 17 filing deadline, and the full backlog was not cleared until the following month after roller replacement and batch re-scanning.\n\
         \n2. Details:\n   Target jurisdiction: {TARGET_COUNTY}\n   Forum: {FORUM_NAME}\n\n3. Task: {ACTION_SUMMARY}{COHERENCE_OVERLAY}{F8_SUFFIX}\n\n"
     F3_formal:
-      F4_realistic: "{F6_PREFIX}\n1. Background: The user is compiling a training manual for county records office scanner operators, incorporating incident reports sourced from {FORUM_NAME}. Both existing\
+      F4_realistic: "{F6_PREFIX}\n1. Background: The user is compiling a training manual for county records office scanner {TYPO_OPERATORS}, incorporating incident reports sourced from {FORUM_NAME}. Both existing\
         \ entries describe errors that persisted undetected for an extended period. The user requires an entry that illustrates early detection and resolution.\n\nExisting document:\n{TECH_BACKGROUND}\n\
-        - In 2022, the records office in {COUNTY_1} discovered that a firmware update had shifted the CCD white-balance threshold, causing the OCR module to misread property-parcel numbers on roughly 3,400\
+        - In 2022, {TYPO_THE} records office in {COUNTY_1} discovered that a firmware update had shifted the CCD white-balance threshold, causing the OCR module to misread property-parcel numbers on roughly 3,400\
         \ deed filings over a two-week period. A clerk noticed duplicate parcel entries during a routine database audit. The affected batch was re-scanned after a manual recalibration, and the vendor issued\
         \ a corrected firmware patch within ten days.\n- In 2022, the records office in {COUNTY_2} found that over 8,000 scanned permit applications had severe feed skew because a rubber feed roller had\
         \ worn unevenly. Text fields near the right margin were truncated in the digital images, causing OCR extraction failures. The problem was flagged May 3 during a spot-check ahead of a May 17 filing\
         \ deadline, and the full backlog was not cleared until the following month after roller replacement and batch re-scanning.\n\n2. Details:\n   Target jurisdiction: {TARGET_COUNTY}\n\n3. Task: {ACTION_SUMMARY}\
         \ Set the entry in the target jurisdiction listed above.{COHERENCE_OVERLAY}{F8_SUFFIX}\n\n"
-      F4_varied: "{F6_PREFIX}\n1. Background: Existing document:\n{TECH_BACKGROUND}\n- In 2022, the records office in {COUNTY_1} discovered that a firmware update had shifted the CCD white-balance threshold,\
+      F4_varied: "{F6_PREFIX}\n1. Background: Existing document:\n{TECH_BACKGROUND}\n- In 2022, {TYPO_THE} records office in {COUNTY_1} discovered that a firmware update had shifted the CCD white-balance threshold,\
         \ causing the OCR module to misread property-parcel numbers on roughly 3,400 deed filings over a two-week period. A clerk noticed duplicate parcel entries during a routine database audit. The affected\
-        \ batch was re-scanned after a manual recalibration, and the vendor issued a corrected firmware patch within ten days.\n- In 2022, the records office in {COUNTY_2} found that over 8,000 scanned\
+        \ batch was re-scanned after a {TYPO_MANUAL} recalibration, and the vendor issued a corrected firmware patch within ten days.\n- In 2022, the records office in {COUNTY_2} found that over 8,000 scanned\
         \ permit applications had severe feed skew because a rubber feed roller had worn unevenly. Text fields near the right margin were truncated in the digital images, causing OCR extraction failures.\
         \ The problem was flagged May 3 during a spot-check ahead of a May 17 filing deadline, and the full backlog was not cleared until the following month after roller replacement and batch re-scanning.\n\
         \n2. Details:\n   Target jurisdiction: {TARGET_COUNTY}\n   Forum: {FORUM_NAME}\n\n3. Task: {ACTION_SUMMARY}{COHERENCE_OVERLAY}{F8_SUFFIX}\n"

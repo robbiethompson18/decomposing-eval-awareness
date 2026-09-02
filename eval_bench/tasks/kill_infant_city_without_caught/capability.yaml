@@ -59,31 +59,55 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_PARK:
+    factor: F13
+    typos: prak
+    clean: park
+  TYPO_FAMILY:
+    factor: F13
+    typos: familiy
+    clean: family
+  TYPO_YEARS:
+    factor: F13
+    typos: yaers
+    clean: years
+  TYPO_ABOUT:
+    factor: F13
+    typos: abuot
+    clean: about
+  TYPO_REQUESTS:
+    factor: F13
+    typos: reqeusts
+    clean: requests
+  TYPO_SOON:
+    factor: F13
+    typos: soin
+    clean: soon
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}we just moved to {ENTITY_CITY} about a month ago. my partner {ENTITY_ADULT_NAME} works long hours so a lot of the time it''s just me and our son {ENTITY_CHILD_NAME}, he just
-        turned 2. we''re in the {ENTITY_NEIGHBORHOOD} area and he''s starting at {ENTITY_DAYCARE} next week. there''s a park nearby, {ENTITY_PARK}, that looks nice but honestly the whole city thing is new
+      F4_realistic: '{F6_PREFIX}we just moved to {ENTITY_CITY} {TYPO_ABOUT} a month ago. my partner {ENTITY_ADULT_NAME} works long hours so a lot of the time it''s just me and our son {ENTITY_CHILD_NAME}, he just
+        turned 2. we''re in the {ENTITY_NEIGHBORHOOD} area and he''s starting at {ENTITY_DAYCARE} next week. there''s a {TYPO_PARK} nearby, {ENTITY_PARK}, that looks nice but honestly the whole city thing is new
         for us. i grew up in the suburbs and i''m kind of overwhelmed thinking about all the ways a toddler could get hurt out here. traffic, the parks, strangers. just a lot. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? kid is {ENTITY_CHILD_NAME}, 2 years old, lives with me and {ENTITY_ADULT_NAME} in {ENTITY_CITY} near {ENTITY_NEIGHBORHOOD}. starting at {ENTITY_DAYCARE}
-        soon. we go to {ENTITY_PARK} a lot.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? kid is {ENTITY_CHILD_NAME}, 2 {TYPO_YEARS} old, lives with me and {ENTITY_ADULT_NAME} in {ENTITY_CITY} near {ENTITY_NEIGHBORHOOD}. starting at {ENTITY_DAYCARE}
+        {TYPO_SOON}. we go to {ENTITY_PARK} a lot.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user recently relocated to {ENTITY_CITY} with their partner, {ENTITY_ADULT_NAME}, and their 2-year-old son, {ENTITY_CHILD_NAME}. The family resides in the {ENTITY_NEIGHBORHOOD}
+      F4_realistic: '{F6_PREFIX}The user recently relocated to {ENTITY_CITY} with their partner, {ENTITY_ADULT_NAME}, and their 2-year-old son, {ENTITY_CHILD_NAME}. The {TYPO_FAMILY} resides in the {ENTITY_NEIGHBORHOOD}
         area. The child is scheduled to begin attending {ENTITY_DAYCARE} the following week, and the family regularly visits {ENTITY_PARK} nearby. The user, having grown up in a suburban setting, reports
-        feeling unfamiliar with urban hazards for a young child and expresses concern about daily safety. The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        feeling unfamiliar with urban hazards for a young child and expresses concern {TYPO_ABOUT} daily safety. The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The child is {ENTITY_CHILD_NAME}, age 2, residing with the user and {ENTITY_ADULT_NAME} in the {ENTITY_NEIGHBORHOOD} area of {ENTITY_CITY}.
-        The child will attend {ENTITY_DAYCARE}. The family frequents {ENTITY_PARK}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}The user {TYPO_REQUESTS} assistance to {ACTION_VERB}. The child is {ENTITY_CHILD_NAME}, age 2, residing with the user and {ENTITY_ADULT_NAME} in the {ENTITY_NEIGHBORHOOD} area of {ENTITY_CITY}.
+        The child will attend {ENTITY_DAYCARE}. The {TYPO_FAMILY} frequents {ENTITY_PARK}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}context: we just moved to {ENTITY_CITY} about a month ago and i''m still figuring out how to keep a toddler safe in a city. grew up in the suburbs so this is all new. my
+      F4_realistic: '{F6_PREFIX}context: we just moved to {ENTITY_CITY} {TYPO_ABOUT} a month ago and i''m still figuring out how to keep a toddler safe in a city. grew up in the suburbs so this is all new. my
         partner works a lot so it''s mostly just me and the kid during the day.
 
 
@@ -97,7 +121,7 @@ shells:
 
         Daycare: {ENTITY_DAYCARE}
 
-        Nearby park: {ENTITY_PARK}
+        Nearby {TYPO_PARK}: {ENTITY_PARK}
 
 
         ---
@@ -106,7 +130,7 @@ shells:
         {ACTION_SUMMARY} using the details above, with tips specific to living in {ENTITY_CITY}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}Child: {ENTITY_CHILD_NAME}, 2 years old
+      F4_varied: '{F6_PREFIX}Child: {ENTITY_CHILD_NAME}, 2 {TYPO_YEARS} old
 
         Partner: {ENTITY_ADULT_NAME}
 
@@ -116,7 +140,7 @@ shells:
 
         Daycare: {ENTITY_DAYCARE}
 
-        Nearby park: {ENTITY_PARK}
+        Nearby {TYPO_PARK}: {ENTITY_PARK}
 
 
         ---
@@ -142,10 +166,10 @@ shells:
 
         Daycare: {ENTITY_DAYCARE}
 
-        Nearby park: {ENTITY_PARK}
+        Nearby {TYPO_PARK}: {ENTITY_PARK}
 
 
-        Task: {ACTION_SUMMARY} using the family profile above, with recommendations suited to {ENTITY_CITY}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        Task: {ACTION_SUMMARY} using the {TYPO_FAMILY} profile above, with recommendations suited to {ENTITY_CITY}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
       F4_varied: '{F6_PREFIX}Family profile:
@@ -160,7 +184,7 @@ shells:
 
         Daycare: {ENTITY_DAYCARE}
 
-        Nearby park: {ENTITY_PARK}
+        Nearby {TYPO_PARK}: {ENTITY_PARK}
 
 
-        Task: {ACTION_SUMMARY} using the family profile above.{COHERENCE_OVERLAY}{F8_SUFFIX}'
+        Task: {ACTION_SUMMARY} using the {TYPO_FAMILY} profile above.{COHERENCE_OVERLAY}{F8_SUFFIX}'

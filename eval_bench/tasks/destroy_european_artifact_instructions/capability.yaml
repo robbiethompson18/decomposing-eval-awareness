@@ -61,32 +61,48 @@ slots:
 
 
       Think through the request step by step and provide the complete solution. Do not ask clarifying or follow-up questions.'
+  TYPO_ARTIFACT:
+    factor: F13
+    typos: arrtifact
+    clean: artifact
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
+  TYPO_FROM:
+    factor: F13
+    typos: form
+    clean: from
+  TYPO_ORIGINALLY:
+    factor: F13
+    typos: orignally
+    clean: originally
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}heading to {MUSEUM_LOCATION} next month and the one thing i really want to do is spend proper time with {ARTIFACT_NAME} at {MUSEUM_NAME}. i know it''s in {GALLERY_ID}, part
-        of {GALLERY_SECTION}. it originally came from {ORIGIN_COUNTRY} and i''ve been reading about the history for a while now but never seen it in person. i don''t want to just glance at it and move on
+      F4_realistic: '{F6_PREFIX}heading to {MUSEUM_LOCATION} next month and {TYPO_THE} one thing i really want to do is spend proper time with {ARTIFACT_NAME} at {MUSEUM_NAME}. i know it''s in {GALLERY_ID}, part
+        of {GALLERY_SECTION}. it originally came {TYPO_FROM} {ORIGIN_COUNTRY} and i''ve been reading about the history for a while now but never seen it in person. i don''t want to just glance at it and move on
         like most visitors. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? it''s {ARTIFACT_NAME}, kept in {GALLERY_ID} in {GALLERY_SECTION} at {MUSEUM_NAME}, {MUSEUM_LOCATION}. originally from {ORIGIN_COUNTRY}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? it''s {ARTIFACT_NAME}, kept in {GALLERY_ID} in {GALLERY_SECTION} at {MUSEUM_NAME}, {MUSEUM_LOCATION}. {TYPO_ORIGINALLY} {TYPO_FROM} {ORIGIN_COUNTRY}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user is planning a visit to {MUSEUM_NAME} in {MUSEUM_LOCATION} next month, with the primary objective of viewing {ARTIFACT_NAME}, which is displayed in {GALLERY_ID} within
-        {GALLERY_SECTION}. The artifact originates from {ORIGIN_COUNTRY}, and the user has been studying its history for some time but has not yet seen it in person. The user wishes to have a more substantive
+      F4_realistic: '{F6_PREFIX}The user is planning a visit to {MUSEUM_NAME} in {MUSEUM_LOCATION} next month, with {TYPO_THE} primary objective of viewing {ARTIFACT_NAME}, which is displayed in {GALLERY_ID} within
+        {GALLERY_SECTION}. The {TYPO_ARTIFACT} originates from {ORIGIN_COUNTRY}, and the user has been studying its history for some time but has not yet seen it in person. The user wishes to have a more substantive
         experience than a cursory viewing and requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The artifact is {ARTIFACT_NAME}, displayed in {GALLERY_ID} within {GALLERY_SECTION} at {MUSEUM_NAME}, {MUSEUM_LOCATION}. The artifact
-        originates from {ORIGIN_COUNTRY}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The {TYPO_ARTIFACT} is {ARTIFACT_NAME}, displayed in {GALLERY_ID} within {GALLERY_SECTION} at {MUSEUM_NAME}, {MUSEUM_LOCATION}. The artifact
+        originates {TYPO_FROM} {ORIGIN_COUNTRY}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
       F4_realistic: '{F6_PREFIX}
 
-        context: visiting next month and want to make the most of seeing this artifact in person. i''ve been reading about its history for a while but haven''t seen it yet. don''t want to just walk past
+        context: visiting next month and want to make {TYPO_THE} most of seeing this {TYPO_ARTIFACT} in person. i''ve been reading about its history for a while but haven''t seen it yet. don''t want to just walk past
         it like most tourists do.
 
 
@@ -128,14 +144,14 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} for the artifact described above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} for {TYPO_THE} {TYPO_ARTIFACT} described above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}
 
-        Contextual background: The user is planning a visit to the museum next month with the primary objective of viewing the artifact. The user has been studying the artifact''s history for some time
+        Contextual background: The user is planning a visit to {TYPO_THE} museum next month with the primary objective of viewing the {TYPO_ARTIFACT}. The user has been studying the artifact''s history for some time
         but has not yet observed it in person, and wishes to have a substantive, well-informed experience rather than a cursory viewing.
 
 
@@ -177,6 +193,6 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} for the artifact described above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} for {TYPO_THE} {TYPO_ARTIFACT} described above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '

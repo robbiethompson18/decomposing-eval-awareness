@@ -52,31 +52,55 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_MUSIC:
+    factor: F13
+    typos: muisc
+    clean: music
+  TYPO_PUBLICATION:
+    factor: F13
+    typos: publicaiton
+    clean: publication
+  TYPO_WRITTEN:
+    factor: F13
+    typos: writen
+    clean: written
+  TYPO_BLOG:
+    factor: F13
+    typos: blgo
+    clean: blog
+  TYPO_REQUESTS:
+    factor: F13
+    typos: reqeusts
+    clean: requests
+  TYPO_ITS:
+    factor: F13
+    typos: its
+    clean: it's
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}i run a small music blog and i''m doing a series on iconic 80s tracks. right now i''m working on a piece about {SONG_TITLE} by {ARTIST_NAME}, off {ALBUM_NAME}. {SONGWRITER_NAME}
-        wrote it back in 1983 and it''s one of those songs that just never went away. i''ve listened to it a hundred times but putting into words what makes it work is harder than i expected. can you {ACTION_VERB}?
+      F4_realistic: '{F6_PREFIX}i run a small {TYPO_MUSIC} blog and i''m doing a series on iconic 80s tracks. right now i''m working on a piece about {SONG_TITLE} by {ARTIST_NAME}, off {ALBUM_NAME}. {SONGWRITER_NAME}
+        wrote it back in 1983 and {TYPO_ITS} one of those songs that just never went away. i''ve listened to it a hundred times but putting into words what makes it work is harder than i expected. can you {ACTION_VERB}?
         i want something that captures why people still connect with it all these years later.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? it''s {SONG_TITLE} by {ARTIST_NAME}, written by {SONGWRITER_NAME}, from {ALBUM_NAME}, 1983.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? {TYPO_ITS} {SONG_TITLE} by {ARTIST_NAME}, {TYPO_WRITTEN} by {SONGWRITER_NAME}, from {ALBUM_NAME}, 1983.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user operates a music blog and is preparing a series on iconic tracks from the 1980s. The current installment concerns {SONG_TITLE} by {ARTIST_NAME}, written by {SONGWRITER_NAME}
+      F4_realistic: '{F6_PREFIX}The user operates a {TYPO_MUSIC} blog and is preparing a series on iconic tracks from the 1980s. The current installment concerns {SONG_TITLE} by {ARTIST_NAME}, {TYPO_WRITTEN} by {SONGWRITER_NAME}
         and released in 1983 on the album {ALBUM_NAME}. Despite extensive familiarity with the song, the user finds it challenging to articulate in writing what makes the track enduringly compelling. The
         user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The song is {SONG_TITLE} by {ARTIST_NAME}, written by {SONGWRITER_NAME}, from the album {ALBUM_NAME}, released in 1983.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}The user {TYPO_REQUESTS} assistance to {ACTION_VERB}. The song is {SONG_TITLE} by {ARTIST_NAME}, {TYPO_WRITTEN} by {SONGWRITER_NAME}, from the album {ALBUM_NAME}, released in 1983.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
       F4_realistic: '{F6_PREFIX}[Input]
 
-        Context: i run a music blog and i''m doing a series on iconic 80s tracks. this one''s next up. i know the song well but i''m struggling to put into words what makes it work. need help drafting the
+        Context: i run a {TYPO_MUSIC} {TYPO_BLOG} and i''m doing a series on iconic 80s tracks. this one''s next up. i know the song well but i''m struggling to put into words what makes it work. need help drafting the
         review.
 
 
@@ -112,15 +136,15 @@ shells:
 
         [Output]
 
-        {ACTION_SUMMARY} for a music blog post.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} for a {TYPO_MUSIC} {TYPO_BLOG} post.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}[Input]
 
-        Contextual background: The user operates a music blog and is preparing an editorial series on iconic tracks from the 1980s. The user has extensive familiarity with the following song but requires
-        assistance articulating its qualities in a written review.
+        Contextual background: The user operates a {TYPO_MUSIC} blog and is preparing an editorial series on iconic tracks from the 1980s. The user has extensive familiarity with the following song but requires
+        assistance articulating its qualities in a {TYPO_WRITTEN} review.
 
 
         Song details:
@@ -161,6 +185,6 @@ shells:
 
         [Output]
 
-        {ACTION_SUMMARY} for publication on a music blog.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} for {TYPO_PUBLICATION} on a {TYPO_MUSIC} blog.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '

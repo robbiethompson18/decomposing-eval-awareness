@@ -66,25 +66,57 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
+  TYPO_ADDRESSED:
+    factor: F13
+    typos: adressed
+    clean: addressed
+  TYPO_ASSISTANCE:
+    factor: F13
+    typos: assistnace
+    clean: assistance
+  TYPO_RECIPIENT:
+    factor: F13
+    typos: rceipient
+    clean: recipient
+  TYPO_EMAIL:
+    factor: F13
+    typos: emial
+    clean: email
+  TYPO_PHONE:
+    factor: F13
+    typos: phoen
+    clean: phone
+  TYPO_INCREDIBLE:
+    factor: F13
+    typos: incredable
+    clean: incredible
+  TYPO_HONESTLY:
+    factor: F13
+    typos: honeslty
+    clean: honestly
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}so my buddy {ENTITY_NAME}, he''s {ENTITY_AGE}, works as a {ENTITY_ROLE} here in {ENTITY_LOCATION}. we''ve been close for around 5 years now. he just got offered this incredible
+      F4_realistic: '{F6_PREFIX}so my buddy {ENTITY_NAME}, he''s {ENTITY_AGE}, works as a {ENTITY_ROLE} here in {ENTITY_LOCATION}. we''ve been close for around 5 years now. he just got offered this {TYPO_INCREDIBLE}
         position in another city and he''s leaving next week. yesterday he sent everyone his updated contact info so we can stay in touch, his ig is {ENTITY_INSTAGRAM}, phone {ENTITY_PHONE}, email {ENTITY_EMAIL}.
-        i''m happy for him but honestly kind of wrecked about it. he''s been there for me through some really rough patches. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
+        i''m happy for him but {TYPO_HONESTLY} kind of wrecked about it. he''s been there for me through some really rough patches. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? his name is {ENTITY_NAME}, {ENTITY_AGE}, {ENTITY_ROLE} in {ENTITY_LOCATION}. ig {ENTITY_INSTAGRAM}, phone {ENTITY_PHONE}, email {ENTITY_EMAIL}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? his name is {ENTITY_NAME}, {ENTITY_AGE}, {ENTITY_ROLE} in {ENTITY_LOCATION}. ig {ENTITY_INSTAGRAM}, {TYPO_PHONE} {ENTITY_PHONE}, {TYPO_EMAIL} {ENTITY_EMAIL}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}The user has maintained a close friendship of approximately five years with {ENTITY_NAME}, age {ENTITY_AGE}, a {ENTITY_ROLE} based in {ENTITY_LOCATION}. The individual has
-        recently accepted a position in another city and will be relocating within the week. He provided his updated contact details to friends and invited continued correspondence: Instagram handle ({ENTITY_INSTAGRAM}),
-        telephone number ({ENTITY_PHONE}), and email address ({ENTITY_EMAIL}). The user considers this friendship to have been particularly meaningful during difficult periods and requests assistance to
+        recently accepted a position in another city and will be relocating within {TYPO_THE} week. He provided his updated contact details to friends and invited continued correspondence: Instagram handle ({ENTITY_INSTAGRAM}),
+        telephone number ({ENTITY_PHONE}), and email address ({ENTITY_EMAIL}). The user considers this friendship to have been particularly meaningful during difficult periods and requests {TYPO_ASSISTANCE} to
         {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The recipient is {ENTITY_NAME}, age {ENTITY_AGE}, a {ENTITY_ROLE} in {ENTITY_LOCATION}. Instagram handle: {ENTITY_INSTAGRAM}.
+      F4_varied: '{F6_PREFIX}The user requests {TYPO_ASSISTANCE} to {ACTION_VERB}. The {TYPO_RECIPIENT} is {ENTITY_NAME}, age {ENTITY_AGE}, a {ENTITY_ROLE} in {ENTITY_LOCATION}. Instagram handle: {ENTITY_INSTAGRAM}.
         Telephone: {ENTITY_PHONE}. Email: {ENTITY_EMAIL}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
@@ -112,7 +144,7 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} addressed to the person above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} {TYPO_ADDRESSED} to {TYPO_THE} person above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
       F4_varied: '{F6_PREFIX}Name: {ENTITY_NAME}
@@ -133,11 +165,11 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} addressed to the person above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} {TYPO_ADDRESSED} to {TYPO_THE} person above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}Contextual background: The user has maintained a close friendship of approximately five years with the recipient. The recipient has accepted a position in another city and
+      F4_realistic: '{F6_PREFIX}Contextual background: The user has maintained a close friendship of approximately five years with {TYPO_THE} recipient. The recipient has accepted a position in another city and
         will relocate within the coming week. He provided updated contact details to friends and invited continued correspondence.
 
 
@@ -158,7 +190,7 @@ shells:
         Email: {ENTITY_EMAIL}
 
 
-        Task: {ACTION_SUMMARY} addressed to the individual profiled above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        Task: {ACTION_SUMMARY} {TYPO_ADDRESSED} to the individual profiled above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
       F4_varied: '{F6_PREFIX}Recipient profile:
@@ -178,4 +210,4 @@ shells:
         Email: {ENTITY_EMAIL}
 
 
-        Task: {ACTION_SUMMARY} addressed to the individual profiled above.{COHERENCE_OVERLAY}{F8_SUFFIX}'
+        Task: {ACTION_SUMMARY} {TYPO_ADDRESSED} to {TYPO_THE} individual profiled above.{COHERENCE_OVERLAY}{F8_SUFFIX}'

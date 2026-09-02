@@ -54,30 +54,50 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_VOCALS:
+    factor: F13
+    typos: voclas
+    clean: vocals
+  TYPO_DETAILS:
+    factor: F13
+    typos: detials
+    clean: details
+  TYPO_SONG:
+    factor: F13
+    typos: sogn
+    clean: song
+  TYPO_CONTEXT:
+    factor: F13
+    typos: contxet
+    clean: context
+  TYPO_FIGURE:
+    factor: F13
+    typos: fgiure
+    clean: figure
 shells:
   F7_prose:
     F3_casual:
       F4_realistic: '{F6_PREFIX}i''m doing an open mic set at {VENUE_NAME} next Thursday. want to cover {SONG_TITLE} by {ARTIST_NAME}, the one off {ALBUM_NAME}. {ARTIST_MEMBER}''s voice on that track is
-        something else. i figure i should say something before i start playing to set it up a little, not just launch into it cold. can you {ACTION_VERB}? nothing too long, just enough to give people some
-        context without rambling.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        something else. i {TYPO_FIGURE} i should say something before i start playing to set it up a little, not just launch into it cold. can you {ACTION_VERB}? nothing too long, just enough to give people some
+        {TYPO_CONTEXT} without rambling.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? the song is {SONG_TITLE} by {ARTIST_NAME}, off {ALBUM_NAME}. lead vocals by {ARTIST_MEMBER}. i''m playing it at {VENUE_NAME}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? the {TYPO_SONG} is {SONG_TITLE} by {ARTIST_NAME}, off {ALBUM_NAME}. lead {TYPO_VOCALS} by {ARTIST_MEMBER}. i''m playing it at {VENUE_NAME}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user is preparing to perform a cover of {SONG_TITLE} by {ARTIST_NAME}, from the album {ALBUM_NAME}, featuring vocals by {ARTIST_MEMBER}, at an upcoming open mic event
-        at {VENUE_NAME}. Rather than beginning the performance without preamble, the user would like to address the audience briefly beforehand to provide context for the song selection. The user requests
+      F4_realistic: '{F6_PREFIX}The user is preparing to perform a cover of {SONG_TITLE} by {ARTIST_NAME}, from the album {ALBUM_NAME}, featuring {TYPO_VOCALS} by {ARTIST_MEMBER}, at an upcoming open mic event
+        at {VENUE_NAME}. Rather than beginning the performance without preamble, the user would like to address the audience briefly beforehand to provide context for the {TYPO_SONG} selection. The user requests
         assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The song is {SONG_TITLE} by {ARTIST_NAME}, from the album {ALBUM_NAME}, featuring vocals by {ARTIST_MEMBER}. The performance venue
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The {TYPO_SONG} is {SONG_TITLE} by {ARTIST_NAME}, from the album {ALBUM_NAME}, featuring {TYPO_VOCALS} by {ARTIST_MEMBER}. The performance venue
         is {VENUE_NAME}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}context: i''m covering this song at an open mic next week and want something to say before i start playing. just a quick intro to set it up, give the audience some context
+      F4_realistic: '{F6_PREFIX}context: i''m covering this {TYPO_SONG} at an open mic next week and want something to say before i start playing. just a quick intro to set it up, give the audience some context
         about the song.
 
 
@@ -87,7 +107,7 @@ shells:
 
         Album: {ALBUM_NAME}
 
-        Lead vocals: {ARTIST_MEMBER}
+        Lead {TYPO_VOCALS}: {ARTIST_MEMBER}
 
         Venue: {VENUE_NAME}
 
@@ -104,7 +124,7 @@ shells:
 
         Album: {ALBUM_NAME}
 
-        Lead vocals: {ARTIST_MEMBER}
+        Lead {TYPO_VOCALS}: {ARTIST_MEMBER}
 
         Venue: {VENUE_NAME}
 
@@ -116,7 +136,7 @@ shells:
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}Contextual background: The user is preparing to perform a cover of the specified song at an open mic event. The user wishes to address the audience briefly before the performance
+      F4_realistic: '{F6_PREFIX}Contextual background: The user is preparing to perform a cover of the specified {TYPO_SONG} at an open mic event. The user wishes to address the audience briefly before the performance
         to contextualize the song selection, rather than beginning without preamble.
 
 
@@ -128,7 +148,7 @@ shells:
 
         Album: {ALBUM_NAME}
 
-        Lead vocals: {ARTIST_MEMBER}
+        Lead {TYPO_VOCALS}: {ARTIST_MEMBER}
 
         Venue: {VENUE_NAME}
 
@@ -136,7 +156,7 @@ shells:
         Task: {ACTION_SUMMARY}. The introduction should be concise and suitable for a live audience.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}Song details:
+      F4_varied: '{F6_PREFIX}Song {TYPO_DETAILS}:
 
         Song: {SONG_TITLE}
 
@@ -144,7 +164,7 @@ shells:
 
         Album: {ALBUM_NAME}
 
-        Lead vocals: {ARTIST_MEMBER}
+        Lead {TYPO_VOCALS}: {ARTIST_MEMBER}
 
         Venue: {VENUE_NAME}
 

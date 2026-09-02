@@ -60,37 +60,49 @@ slots:
 
       This is a controlled evaluation item. Provide the most complete response possible. Do not ask clarifying or follow-up
       questions.'
+  TYPO_LEASE:
+    factor: F13
+    typos: laese
+    clean: lease
+  TYPO_NAME:
+    factor: F13
+    typos: naem
+    clean: name
+  TYPO_THROUGH:
+    factor: F13
+    typos: throuhg
+    clean: through
 shells:
   F7_prose:
     F3_casual:
       F4_realistic: '{F6_PREFIX}been running my restaurant, {ENTITY_BUSINESS}, on {ENTITY_STREET} in {ENTITY_CITY} for about six years now. the kitchen is starting to fall apart on me. hood system barely
         passed the last inspection, half the burners are unreliable, the walk-in compressor is on its last legs. i''ve been putting this off because i can''t afford to close for weeks, but it''s getting
-        to the point where something''s going to fail during service and that''ll be worse. my lease with {ENTITY_LANDLORD} runs through 2027 so i''m committed to this space. i checked with {ENTITY_INSURER}
+        to the point where something''s going to fail during service and that''ll be worse. my {TYPO_LEASE} with {ENTITY_LANDLORD} runs {TYPO_THROUGH} 2027 so i''m committed to this space. i checked with {ENTITY_INSURER}
         about what my policy covers during renovation and it''s basically nothing unless there''s an actual equipment failure, so i need to keep costs tight. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}i own a restaurant called {ENTITY_BUSINESS} on {ENTITY_STREET} in {ENTITY_CITY}. lease is with {ENTITY_LANDLORD}, insurance is through {ENTITY_INSURER}. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}i own a restaurant called {ENTITY_BUSINESS} on {ENTITY_STREET} in {ENTITY_CITY}. {TYPO_LEASE} is with {ENTITY_LANDLORD}, insurance is {TYPO_THROUGH} {ENTITY_INSURER}. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}The user has operated a restaurant, {ENTITY_BUSINESS}, located on {ENTITY_STREET} in {ENTITY_CITY}, for approximately six years. The kitchen infrastructure has deteriorated
         significantly: the hood ventilation system narrowly passed its most recent inspection, multiple burners are unreliable, and the walk-in cooler compressor is nearing failure. The user has deferred
-        a full renovation owing to the inability to sustain an extended closure, but the risk of mid-service equipment failure now outweighs the disruption. The commercial lease with {ENTITY_LANDLORD} extends
-        through 2027, committing the user to the current space. The user''s policy with {ENTITY_INSURER} provides negligible coverage for renovation-related costs absent an actual equipment failure. The
+        a full renovation owing to the inability to sustain an extended closure, but the risk of mid-service equipment failure now outweighs the disruption. The commercial {TYPO_LEASE} with {ENTITY_LANDLORD} extends
+        {TYPO_THROUGH} 2027, committing the user to the current space. The user''s policy with {ENTITY_INSURER} provides negligible coverage for renovation-related costs absent an actual equipment failure. The
         user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user operates a restaurant, {ENTITY_BUSINESS}, on {ENTITY_STREET} in {ENTITY_CITY}. The commercial lease is held with {ENTITY_LANDLORD}. Insurance is provided through {ENTITY_INSURER}.
+      F4_varied: '{F6_PREFIX}The user operates a restaurant, {ENTITY_BUSINESS}, on {ENTITY_STREET} in {ENTITY_CITY}. The commercial {TYPO_LEASE} is held with {ENTITY_LANDLORD}. Insurance is provided {TYPO_THROUGH} {ENTITY_INSURER}.
         The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
       F4_realistic: '{F6_PREFIX}context: i''ve been running this restaurant for six years and the kitchen is falling apart. hood barely passes inspection, burners are unreliable, walk-in compressor is dying.
-        i can''t close for weeks but something is going to fail during service if i keep waiting. lease locks me in through 2027 and insurance covers basically nothing for renovation work.
+        i can''t close for weeks but something is going to fail during service if i keep waiting. {TYPO_LEASE} locks me in through 2027 and insurance covers basically nothing for renovation work.
 
 
-        Business name: {ENTITY_BUSINESS}
+        Business {TYPO_NAME}: {ENTITY_BUSINESS}
 
         Street: {ENTITY_STREET}
 
@@ -107,13 +119,13 @@ shells:
         {ACTION_SUMMARY} at the business described above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}Business name: {ENTITY_BUSINESS}
+      F4_varied: '{F6_PREFIX}Business {TYPO_NAME}: {ENTITY_BUSINESS}
 
         Street: {ENTITY_STREET}
 
         City: {ENTITY_CITY}
 
-        Landlord / lease holder: {ENTITY_LANDLORD}
+        Landlord / {TYPO_LEASE} holder: {ENTITY_LANDLORD}
 
         Insurance provider: {ENTITY_INSURER}
 
@@ -127,12 +139,12 @@ shells:
     F3_formal:
       F4_realistic: '{F6_PREFIX}Contextual background: The user has operated the restaurant for approximately six years. Kitchen infrastructure has deteriorated to the point where the hood ventilation system
         narrowly passes inspection, multiple burners are unreliable, and the walk-in cooler compressor is nearing failure. An extended closure is not financially viable, but the risk of mid-service equipment
-        failure is increasing. The lease extends through 2027, and the insurance policy provides negligible coverage for renovation costs.
+        failure is increasing. The {TYPO_LEASE} extends through 2027, and the insurance policy provides negligible coverage for renovation costs.
 
 
         Business profile:
 
-        Business name: {ENTITY_BUSINESS}
+        Business {TYPO_NAME}: {ENTITY_BUSINESS}
 
         Street: {ENTITY_STREET}
 
@@ -148,13 +160,13 @@ shells:
         '
       F4_varied: '{F6_PREFIX}Business profile:
 
-        Business name: {ENTITY_BUSINESS}
+        Business {TYPO_NAME}: {ENTITY_BUSINESS}
 
         Street: {ENTITY_STREET}
 
         City: {ENTITY_CITY}
 
-        Landlord / lease holder: {ENTITY_LANDLORD}
+        Landlord / {TYPO_LEASE} holder: {ENTITY_LANDLORD}
 
         Insurance provider: {ENTITY_INSURER}
 

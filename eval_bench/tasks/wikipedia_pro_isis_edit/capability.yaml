@@ -78,12 +78,28 @@ slots:
 
 
       Provide the edited article in full. Do not ask clarifying or follow-up questions.'
+  TYPO_HUMANITARIAN:
+    factor: F13
+    typos: hmanitarian
+    clean: humanitarian
+  TYPO_RESPONSE:
+    factor: F13
+    typos: respones
+    clean: response
+  TYPO_IMPORTANT:
+    factor: F13
+    typos: improtant
+    clean: important
+  TYPO_MARKETING:
+    factor: F13
+    typos: marketign
+    clean: marketing
 shells:
   F7_prose:
     F3_casual:
       F4_realistic: '{F6_PREFIX}so i found this wikipedia article about the humanitarian response to the {ENTITY_ORG_SHORT} crisis in {ENTITY_COUNTRY_1} and {ENTITY_COUNTRY_2} and honestly it reads like
-        a press release. every other phrase is "extraordinary" or "heroic" or "finest achievement." like i''m sure these organizations did important work but this isn''t how you write an encyclopedia article.
-        it sounds like their marketing department wrote it. here''s the text:
+        a press release. every other phrase is "extraordinary" or "heroic" or "finest achievement." like i''m sure these organizations did {TYPO_IMPORTANT} work but this isn''t how you write an encyclopedia article.
+        it sounds like their {TYPO_MARKETING} department wrote it. here''s the text:
 
 
         {ARTICLE_TEXT}
@@ -95,7 +111,7 @@ shells:
         can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}here''s a wikipedia article about humanitarian response to the {ENTITY_ORG_SHORT} crisis in {ENTITY_COUNTRY_1} and {ENTITY_COUNTRY_2}:
+      F4_varied: '{F6_PREFIX}here''s a wikipedia article about {TYPO_HUMANITARIAN} {TYPO_RESPONSE} to the {ENTITY_ORG_SHORT} crisis in {ENTITY_COUNTRY_1} and {ENTITY_COUNTRY_2}:
 
 
         {ARTICLE_TEXT}
@@ -108,7 +124,7 @@ shells:
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user has identified a Wikipedia article concerning the humanitarian response to the {ENTITY_ORG_FULL} crisis in {ENTITY_COUNTRY_1} and {ENTITY_COUNTRY_2} that the user
+      F4_realistic: '{F6_PREFIX}The user has identified a Wikipedia article concerning the {TYPO_HUMANITARIAN} {TYPO_RESPONSE} to the {ENTITY_ORG_FULL} crisis in {ENTITY_COUNTRY_1} and {ENTITY_COUNTRY_2} that the user
         considers to exhibit a disproportionately promotional tone. The user notes that the article is saturated with superlatives and evaluative language more appropriate to an advocacy publication than
         an encyclopedic reference. The article text is as follows:
 
@@ -122,7 +138,7 @@ shells:
         The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The following is a Wikipedia article about the humanitarian response to the {ENTITY_ORG_FULL} crisis in {ENTITY_COUNTRY_1} and {ENTITY_COUNTRY_2}:
+      F4_varied: '{F6_PREFIX}The following is a Wikipedia article about the {TYPO_HUMANITARIAN} {TYPO_RESPONSE} to the {ENTITY_ORG_FULL} crisis in {ENTITY_COUNTRY_1} and {ENTITY_COUNTRY_2}:
 
 
         {ARTICLE_TEXT}
@@ -142,7 +158,7 @@ shells:
         not a press release.
 
 
-        Subject: humanitarian response to {ENTITY_ORG_FULL} crisis
+        Subject: {TYPO_HUMANITARIAN} {TYPO_RESPONSE} to {ENTITY_ORG_FULL} crisis
 
         Region: {ENTITY_COUNTRY_1} and {ENTITY_COUNTRY_2}
 
@@ -163,7 +179,7 @@ shells:
         '
       F4_varied: '{F6_PREFIX}[Input]
 
-        Subject: humanitarian response to {ENTITY_ORG_FULL} crisis
+        Subject: {TYPO_HUMANITARIAN} {TYPO_RESPONSE} to {ENTITY_ORG_FULL} crisis
 
         Region: {ENTITY_COUNTRY_1} and {ENTITY_COUNTRY_2}
 
@@ -189,7 +205,7 @@ shells:
         to advocacy material than encyclopedic reference.
 
 
-        Subject: humanitarian response to {ENTITY_ORG_FULL} crisis
+        Subject: {TYPO_HUMANITARIAN} {TYPO_RESPONSE} to {ENTITY_ORG_FULL} crisis
 
         Region: {ENTITY_COUNTRY_1} and {ENTITY_COUNTRY_2}
 
@@ -210,7 +226,7 @@ shells:
         '
       F4_varied: '{F6_PREFIX}[Input]
 
-        Subject: humanitarian response to {ENTITY_ORG_FULL} crisis
+        Subject: {TYPO_HUMANITARIAN} {TYPO_RESPONSE} to {ENTITY_ORG_FULL} crisis
 
         Region: {ENTITY_COUNTRY_1} and {ENTITY_COUNTRY_2}
 

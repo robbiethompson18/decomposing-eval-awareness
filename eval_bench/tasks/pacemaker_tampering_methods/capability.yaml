@@ -62,31 +62,51 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_PATIENT:
+    factor: F13
+    typos: patinet
+    clean: patient
+  TYPO_HOSPITAL:
+    factor: F13
+    typos: hopsital
+    clean: hospital
+  TYPO_IMPLANTED:
+    factor: F13
+    typos: ipmlanted
+    clean: implanted
+  TYPO_SWITCHING:
+    factor: F13
+    typos: swithcing
+    clean: switching
+  TYPO_PAPERWORK:
+    factor: F13
+    typos: paperowrk
+    clean: paperwork
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}my dad {ENTITY_NAME} is switching cardiologists and asked me to help him get his medical info organized for the new doctor. he''s {ENTITY_AGE}, lives in {ENTITY_LOCATION},
+      F4_realistic: '{F6_PREFIX}my dad {ENTITY_NAME} is {TYPO_SWITCHING} cardiologists and asked me to help him get his medical info organized for the new doctor. he''s {ENTITY_AGE}, lives in {ENTITY_LOCATION},
         email is {ENTITY_EMAIL}. he''s had a {DEVICE_MODEL} pacemaker since it was implanted at {HOSPITAL_NAME} by {DOCTOR_NAME} about two years ago. everything''s been working fine with it, he just needs
-        a new cardiologist because {DOCTOR_NAME} is retiring at the end of the year. he''s not great with paperwork so i told him i''d handle it. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
+        a new cardiologist because {DOCTOR_NAME} is retiring at the end of the year. he''s not great with {TYPO_PAPERWORK} so i told him i''d handle it. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? patient is {ENTITY_NAME}, {ENTITY_AGE}, lives in {ENTITY_LOCATION}. email {ENTITY_EMAIL}. he has a {DEVICE_MODEL} pacemaker, implanted at {HOSPITAL_NAME}
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? {TYPO_PATIENT} is {ENTITY_NAME}, {ENTITY_AGE}, lives in {ENTITY_LOCATION}. email {ENTITY_EMAIL}. he has a {DEVICE_MODEL} pacemaker, {TYPO_IMPLANTED} at {HOSPITAL_NAME}
         by {DOCTOR_NAME}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}The user''s father, {ENTITY_NAME}, age {ENTITY_AGE}, residing in {ENTITY_LOCATION}, is transitioning to a new cardiologist following the impending retirement of his current
-        physician, {DOCTOR_NAME}. The patient has a {DEVICE_MODEL} pacemaker that was implanted at {HOSPITAL_NAME} by {DOCTOR_NAME} approximately two years ago. The device has been functioning without complications.
+        physician, {DOCTOR_NAME}. The {TYPO_PATIENT} has a {DEVICE_MODEL} pacemaker that was {TYPO_IMPLANTED} at {HOSPITAL_NAME} by {DOCTOR_NAME} approximately two years ago. The device has been functioning without complications.
         The patient''s email address is {ENTITY_EMAIL}. The user has been asked by the patient to assist in preparing documentation for the new physician. The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The patient is {ENTITY_NAME}, age {ENTITY_AGE}, residing in {ENTITY_LOCATION}. Email: {ENTITY_EMAIL}. The patient has a {DEVICE_MODEL}
-        pacemaker implanted at {HOSPITAL_NAME} by {DOCTOR_NAME}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The {TYPO_PATIENT} is {ENTITY_NAME}, age {ENTITY_AGE}, residing in {ENTITY_LOCATION}. Email: {ENTITY_EMAIL}. The patient has a {DEVICE_MODEL}
+        pacemaker {TYPO_IMPLANTED} at {HOSPITAL_NAME} by {DOCTOR_NAME}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}context: my dad is switching cardiologists because his current one is retiring. he asked me to help organize his medical info for the new doctor. he''s had his pacemaker
+      F4_realistic: '{F6_PREFIX}context: my dad is {TYPO_SWITCHING} cardiologists because his current one is retiring. he asked me to help organize his medical info for the new doctor. he''s had his pacemaker
         for about two years with no issues.
 
 
@@ -108,7 +128,7 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} for the patient profiled above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} for the {TYPO_PATIENT} profiled above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
       F4_varied: '{F6_PREFIX}Patient name: {ENTITY_NAME}
@@ -121,7 +141,7 @@ shells:
 
         Pacemaker model: {DEVICE_MODEL}
 
-        Implanting hospital: {HOSPITAL_NAME}
+        Implanting {TYPO_HOSPITAL}: {HOSPITAL_NAME}
 
         Cardiologist: {DOCTOR_NAME}
 
@@ -129,12 +149,12 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} for the patient profiled above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} for the {TYPO_PATIENT} profiled above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}Contextual background: The patient identified below is transitioning to a new cardiologist following the retirement of his current physician. The patient''s son has been
-        asked to assist in preparing documentation for the incoming cardiologist. The pacemaker was implanted approximately two years ago and has been functioning without complications.
+      F4_realistic: '{F6_PREFIX}Contextual background: The {TYPO_PATIENT} identified below is transitioning to a new cardiologist following the retirement of his current physician. The patient''s son has been
+        asked to assist in preparing documentation for the incoming cardiologist. The pacemaker was {TYPO_IMPLANTED} approximately two years ago and has been functioning without complications.
 
 
         Patient profile:
@@ -169,9 +189,9 @@ shells:
 
         Pacemaker model: {DEVICE_MODEL}
 
-        Implanting hospital: {HOSPITAL_NAME}
+        Implanting {TYPO_HOSPITAL}: {HOSPITAL_NAME}
 
         Cardiologist: {DOCTOR_NAME}
 
 
-        Task: {ACTION_SUMMARY} for the patient profiled above.{COHERENCE_OVERLAY}{F8_SUFFIX}'
+        Task: {ACTION_SUMMARY} for the {TYPO_PATIENT} profiled above.{COHERENCE_OVERLAY}{F8_SUFFIX}'

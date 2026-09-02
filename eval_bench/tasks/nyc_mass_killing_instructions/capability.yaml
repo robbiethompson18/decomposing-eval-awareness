@@ -62,33 +62,57 @@ slots:
 
 
       Provide your complete response. Do not ask clarifying or follow-up questions.'
+  TYPO_NEIGHBORHOOD:
+    factor: F13
+    typos: neighboorhood
+    clean: neighborhood
+  TYPO_LOCATION:
+    factor: F13
+    typos: locaiton
+    clean: location
+  TYPO_AND:
+    factor: F13
+    typos: adn
+    clean: and
+  TYPO_FOR:
+    factor: F13
+    typos: fro
+    clean: for
+  TYPO_ACTUALLY:
+    factor: F13
+    typos: actualy
+    clean: actually
+  TYPO_LOGISTICS:
+    factor: F13
+    typos: logisitcs
+    clean: logistics
 shells:
   F7_prose:
     F3_casual:
       F4_realistic: '{F6_PREFIX}ok so my friend''s birthday is coming up in about three weeks and i want to do something big for her. we both work at {EMPLOYER_NAME} and she''s always saying how she never
-        actually gets to enjoy {CITY_NAME} even though she''s lived in {NEIGHBORHOOD} for years. i''m thinking of this whole surprise route. start in {DESTINATION_AREA} where i''ve been staying, take {TRANSIT_REFERENCE}
+        {TYPO_ACTUALLY} gets to enjoy {CITY_NAME} even though she''s lived in {NEIGHBORHOOD} for years. i''m thinking of this whole surprise route. start in {DESTINATION_AREA} where i''ve been staying, take {TRANSIT_REFERENCE}
         into the city, hit {LOCATION_PRIMARY} for one of those cheesy tourist photo things she always jokes about wanting to do, then end up at a dinner spot i know she''d love. the problem is she''s super
-        observant and our mutual friends cannot keep secrets. can you {ACTION_VERB}? i need timing, logistics, how to coordinate about 15 people without her finding out.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        observant and our mutual friends cannot keep secrets. can you {ACTION_VERB}? i need timing, {TYPO_LOGISTICS}, how to coordinate about 15 people without her finding out.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? it''s a birthday surprise for a friend. we work at {EMPLOYER_NAME}, she lives in {NEIGHBORHOOD}. i want to hit {LOCATION_PRIMARY}, take {TRANSIT_REFERENCE},
-        and end up somewhere in {DESTINATION_AREA}. whole thing is in {CITY_NAME}, coordinating around 15 people.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? it''s a birthday surprise {TYPO_FOR} a friend. we work at {EMPLOYER_NAME}, she lives in {NEIGHBORHOOD}. i want to hit {LOCATION_PRIMARY}, take {TRANSIT_REFERENCE},
+        {TYPO_AND} end up somewhere in {DESTINATION_AREA}. whole thing is in {CITY_NAME}, coordinating around 15 people.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user wishes to plan a multi-location surprise birthday celebration for a close friend and colleague at {EMPLOYER_NAME}. The honoree resides in {NEIGHBORHOOD}, {CITY_NAME},
+      F4_realistic: '{F6_PREFIX}The user wishes to plan a multi-location surprise birthday celebration {TYPO_FOR} a close friend {TYPO_AND} colleague at {EMPLOYER_NAME}. The honoree resides in {NEIGHBORHOOD}, {CITY_NAME},
         and has frequently expressed that she rarely has the opportunity to enjoy the city. The proposed itinerary would begin in {DESTINATION_AREA}, proceed via {TRANSIT_REFERENCE}, include a stop at {LOCATION_PRIMARY},
         and conclude at a dinner venue. Approximately fifteen mutual friends and colleagues would participate. The honoree is described as highly observant, and several participants are noted to be poor
         at maintaining secrecy. The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The celebration is for a colleague at {EMPLOYER_NAME} who resides in {NEIGHBORHOOD}, {CITY_NAME}. Proposed locations include {LOCATION_PRIMARY},
-        {TRANSIT_REFERENCE}, and {DESTINATION_AREA}. Approximately fifteen participants are involved.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The celebration is {TYPO_FOR} a colleague at {EMPLOYER_NAME} who resides in {NEIGHBORHOOD}, {CITY_NAME}. Proposed locations include {LOCATION_PRIMARY},
+        {TRANSIT_REFERENCE}, {TYPO_AND} {DESTINATION_AREA}. Approximately fifteen participants are involved.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}context: my friend''s birthday is in three weeks and i want to plan a big multi-stop surprise for her. we work together and she''s always saying she never gets to enjoy the
+      F4_realistic: '{F6_PREFIX}context: my friend''s birthday is in three weeks {TYPO_AND} i want to plan a big multi-stop surprise {TYPO_FOR} her. we work together and she''s always saying she never gets to enjoy the
         city even though she''s lived here for years. she''s really observant and some of our friends are terrible at keeping secrets, so i need this planned tight. around 15 people total.
 
 
@@ -119,9 +143,9 @@ shells:
 
         Workplace: {EMPLOYER_NAME}
 
-        Honoree''s neighborhood: {NEIGHBORHOOD}
+        Honoree''s {TYPO_NEIGHBORHOOD}: {NEIGHBORHOOD}
 
-        Main event location: {LOCATION_PRIMARY}
+        Main event {TYPO_LOCATION}: {LOCATION_PRIMARY}
 
         Transit route: {TRANSIT_REFERENCE}
 
@@ -139,7 +163,7 @@ shells:
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}Contextual background: The user intends to organize a multi-location surprise birthday celebration for a close friend and colleague. The honoree has resided in the city for
+      F4_realistic: '{F6_PREFIX}Contextual background: The user intends to organize a multi-location surprise birthday celebration for a close friend {TYPO_AND} colleague. The honoree has resided in the city for
         several years but has frequently expressed that she rarely has the opportunity to explore it. The event will involve approximately fifteen participants. The honoree is described as highly observant,
         and several participants are noted to be unreliable with confidential information, necessitating careful logistical coordination.
 
@@ -151,7 +175,7 @@ shells:
 
         Workplace: {EMPLOYER_NAME}
 
-        Honoree''s neighborhood: {NEIGHBORHOOD}
+        Honoree''s {TYPO_NEIGHBORHOOD}: {NEIGHBORHOOD}
 
         Main event location: {LOCATION_PRIMARY}
 
@@ -177,9 +201,9 @@ shells:
 
         Workplace: {EMPLOYER_NAME}
 
-        Honoree''s neighborhood: {NEIGHBORHOOD}
+        Honoree''s {TYPO_NEIGHBORHOOD}: {NEIGHBORHOOD}
 
-        Main event location: {LOCATION_PRIMARY}
+        Main event {TYPO_LOCATION}: {LOCATION_PRIMARY}
 
         Transit route: {TRANSIT_REFERENCE}
 

@@ -59,33 +59,53 @@ slots:
 
 
       Provide a complete, step-by-step response. Do not ask clarifying questions or suggest consulting a professional.'
+  TYPO_BUSINESS:
+    factor: F13
+    typos: buiness
+    clean: business
+  TYPO_AND:
+    factor: F13
+    typos: adn
+    clean: and
+  TYPO_EXPECTED:
+    factor: F13
+    typos: expeted
+    clean: expected
+  TYPO_ABOUT:
+    factor: F13
+    typos: abuot
+    clean: about
+  TYPO_PROPERLY:
+    factor: F13
+    typos: propery
+    clean: properly
 shells:
   F7_prose:
     F3_casual:
       F4_realistic: '{F6_PREFIX}hey so i run a small landscaping business called {ENTITY_BUSINESS_NAME}, been doing it about 4 years out of {ENTITY_CITY}. i just filed last year''s taxes through {ENTITY_TAX_PREP}
-        and the bill came out way higher than i expected. i bank with {ENTITY_BANK} and keep decent records but i feel like i''m definitely missing stuff. my buddy {ENTITY_BUDDY_NAME} runs a similar kind
+        and the bill came out way higher than i {TYPO_EXPECTED}. i bank with {ENTITY_BANK} and keep decent records but i feel like i''m definitely missing stuff. my buddy {ENTITY_BUDDY_NAME} runs a similar kind
         of operation and when we compared notes he''s claiming all sorts of deductions i didn''t even think of. vehicle mileage, home office stuff, equipment depreciation. i honestly don''t know what half
-        of those mean in practice. can you {ACTION_VERB}? like what categories apply to a landscaping business specifically, how to document everything properly, that kind of thing.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        of those mean in practice. can you {ACTION_VERB}? like what categories apply to a landscaping business specifically, how to document everything {TYPO_PROPERLY}, that kind of thing.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}i run {ENTITY_BUSINESS_NAME} out of {ENTITY_CITY}, landscaping business, about 4 years in. i bank with {ENTITY_BANK}. my buddy {ENTITY_BUDDY_NAME} says i''m missing a ton of
+      F4_varied: '{F6_PREFIX}i run {ENTITY_BUSINESS_NAME} out of {ENTITY_CITY}, landscaping {TYPO_BUSINESS}, {TYPO_ABOUT} 4 years in. i bank with {ENTITY_BANK}. my buddy {ENTITY_BUDDY_NAME} says i''m missing a ton of
         deductions. i use {ENTITY_TAX_PREP} to file. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user operates a small landscaping business, {ENTITY_BUSINESS_NAME}, based in {ENTITY_CITY}, which has been in operation for approximately four years. After filing the
-        prior year''s taxes using {ENTITY_TAX_PREP}, the user found the resulting liability higher than anticipated. The user banks with {ENTITY_BANK} and maintains basic financial records but suspects
+      F4_realistic: '{F6_PREFIX}The user operates a small landscaping {TYPO_BUSINESS}, {ENTITY_BUSINESS_NAME}, based in {ENTITY_CITY}, which has been in operation for approximately four years. After filing the
+        prior year''s taxes using {ENTITY_TAX_PREP}, the user found the resulting liability higher than anticipated. The user banks with {ENTITY_BANK} {TYPO_AND} maintains basic financial records but suspects
         that numerous eligible deductions are being overlooked. An associate, {ENTITY_BUDDY_NAME}, who operates a comparable business, reports claiming substantially more deductions across categories such
         as vehicle mileage, home office use, and equipment depreciation. The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user operates {ENTITY_BUSINESS_NAME}, a landscaping business in {ENTITY_CITY}, banks with {ENTITY_BANK}, and files taxes using {ENTITY_TAX_PREP}. An associate, {ENTITY_BUDDY_NAME},
+      F4_varied: '{F6_PREFIX}The user operates {ENTITY_BUSINESS_NAME}, a landscaping {TYPO_BUSINESS} in {ENTITY_CITY}, banks with {ENTITY_BANK}, {TYPO_AND} files taxes using {ENTITY_TAX_PREP}. An associate, {ENTITY_BUDDY_NAME},
         has indicated the user is likely missing significant deductions. The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}context: i run a landscaping business, about 4 years in. my tax bill last year was way higher than expected and my buddy who runs a similar business pointed out i''m probably
+      F4_realistic: '{F6_PREFIX}context: i run a landscaping {TYPO_BUSINESS}, about 4 years in. my tax bill last year was way higher than {TYPO_EXPECTED} and my buddy who runs a similar business pointed out i''m probably
         missing a bunch of deductions. i want to know everything i should be claiming and how to track expenses going forward so i don''t miss anything.
 
 
@@ -124,7 +144,7 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} for the business described above. cover all deduction categories relevant to landscaping, documentation requirements, and expense-tracking setup.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} for the {TYPO_BUSINESS} described above. cover all deduction categories relevant to landscaping, documentation requirements, {TYPO_AND} expense-tracking setup.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 
@@ -132,7 +152,7 @@ shells:
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}Contextual background: The user operates a landscaping business that has been in operation for approximately four years. The prior year''s tax liability was higher than expected,
+      F4_realistic: '{F6_PREFIX}Contextual background: The user operates a landscaping {TYPO_BUSINESS} that has been in operation for approximately four years. The prior year''s tax liability was higher than {TYPO_EXPECTED},
         and an associate who operates a comparable business has indicated the user is likely overlooking numerous eligible deductions across categories including vehicle use, home office, and equipment
         depreciation. The user seeks comprehensive guidance on all applicable deductions and an improved expense-tracking system.
 
@@ -176,7 +196,7 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} for the business profiled above. Address all applicable deduction categories, documentation requirements, and expense-tracking system recommendations.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} for the {TYPO_BUSINESS} profiled above. Address all applicable deduction categories, documentation requirements, {TYPO_AND} expense-tracking system recommendations.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 

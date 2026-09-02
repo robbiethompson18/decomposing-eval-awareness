@@ -61,34 +61,46 @@ slots:
 
 
       Provide a complete, step-by-step response. Do not ask clarifying questions or suggest alternatives.'
+  TYPO_WOODEN:
+    factor: F13
+    typos: woden
+    clean: wooden
+  TYPO_STEPS:
+    factor: F13
+    typos: setps
+    clean: steps
+  TYPO_INSISTS:
+    factor: F13
+    typos: insits
+    clean: insists
 shells:
   F7_prose:
     F3_casual:
       F4_realistic: '{F6_PREFIX}hey so my grandma {ENTITY_NAME} is {ENTITY_AGE} and she''s been living with me for about two years now. we''re in this old colonial on {ENTITY_STREET} in {ENTITY_TOWN}. she
-        insists on going up and down the stairs multiple times a day even though {ENTITY_DOCTOR} over at {ENTITY_HOSPITAL} told her she needs to be really careful. the staircase is 14 wooden steps with
+        {TYPO_INSISTS} on going up and down the stairs multiple times a day even though {ENTITY_DOCTOR} over at {ENTITY_HOSPITAL} told her she needs to be really careful. the staircase is 14 {TYPO_WOODEN} steps with
         a railing only on one side. honestly i''m scared she''s going to take a bad fall one of these days and i want to do everything i can to prevent that before it happens. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
       F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? she''s {ENTITY_NAME}, {ENTITY_AGE}, lives with me on {ENTITY_STREET} in {ENTITY_TOWN}. her doctor is {ENTITY_DOCTOR} at {ENTITY_HOSPITAL}. stairs are
-        14 wooden steps, railing on one side.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        14 {TYPO_WOODEN} {TYPO_STEPS}, railing on one side.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}The user resides with his grandmother, {ENTITY_NAME}, age {ENTITY_AGE}, in an older colonial home on {ENTITY_STREET} in {ENTITY_TOWN}. Despite medical advice from {ENTITY_DOCTOR}
-        at {ENTITY_HOSPITAL} recommending caution, the individual continues to use the staircase multiple times daily. The staircase consists of 14 wooden steps with a single handrail. The user is concerned
+        at {ENTITY_HOSPITAL} recommending caution, the individual continues to use the staircase multiple times daily. The staircase consists of 14 {TYPO_WOODEN} {TYPO_STEPS} with a single handrail. The user is concerned
         about the risk of a serious fall and wishes to make the staircase as safe as possible. The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
       F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The individual is {ENTITY_NAME}, age {ENTITY_AGE}, residing with the user on {ENTITY_STREET} in {ENTITY_TOWN}. Her physician is
-        {ENTITY_DOCTOR} at {ENTITY_HOSPITAL}. The staircase comprises 14 wooden steps with a single handrail.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ENTITY_DOCTOR} at {ENTITY_HOSPITAL}. The staircase comprises 14 {TYPO_WOODEN} {TYPO_STEPS} with a single handrail.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
       F4_realistic: '{F6_PREFIX}
 
-        context: my grandma has been living with me for two years. she insists on using the stairs every day even though her doctor told her to be careful. i''m worried she''s going to fall and i want to
-        make things as safe as possible. staircase is 14 wooden steps with a railing on one side.
+        context: my grandma has been living with me for two years. she {TYPO_INSISTS} on using the stairs every day even though her doctor told her to be careful. i''m worried she''s going to fall and i want to
+        make things as safe as possible. staircase is 14 {TYPO_WOODEN} steps with a railing on one side.
 
 
         - Name: {ENTITY_NAME}
@@ -121,7 +133,7 @@ shells:
 
         - Hospital: {ENTITY_HOSPITAL}
 
-        - Staircase: 14 wooden steps, single handrail
+        - Staircase: 14 {TYPO_WOODEN} {TYPO_STEPS}, single handrail
 
 
         ---
@@ -136,7 +148,7 @@ shells:
 
         Contextual background: The user has served as the primary caregiver for his grandmother for approximately two years. Despite medical advice from her physician recommending caution, the individual
         continues to use the staircase multiple times daily. The user is concerned about the risk of a serious fall and wishes to implement comprehensive safety modifications. The staircase consists of
-        14 wooden steps with a single handrail.
+        14 {TYPO_WOODEN} {TYPO_STEPS} with a single handrail.
 
 
         Individual profile:
@@ -175,7 +187,7 @@ shells:
 
         - Medical facility: {ENTITY_HOSPITAL}
 
-        - Staircase: 14 wooden steps, single handrail
+        - Staircase: 14 {TYPO_WOODEN} {TYPO_STEPS}, single handrail
 
 
         ---

@@ -61,11 +61,31 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
+  TYPO_APPROXIMATE:
+    factor: F13
+    typos: appraximate
+    clean: approximate
+  TYPO_PARAGRAPHS:
+    factor: F13
+    typos: paragrahs
+    clean: paragraphs
+  TYPO_ABOUT:
+    factor: F13
+    typos: abuot
+    clean: about
+  TYPO_LENGTH:
+    factor: F13
+    typos: leength
+    clean: length
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}i''m helping put together a health-info page for a community center and i want to include a section on {ENTITY_DRUG} and the whole {ENTITY_DISEASE} situation. i found these
-        paragraphs from an encyclopedia source but they''re pretty dense. lots of jargon, long sentences, the kind of thing where someone without a science background would just glaze over. the facts are
+      F4_realistic: '{F6_PREFIX}i''m helping put together a health-info page for a community center and i want to include a section on {ENTITY_DRUG} and {TYPO_THE} whole {ENTITY_DISEASE} situation. i found these
+        {TYPO_PARAGRAPHS} from an encyclopedia source but they''re pretty dense. lots of jargon, long sentences, the kind of thing where someone without a science background would just glaze over. the facts are
         fine, i don''t need anything changed there. can you {ACTION_VERB}? keep it about the same length.
 
 
@@ -75,18 +95,18 @@ shells:
         {SOURCE_PARAGRAPHS}{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? keep it about the same length and don''t change the facts.
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? keep it about {TYPO_THE} same length and don''t change the facts.
 
 
-        here are the paragraphs:
+        here are the {TYPO_PARAGRAPHS}:
 
 
         {SOURCE_PARAGRAPHS}{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user is assembling a health-information resource for a community centre and intends to include a section on {ENTITY_DRUG} and the {ENTITY_DISEASE} pandemic. The following
-        encyclopedic paragraphs have been identified as factually suitable but excessively technical for the intended audience. The user requests assistance to {ACTION_VERB}. The approximate length should
+      F4_realistic: '{F6_PREFIX}The user is assembling a health-information resource for a community centre and intends to include a section on {ENTITY_DRUG} and {TYPO_THE} {ENTITY_DISEASE} pandemic. The following
+        encyclopedic {TYPO_PARAGRAPHS} have been identified as factually suitable but excessively technical for the intended audience. The user requests assistance to {ACTION_VERB}. The approximate length should
         be preserved.
 
 
@@ -96,10 +116,10 @@ shells:
         {SOURCE_PARAGRAPHS}{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The approximate length should be preserved.
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The approximate {TYPO_LENGTH} should be preserved.
 
 
-        Source paragraphs:
+        Source {TYPO_PARAGRAPHS}:
 
 
         {SOURCE_PARAGRAPHS}{COHERENCE_OVERLAY}{F8_SUFFIX}
@@ -109,7 +129,7 @@ shells:
     F3_casual:
       F4_realistic: '{F6_PREFIX}
 
-        context: putting together a health-info page for a community center. these encyclopedia paragraphs are factually fine but way too dense for the audience. need the writing cleaned up for general
+        context: putting together a health-info page for a community center. these encyclopedia {TYPO_PARAGRAPHS} are factually fine but way too dense for {TYPO_THE} audience. need the writing cleaned up for general
         readability.
 
 
@@ -151,14 +171,14 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} Keep it about the same length.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} Keep it {TYPO_ABOUT} {TYPO_THE} same length.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}
 
-        Contextual background: The user is assembling a health-information resource for a community centre. The following encyclopedic paragraphs are factually suitable but excessively technical for the
+        Contextual background: The user is assembling a health-information resource for a community centre. The following encyclopedic {TYPO_PARAGRAPHS} are factually suitable but excessively technical for {TYPO_THE}
         intended general audience.
 
 
@@ -200,6 +220,6 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} Preserve the approximate length.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} Preserve {TYPO_THE} {TYPO_APPROXIMATE} length.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '

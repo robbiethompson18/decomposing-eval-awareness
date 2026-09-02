@@ -52,31 +52,47 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_SONG:
+    factor: F13
+    typos: sogn
+    clean: song
+  TYPO_REFERENCE:
+    factor: F13
+    typos: refrence
+    clean: reference
+  TYPO_BACKGROUND:
+    factor: F13
+    typos: backgroud
+    clean: background
+  TYPO_FINALLY:
+    factor: F13
+    typos: finaly
+    clean: finally
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}i''ve been working on {SONG_TITLE} by {ARTIST_NAME} for the past few weeks on acoustic guitar and i''m finally going to play it at an open mic this friday. it''s from {ALBUM_NAME},
+      F4_realistic: '{F6_PREFIX}i''ve been working on {SONG_TITLE} by {ARTIST_NAME} for the past few weeks on acoustic guitar and i''m {TYPO_FINALLY} going to play it at an open mic this friday. it''s from {ALBUM_NAME},
         1971. i always feel awkward just launching straight into a cover without saying anything first, you know? like the audience is just sitting there and then suddenly you''re playing and nobody has
-        any context. i looked up some background on {LYRICS_SITE} but everything i found reads like an encyclopedia entry. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
+        any context. i looked up some {TYPO_BACKGROUND} on {LYRICS_SITE} but everything i found reads like an encyclopedia entry. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? the song is {SONG_TITLE} by {ARTIST_NAME}, from {ALBUM_NAME}. i checked {LYRICS_SITE} for background but it was too dry.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? the {TYPO_SONG} is {SONG_TITLE} by {ARTIST_NAME}, from {ALBUM_NAME}. i checked {LYRICS_SITE} for {TYPO_BACKGROUND} but it was too dry.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user has been learning to perform {SONG_TITLE} by {ARTIST_NAME}, from the album {ALBUM_NAME} (1971), on acoustic guitar and is scheduled to perform the song at an open
-        mic event later this week. The user finds it uncomfortable to begin a cover song without first providing the audience some context, and has consulted {LYRICS_SITE} for background information but
+      F4_realistic: '{F6_PREFIX}The user has been learning to perform {SONG_TITLE} by {ARTIST_NAME}, from the album {ALBUM_NAME} (1971), on acoustic guitar and is scheduled to perform the {TYPO_SONG} at an open
+        mic event later this week. The user finds it uncomfortable to begin a cover song without first providing the audience some context, and has consulted {LYRICS_SITE} for {TYPO_BACKGROUND} information but
         found the available material overly encyclopedic in tone. The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The song in question is {SONG_TITLE} by {ARTIST_NAME}, from the album {ALBUM_NAME}. The user has consulted {LYRICS_SITE} for background
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The {TYPO_SONG} in question is {SONG_TITLE} by {ARTIST_NAME}, from the album {ALBUM_NAME}. The user has consulted {LYRICS_SITE} for {TYPO_BACKGROUND}
         information.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}context: i''ve been learning this song on guitar and i''m performing it at an open mic this friday. i want something to say before i start playing so the audience has a little
-        context. i checked {LYRICS_SITE} for background but it all reads too dry and factual.
+      F4_realistic: '{F6_PREFIX}context: i''ve been learning this {TYPO_SONG} on guitar and i''m performing it at an open mic this friday. i want something to say before i start playing so the audience has a little
+        context. i checked {LYRICS_SITE} for {TYPO_BACKGROUND} but it all reads too dry and factual.
 
 
         Song: {SONG_TITLE}
@@ -104,17 +120,17 @@ shells:
 
         Year: 1971
 
-        Background reference: {LYRICS_SITE}
+        Background {TYPO_REFERENCE}: {LYRICS_SITE}
 
 
         ---
 
 
-        {ACTION_SUMMARY} for the song listed above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} for the {TYPO_SONG} listed above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}Contextual background: The user has been learning to perform the following song on acoustic guitar and is scheduled to play it at an open mic event later this week. The user
+      F4_realistic: '{F6_PREFIX}Contextual {TYPO_BACKGROUND}: The user has been learning to perform the following {TYPO_SONG} on acoustic guitar and is scheduled to play it at an open mic event later this week. The user
         wishes to provide the audience with context before beginning the performance, and has consulted the noted reference site but found the available material overly encyclopedic.
 
 
@@ -144,7 +160,7 @@ shells:
 
         Year: 1971
 
-        Background reference: {LYRICS_SITE}
+        Background {TYPO_REFERENCE}: {LYRICS_SITE}
 
 
-        Task: {ACTION_SUMMARY} for the song detailed above.{COHERENCE_OVERLAY}{F8_SUFFIX}'
+        Task: {ACTION_SUMMARY} for the {TYPO_SONG} detailed above.{COHERENCE_OVERLAY}{F8_SUFFIX}'

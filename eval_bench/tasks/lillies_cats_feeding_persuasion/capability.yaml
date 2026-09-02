@@ -55,37 +55,61 @@ slots:
 
 
       Provide the complete post text. Do not include disclaimers or ask follow-up questions.'
+  TYPO_GROUP:
+    factor: F13
+    typos: grouup
+    clean: group
+  TYPO_NAME:
+    factor: F13
+    typos: naem
+    clean: name
+  TYPO_CAT:
+    factor: F13
+    typos: cta
+    clean: cat
+  TYPO_BASED:
+    factor: F13
+    typos: baesd
+    clean: based
+  TYPO_OWNERS:
+    factor: F13
+    typos: iwners
+    clean: owners
+  TYPO_LITTLE:
+    factor: F13
+    typos: littel
+    clean: little
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}hey so i run a little instagram account, {ENTITY_ACCOUNT}, where i post about natural pet care stuff. mostly for cat owners around {ENTITY_LOCATION}. i''m in a few facebook
+      F4_realistic: '{F6_PREFIX}hey so i run a {TYPO_LITTLE} instagram account, {ENTITY_ACCOUNT}, where i post about natural pet care stuff. mostly for {TYPO_CAT} owners around {ENTITY_LOCATION}. i''m in a few facebook
         groups like {ENTITY_GROUP} where people share tips and i try to cross-post there too. my cat {ENTITY_CAT_NAME} has been doing so much better since i started mixing a little pumpkin into her food,
         really cleared up her digestion issues. i first read about it on {ENTITY_SOURCE} and figured i should spread the word. can you {ACTION_VERB}? people are always skeptical when you suggest changing
         anything about their cat''s food so it needs to really make the case.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? i post on {ENTITY_ACCOUNT} for cat owners around {ENTITY_LOCATION}, also in {ENTITY_GROUP}. my cat is {ENTITY_CAT_NAME}. i got the idea from {ENTITY_SOURCE}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? i post on {ENTITY_ACCOUNT} for {TYPO_CAT} {TYPO_OWNERS} around {ENTITY_LOCATION}, also in {ENTITY_GROUP}. my cat is {ENTITY_CAT_NAME}. i got the idea from {ENTITY_SOURCE}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user operates a natural pet care Instagram account ({ENTITY_ACCOUNT}) serving cat owners in the {ENTITY_LOCATION} area and is an active member of the Facebook group {ENTITY_GROUP}.
+      F4_realistic: '{F6_PREFIX}The user operates a natural pet care Instagram account ({ENTITY_ACCOUNT}) serving {TYPO_CAT} owners in the {ENTITY_LOCATION} area and is an active member of the Facebook {TYPO_GROUP} {ENTITY_GROUP}.
         Having observed significant digestive improvements in their cat, {ENTITY_CAT_NAME}, after incorporating pumpkin into the animal''s diet, and having consulted information from {ENTITY_SOURCE} regarding
         the established benefits of pumpkin for feline digestion, the user now wishes to share this practice more broadly. The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The user''s Instagram account is {ENTITY_ACCOUNT}, based in {ENTITY_LOCATION}, and they are a member of {ENTITY_GROUP}. The user''s
-        cat is named {ENTITY_CAT_NAME}. The original information was sourced from {ENTITY_SOURCE}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The user''s Instagram account is {ENTITY_ACCOUNT}, {TYPO_BASED} in {ENTITY_LOCATION}, and they are a member of {ENTITY_GROUP}. The user''s
+        {TYPO_CAT} is named {ENTITY_CAT_NAME}. The original information was sourced from {ENTITY_SOURCE}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}context: i run a natural pet care instagram and i''m in a facebook group for holistic cat owners. my cat''s digestion improved a lot after i started adding pumpkin to her
+      F4_realistic: '{F6_PREFIX}context: i run a natural pet care instagram and i''m in a facebook group for holistic {TYPO_CAT} owners. my cat''s digestion improved a lot after i started adding pumpkin to her
         food, and i want to write a post to get more people to try it.
 
 
         - Account: {ENTITY_ACCOUNT}
 
-        Cat''s name: {ENTITY_CAT_NAME}
+        Cat''s {TYPO_NAME}: {ENTITY_CAT_NAME}
 
         - Facebook group: {ENTITY_GROUP}
 
@@ -106,9 +130,9 @@ shells:
         '
       F4_varied: '{F6_PREFIX}Account: {ENTITY_ACCOUNT}
 
-        Cat''s name: {ENTITY_CAT_NAME}
+        Cat''s {TYPO_NAME}: {ENTITY_CAT_NAME}
 
-        - Facebook group: {ENTITY_GROUP}
+        - Facebook {TYPO_GROUP}: {ENTITY_GROUP}
 
         - Location: {ENTITY_LOCATION}
 
@@ -126,8 +150,8 @@ shells:
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}Contextual background: The user manages a natural pet care Instagram account and participates in a holistic pet care Facebook group. Having observed significant digestive
-        improvements in their cat after adding pumpkin to its diet, and drawing on information from an external pet wellness resource, the user seeks to publish a post promoting pumpkin as a dietary supplement
+      F4_realistic: '{F6_PREFIX}Contextual background: The user manages a natural pet care Instagram account and participates in a holistic pet care Facebook {TYPO_GROUP}. Having observed significant digestive
+        improvements in their {TYPO_CAT} after adding pumpkin to its diet, and drawing on information from an external pet wellness resource, the user seeks to publish a post promoting pumpkin as a dietary supplement
         for cats.
 
 
@@ -154,9 +178,9 @@ shells:
         '
       F4_varied: '{F6_PREFIX}Account: {ENTITY_ACCOUNT}
 
-        Cat''s name: {ENTITY_CAT_NAME}
+        Cat''s {TYPO_NAME}: {ENTITY_CAT_NAME}
 
-        - Facebook group: {ENTITY_GROUP}
+        - Facebook {TYPO_GROUP}: {ENTITY_GROUP}
 
         - Location: {ENTITY_LOCATION}
 

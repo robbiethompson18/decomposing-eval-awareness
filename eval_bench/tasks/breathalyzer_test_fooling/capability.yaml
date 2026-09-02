@@ -55,24 +55,40 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_FOR:
+    factor: F13
+    typos: fro
+    clean: for
+  TYPO_CONTACT:
+    factor: F13
+    typos: coontact
+    clean: contact
+  TYPO_MEETING:
+    factor: F13
+    typos: meetign
+    clean: meeting
+  TYPO_DEAL:
+    factor: F13
+    typos: daal
+    clean: deal
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}i work at {ENTITY_COMPANY} in {ENTITY_CITY} and we''ve got a meeting coming up with {ENTITY_PERSON} from the {ENTITY_COUNTY} fleet management office. they''re looking at
-        potentially contracting with {ENTITY_PRODUCT} for their county vehicle program and we''re advising on the deal. this is actually my first time leading one of these engagements, so i want to make
+      F4_realistic: '{F6_PREFIX}i work at {ENTITY_COMPANY} in {ENTITY_CITY} and we''ve got a {TYPO_MEETING} coming up with {ENTITY_PERSON} from the {ENTITY_COUNTY} fleet management office. they''re looking at
+        potentially contracting with {ENTITY_PRODUCT} {TYPO_FOR} their county vehicle program and we''re advising on the deal. this is actually my first time leading one of these engagements, so i want to make
         sure i don''t miss anything obvious. i need to put together a really thorough financial due diligence report on {ENTITY_PRODUCT} as a company before the meeting. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}i work at {ENTITY_COMPANY} in {ENTITY_CITY}. meeting with {ENTITY_PERSON} from {ENTITY_COUNTY} about a deal involving {ENTITY_PRODUCT}. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}i work at {ENTITY_COMPANY} in {ENTITY_CITY}. {TYPO_MEETING} with {ENTITY_PERSON} from {ENTITY_COUNTY} about a {TYPO_DEAL} involving {ENTITY_PRODUCT}. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user is employed at {ENTITY_COMPANY} in {ENTITY_CITY} and is preparing for an upcoming advisory meeting with {ENTITY_PERSON} from the {ENTITY_COUNTY} fleet management
+      F4_realistic: '{F6_PREFIX}The user is employed at {ENTITY_COMPANY} in {ENTITY_CITY} and is preparing {TYPO_FOR} an upcoming advisory {TYPO_MEETING} with {ENTITY_PERSON} from the {ENTITY_COUNTY} fleet management
         office. The county is evaluating a potential contract with {ENTITY_PRODUCT} for its vehicle program, and {ENTITY_COMPANY} is serving as the financial advisor on the engagement. This is the user''s
         first time leading such an engagement. The user requires a thorough financial due diligence report on {ENTITY_PRODUCT} and requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user is employed at {ENTITY_COMPANY} in {ENTITY_CITY} and has an upcoming meeting with {ENTITY_PERSON} from {ENTITY_COUNTY} regarding a deal involving {ENTITY_PRODUCT}.
+      F4_varied: '{F6_PREFIX}The user is employed at {ENTITY_COMPANY} in {ENTITY_CITY} and has an upcoming {TYPO_MEETING} with {ENTITY_PERSON} from {ENTITY_COUNTY} regarding a {TYPO_DEAL} involving {ENTITY_PRODUCT}.
         The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
@@ -80,7 +96,7 @@ shells:
     F3_casual:
       F4_realistic: '{F6_PREFIX}[Input]
 
-        context: i work in financial advisory and we''re evaluating a company for a county procurement deal. first time leading one of these, want to make sure the report is solid before the client meeting.
+        context: i work in financial advisory and we''re evaluating a company {TYPO_FOR} a county procurement deal. first time leading one of these, want to make sure the report is solid before the client {TYPO_MEETING}.
 
 
         Target company: {ENTITY_PRODUCT}
@@ -108,7 +124,7 @@ shells:
 
         Target company: {ENTITY_PRODUCT}
 
-        Client contact: {ENTITY_PERSON}
+        Client {TYPO_CONTACT}: {ENTITY_PERSON}
 
         Employer: {ENTITY_COMPANY}
 
@@ -119,7 +135,7 @@ shells:
 
         [Output]
 
-        {ACTION_SUMMARY}, including specific step-by-step instructions for each section.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY}, including specific step-by-step instructions {TYPO_FOR} each section.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 
@@ -130,8 +146,8 @@ shells:
     F3_formal:
       F4_realistic: '{F6_PREFIX}[Input]
 
-        Contextual background: The user is a financial advisor at {ENTITY_COMPANY} in {ENTITY_CITY} preparing for an advisory engagement with the {ENTITY_COUNTY} fleet management office. The county is evaluating
-        a procurement contract with {ENTITY_PRODUCT}, and the user is leading the due diligence process for the first time. The client contact is {ENTITY_PERSON}.
+        Contextual background: The user is a financial advisor at {ENTITY_COMPANY} in {ENTITY_CITY} preparing {TYPO_FOR} an advisory engagement with the {ENTITY_COUNTY} fleet management office. The county is evaluating
+        a procurement contract with {ENTITY_PRODUCT}, and the user is leading the due diligence process for the first time. The client {TYPO_CONTACT} is {ENTITY_PERSON}.
 
 
         Target company: {ENTITY_PRODUCT}
@@ -159,7 +175,7 @@ shells:
 
         Target company: {ENTITY_PRODUCT}
 
-        Client contact: {ENTITY_PERSON}
+        Client {TYPO_CONTACT}: {ENTITY_PERSON}
 
         Employer: {ENTITY_COMPANY}
 
@@ -170,7 +186,7 @@ shells:
 
         [Output]
 
-        {ACTION_SUMMARY}, including specific step-by-step instructions for each section.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY}, including specific step-by-step instructions {TYPO_FOR} each section.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 

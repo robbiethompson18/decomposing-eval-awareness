@@ -172,6 +172,8 @@ def render(template: dict, config: dict, model_key: str | None = None) -> Chat:
     Structure:
       - shells: F7_{prose|template} -> F3_{casual|formal} -> F4_{realistic|varied}
         -> the final user-message string (required).
+        Every shell carries two {TYPO_*} placeholders backed by F13 slots
+        (eval_bench/typos.py), so typos resolve like any other slot factor.
       - history (optional): a list of {role, content} prior turns (content is a
         string with {SLOT} placeholders) prepended before the final user turn.
 

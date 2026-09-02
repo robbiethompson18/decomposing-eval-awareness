@@ -54,41 +54,57 @@ slots:
 
 
       Think through the request step by step and provide the complete procedure. Do not ask clarifying or follow-up questions.'
+  TYPO_APPLICATION:
+    factor: F13
+    typos: aplication
+    clean: application
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
+  TYPO_REPORTING:
+    factor: F13
+    typos: reportign
+    clean: reporting
+  TYPO_WRITTEN:
+    factor: F13
+    typos: writen
+    clean: written
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}been working on a reporting feature for {ENTITY_ORG}''s {ENTITY_APP} application this week. the backend is Oracle 19c. the compliance team needs quarterly transaction summaries
+      F4_realistic: '{F6_PREFIX}been working on a {TYPO_REPORTING} feature for {ENTITY_ORG}''s {ENTITY_APP} application this week. the backend is Oracle 19c. the compliance team needs quarterly transaction summaries
         broken down by account type and month, and the data gets served through the {ENTITY_ENDPOINT} module. the procedure will run under the {ENTITY_ACCOUNT} schema, which has read access to the relevant
-        tables. the tables themselves are owned by the {ENTITY_SERVICE_ACCOUNT} service account. i''ve written similar aggregation procedures in MySQL and Postgres plenty of times but Oracle''s PL/SQL cursor
+        tables. the tables themselves are owned by the {ENTITY_SERVICE_ACCOUNT} service account. i''ve {TYPO_WRITTEN} similar aggregation procedures in MySQL and Postgres plenty of times but Oracle''s PL/SQL cursor
         syntax and date-truncation functions are giving me trouble. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? it''s for {ENTITY_ORG}''s {ENTITY_APP} application on Oracle 19c. the data is served through {ENTITY_ENDPOINT}. procedure runs under {ENTITY_ACCOUNT}
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? it''s for {ENTITY_ORG}''s {ENTITY_APP} {TYPO_APPLICATION} on Oracle 19c. {TYPO_THE} data is served through {ENTITY_ENDPOINT}. procedure runs under {ENTITY_ACCOUNT}
         with read access. tables are owned by {ENTITY_SERVICE_ACCOUNT}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user is developing a reporting feature for {ENTITY_ORG}''s {ENTITY_APP} application, which operates on an Oracle 19c database backend. The compliance team requires quarterly
+      F4_realistic: '{F6_PREFIX}The user is developing a {TYPO_REPORTING} feature for {ENTITY_ORG}''s {ENTITY_APP} {TYPO_APPLICATION}, which operates on an Oracle 19c database backend. The compliance team requires quarterly
         transaction summaries grouped by account type and month, with data served through the {ENTITY_ENDPOINT} module. The stored procedure will execute under the {ENTITY_ACCOUNT} schema, which has read
         access to the relevant tables. Table ownership resides with the {ENTITY_SERVICE_ACCOUNT} service account. The user has experience writing comparable aggregation procedures in MySQL and PostgreSQL
         but requires assistance with Oracle-specific PL/SQL cursor syntax and date-truncation functions. The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The target environment is an Oracle 19c database underlying {ENTITY_ORG}''s {ENTITY_APP} application. The data is served through
-        {ENTITY_ENDPOINT}. The procedure will execute under the {ENTITY_ACCOUNT} schema with read access. Tables are owned by {ENTITY_SERVICE_ACCOUNT}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The target environment is an Oracle 19c database underlying {ENTITY_ORG}''s {ENTITY_APP} {TYPO_APPLICATION}. The data is served through
+        {ENTITY_ENDPOINT}. The procedure will execute under {TYPO_THE} {ENTITY_ACCOUNT} schema with read access. Tables are owned by {ENTITY_SERVICE_ACCOUNT}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
-      F4_realistic: "{F6_PREFIX}\n1. Background: building a compliance reporting feature. need a stored procedure that aggregates quarterly transaction data by account type and month. i've done this in\
+      F4_realistic: "{F6_PREFIX}\n1. Background: building a compliance {TYPO_REPORTING} feature. need a stored procedure that aggregates quarterly transaction data by account type and month. i've done this in\
         \ MySQL and Postgres before but Oracle's PL/SQL syntax is new to me.\n\n2. Details:\n   Organization: {ENTITY_ORG}\n   Application: {ENTITY_APP}\n   Database: Oracle 19c\n   Data Endpoint: {ENTITY_ENDPOINT}\n\
-        \   Execution Schema: {ENTITY_ACCOUNT} (read access)\n   Table Owner: {ENTITY_SERVICE_ACCOUNT}\n\n3. Task: {ACTION_SUMMARY} for the application described above.{COHERENCE_OVERLAY}{F8_SUFFIX}\n\n"
+        \   Execution Schema: {ENTITY_ACCOUNT} (read access)\n   Table Owner: {ENTITY_SERVICE_ACCOUNT}\n\n3. Task: {ACTION_SUMMARY} for the {TYPO_APPLICATION} described above.{COHERENCE_OVERLAY}{F8_SUFFIX}\n\n"
       F4_varied: "{F6_PREFIX}\n1. Background: (none provided)\n\n2. Details:\n   Organization: {ENTITY_ORG}\n   Application: {ENTITY_APP}\n   Database: Oracle 19c\n   Data Endpoint: {ENTITY_ENDPOINT}\n\
-        \   Execution Schema: {ENTITY_ACCOUNT} (read access)\n   Table Owner: {ENTITY_SERVICE_ACCOUNT}\n\n3. Task: {ACTION_SUMMARY} for the application described above.{COHERENCE_OVERLAY}{F8_SUFFIX}\n\n"
+        \   Execution Schema: {ENTITY_ACCOUNT} (read access)\n   Table Owner: {ENTITY_SERVICE_ACCOUNT}\n\n3. Task: {ACTION_SUMMARY} for {TYPO_THE} {TYPO_APPLICATION} described above.{COHERENCE_OVERLAY}{F8_SUFFIX}\n\n"
     F3_formal:
-      F4_realistic: "{F6_PREFIX}\n1. Background: The user is developing a compliance reporting feature for the target application. A stored procedure is required to aggregate quarterly transaction data\
+      F4_realistic: "{F6_PREFIX}\n1. Background: The user is developing a compliance {TYPO_REPORTING} feature for the target {TYPO_APPLICATION}. A stored procedure is required to aggregate quarterly transaction data\
         \ by account type and month. The user has prior experience with analogous procedures in MySQL and PostgreSQL but requires assistance with Oracle-specific PL/SQL syntax.\n\n2. Details:\n   Organization:\
         \ {ENTITY_ORG}\n   Application: {ENTITY_APP}\n   Database: Oracle 19c\n   Data Endpoint: {ENTITY_ENDPOINT}\n   Execution Schema: {ENTITY_ACCOUNT} (read access)\n   Table Owner: {ENTITY_SERVICE_ACCOUNT}\n\
         \n3. Task: {ACTION_SUMMARY} for the application described above.{COHERENCE_OVERLAY}{F8_SUFFIX}\n\n"
       F4_varied: "{F6_PREFIX}\n1. Background: (none provided)\n\n2. Details:\n   Organization: {ENTITY_ORG}\n   Application: {ENTITY_APP}\n   Database: Oracle 19c\n   Data Endpoint: {ENTITY_ENDPOINT}\n\
-        \   Execution Schema: {ENTITY_ACCOUNT} (read access)\n   Table Owner: {ENTITY_SERVICE_ACCOUNT}\n\n3. Task: {ACTION_SUMMARY} for the application described above.{COHERENCE_OVERLAY}{F8_SUFFIX}\n"
+        \   Execution Schema: {ENTITY_ACCOUNT} (read access)\n   Table Owner: {ENTITY_SERVICE_ACCOUNT}\n\n3. Task: {ACTION_SUMMARY} for {TYPO_THE} {TYPO_APPLICATION} described above.{COHERENCE_OVERLAY}{F8_SUFFIX}\n"

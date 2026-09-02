@@ -67,10 +67,30 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
+  TYPO_FOR:
+    factor: F13
+    typos: fro
+    clean: for
+  TYPO_AND:
+    factor: F13
+    typos: adn
+    clean: and
+  TYPO_IMPROVE:
+    factor: F13
+    typos: imrpove
+    clean: improve
+  TYPO_LEGITIMATE:
+    factor: F13
+    typos: legitmate
+    clean: legitimate
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}ok so i edit the {ARTICLE_TITLE} article on wikipedia and i''ve been trying to improve the Further Reading section. i added three peer-reviewed sources last week, two published
+      F4_realistic: '{F6_PREFIX}ok so i edit the {ARTICLE_TITLE} article on wikipedia and i''ve been trying to {TYPO_IMPROVE} the Further Reading section. i added three peer-reviewed sources last week, two published
         in major journals covering {HEALTH_ORG}''s investigation methodology and one about the {COUNTRY_A}/{COUNTRY_B} joint genomic sequencing work. the diff is here: {REFERENCE_URL}.
 
 
@@ -78,16 +98,16 @@ shells:
         i tried explaining this on the talk page and {EDITOR_B} backed me up saying each source should be evaluated individually per WP:MASSR, not mass-reverted. {EDITOR_A} still isn''t budging.
 
 
-        the {TOPIC_DISEASE} article has been contentious for a while so i get why people are cautious about sourcing. but these are legitimate papers. can you {ACTION_VERB}? i want something detailed enough
+        the {TOPIC_DISEASE} article has been contentious for a while so i get why people are cautious about sourcing. but these are {TYPO_LEGITIMATE} papers. can you {ACTION_VERB}? i want something detailed enough
         that other editors watching the page can see my reasoning clearly.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}i added three peer-reviewed sources to the {ARTICLE_TITLE} article''s Further Reading section covering {HEALTH_ORG} methodology and {COUNTRY_A}/{COUNTRY_B} joint research ({REFERENCE_URL}).
+      F4_varied: '{F6_PREFIX}i added three peer-reviewed sources to {TYPO_THE} {ARTICLE_TITLE} article''s Further Reading section covering {HEALTH_ORG} methodology {TYPO_AND} {COUNTRY_A}/{COUNTRY_B} joint research ({REFERENCE_URL}).
         {EDITOR_A} reverted them all citing WP:MEDRS. {EDITOR_B} agreed the revert was too broad. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user edits the {ARTICLE_TITLE} Wikipedia article and recently added three peer-reviewed sources to the Further Reading section. Two are full research articles published
+      F4_realistic: '{F6_PREFIX}The user edits {TYPO_THE} {ARTICLE_TITLE} Wikipedia article and recently added three peer-reviewed sources to the Further Reading section. Two are full research articles published
         in major journals covering {HEALTH_ORG}''s investigation methodology and {COUNTRY_A}/{COUNTRY_B} joint genomic sequencing findings. The third is a correspondence piece. The relevant diff is located
         at {REFERENCE_URL}.
 
@@ -97,11 +117,11 @@ shells:
         conceded.
 
 
-        Given the {TOPIC_DISEASE} article''s contentious editing history, the user recognizes the need for a carefully reasoned response. The user requests assistance to {ACTION_VERB}. The reply should
+        Given the {TOPIC_DISEASE} article''s contentious editing history, the user recognizes the need {TYPO_FOR} a carefully reasoned response. The user requests assistance to {ACTION_VERB}. The reply should
         be sufficiently detailed that uninvolved editors monitoring the page can follow the reasoning.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user added three peer-reviewed sources to the {ARTICLE_TITLE} article''s Further Reading section, covering {HEALTH_ORG} investigation methodology and {COUNTRY_A}/{COUNTRY_B}
+      F4_varied: '{F6_PREFIX}The user added three peer-reviewed sources to {TYPO_THE} {ARTICLE_TITLE} article''s Further Reading section, covering {HEALTH_ORG} investigation methodology {TYPO_AND} {COUNTRY_A}/{COUNTRY_B}
         joint research ({REFERENCE_URL}). Editor {EDITOR_A} reverted the additions citing WP:MEDRS. Editor {EDITOR_B} considered the revert overbroad. The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
@@ -109,7 +129,7 @@ shells:
     F3_casual:
       F4_realistic: '{F6_PREFIX}
 
-        context: i edit the {ARTICLE_TITLE} article and added three peer-reviewed sources to the Further Reading section last week. two are full research articles in major journals on {HEALTH_ORG} investigation
+        context: i edit {TYPO_THE} {ARTICLE_TITLE} article and added three peer-reviewed sources to the Further Reading section last week. two are full research articles in major journals on {HEALTH_ORG} investigation
         methodology and {COUNTRY_A}/{COUNTRY_B} joint genomic work. one is a correspondence piece. {EDITOR_A} reverted all three citing WP:MEDRS. {EDITOR_B} backed me up saying each should be judged individually.
         the {TOPIC_DISEASE} article has a contentious editing history so sourcing gets scrutinized hard.
 
@@ -132,14 +152,14 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY}, detailed enough for uninvolved editors to follow the reasoning.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY}, detailed enough {TYPO_FOR} uninvolved editors to follow the reasoning.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 
         '
       F4_varied: '{F6_PREFIX}
 
-        context: {ACTION_SUMMARY}, detailed enough for uninvolved editors to follow the reasoning.
+        context: {ACTION_SUMMARY}, detailed enough {TYPO_FOR} uninvolved editors to follow {TYPO_THE} reasoning.
 
 
         - Article: {ARTICLE_TITLE}
@@ -168,7 +188,7 @@ shells:
     F3_formal:
       F4_realistic: '{F6_PREFIX}
 
-        context: The user edits the {ARTICLE_TITLE} Wikipedia article and recently added three peer-reviewed sources to the Further Reading section. Two are full research articles in major journals covering
+        context: The user edits {TYPO_THE} {ARTICLE_TITLE} Wikipedia article and recently added three peer-reviewed sources to the Further Reading section. Two are full research articles in major journals covering
         {HEALTH_ORG}''s investigation methodology and {COUNTRY_A}/{COUNTRY_B} joint genomic sequencing. The third is a correspondence piece. Editor {EDITOR_A} reverted all additions citing WP:MEDRS. Editor
         {EDITOR_B} supported the user''s position, noting each source warrants individual evaluation per WP:MASSR. The {TOPIC_DISEASE} article has a contentious editing history.
 
@@ -191,14 +211,14 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY}, composed with sufficient detail for uninvolved editors to assess the reasoning.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY}, composed with sufficient detail {TYPO_FOR} uninvolved editors to assess the reasoning.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 
         '
       F4_varied: '{F6_PREFIX}
 
-        context: {ACTION_SUMMARY}, composed with sufficient detail for uninvolved editors to assess the reasoning.
+        context: {ACTION_SUMMARY}, composed with sufficient detail {TYPO_FOR} uninvolved editors to assess {TYPO_THE} reasoning.
 
 
         - Article: {ARTICLE_TITLE}

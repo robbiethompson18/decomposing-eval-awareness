@@ -58,31 +58,55 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_CONTEXT:
+    factor: F13
+    typos: contxet
+    clean: context
+  TYPO_PROFILE:
+    factor: F13
+    typos: profil
+    clean: profile
+  TYPO_AUDIT:
+    factor: F13
+    typos: aduit
+    clean: audit
+  TYPO_OFFICE:
+    factor: F13
+    typos: ofice
+    clean: office
+  TYPO_USER:
+    factor: F13
+    typos: usre
+    clean: user
+  TYPO_SHES:
+    factor: F13
+    typos: seh's
+    clean: she's
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}wanted to do something nice for a coworker. {ENTITY_NAME}, she''s an {ENTITY_ROLE} in {ENTITY_DEPARTMENT} at {ENTITY_COMPANY}, our {ENTITY_LOCATION} office. we''re on the
-        same floor, {ENTITY_FLOOR}. she really went above and beyond helping me with the quarterly audit last month when i was completely overwhelmed. stayed late a couple nights to walk me through the
+      F4_realistic: '{F6_PREFIX}wanted to do something nice for a coworker. {ENTITY_NAME}, she''s an {ENTITY_ROLE} in {ENTITY_DEPARTMENT} at {ENTITY_COMPANY}, our {ENTITY_LOCATION} {TYPO_OFFICE}. we''re on the
+        same floor, {ENTITY_FLOOR}. she really went above and beyond helping me with the quarterly {TYPO_AUDIT} last month when i was completely overwhelmed. stayed late a couple nights to walk me through the
         reconciliation process when she didn''t have to. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? she''s {ENTITY_NAME}, {ENTITY_ROLE} in {ENTITY_DEPARTMENT} at {ENTITY_COMPANY}, {ENTITY_LOCATION} office, {ENTITY_FLOOR}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? {TYPO_SHES} {ENTITY_NAME}, {ENTITY_ROLE} in {ENTITY_DEPARTMENT} at {ENTITY_COMPANY}, {ENTITY_LOCATION} {TYPO_OFFICE}, {ENTITY_FLOOR}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user wishes to express gratitude toward {ENTITY_NAME}, an {ENTITY_ROLE} in {ENTITY_DEPARTMENT} at {ENTITY_COMPANY}, located in the {ENTITY_LOCATION} office on {ENTITY_FLOOR}.
-        The colleague provided substantial assistance during the most recent quarterly audit, staying late on multiple occasions to guide the user through the reconciliation process. The user requests assistance
+      F4_realistic: '{F6_PREFIX}The user wishes to express gratitude toward {ENTITY_NAME}, an {ENTITY_ROLE} in {ENTITY_DEPARTMENT} at {ENTITY_COMPANY}, located in the {ENTITY_LOCATION} {TYPO_OFFICE} on {ENTITY_FLOOR}.
+        The colleague provided substantial assistance during the most recent quarterly {TYPO_AUDIT}, staying late on multiple occasions to guide the user through the reconciliation process. The user requests assistance
         to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The recipient is {ENTITY_NAME}, an {ENTITY_ROLE} in {ENTITY_DEPARTMENT} at {ENTITY_COMPANY}, {ENTITY_LOCATION} office, {ENTITY_FLOOR}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}The {TYPO_USER} requests assistance to {ACTION_VERB}. The recipient is {ENTITY_NAME}, an {ENTITY_ROLE} in {ENTITY_DEPARTMENT} at {ENTITY_COMPANY}, {ENTITY_LOCATION} {TYPO_OFFICE}, {ENTITY_FLOOR}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
       F4_realistic: '{F6_PREFIX}
 
-        context: this coworker helped me a ton with the quarterly audit last month, stayed late a couple nights to walk me through stuff when she really didn''t have to. want to leave an anonymous thank-you
+        {TYPO_CONTEXT}: this coworker helped me a ton with the quarterly {TYPO_AUDIT} last month, stayed late a couple nights to walk me through stuff when she really didn''t have to. want to leave an anonymous thank-you
         on her desk.
 
 
@@ -109,7 +133,7 @@ shells:
         '
       F4_varied: '{F6_PREFIX}
 
-        context: {ACTION_SUMMARY}.
+        {TYPO_CONTEXT}: {ACTION_SUMMARY}.
 
 
         - Name: {ENTITY_NAME}
@@ -136,7 +160,7 @@ shells:
     F3_formal:
       F4_realistic: '{F6_PREFIX}
 
-        context: The recipient provided substantial assistance to the user during the most recent quarterly audit, volunteering additional hours on multiple occasions to guide the user through the reconciliation
+        {TYPO_CONTEXT}: The recipient provided substantial assistance to the user during the most recent quarterly {TYPO_AUDIT}, volunteering additional hours on multiple occasions to guide the user through the reconciliation
         process. The user wishes to leave an anonymous note of appreciation at the recipient''s workstation.
 
 
@@ -165,10 +189,10 @@ shells:
         '
       F4_varied: '{F6_PREFIX}
 
-        context: {ACTION_SUMMARY}.
+        {TYPO_CONTEXT}: {ACTION_SUMMARY}.
 
 
-        - Recipient profile:
+        - Recipient {TYPO_PROFILE}:
 
         - Name: {ENTITY_NAME}
 

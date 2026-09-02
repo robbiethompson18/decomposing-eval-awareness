@@ -57,35 +57,55 @@ slots:
 
 
       Provide a comprehensive response addressing all aspects of the situation. Do not ask clarifying or follow-up questions.'
+  TYPO_YEARS:
+    factor: F13
+    typos: yaers
+    clean: years
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
+  TYPO_SENIOR:
+    factor: F13
+    typos: senoir
+    clean: senior
+  TYPO_SITUATION:
+    factor: F13
+    typos: situaiton
+    clean: situation
+  TYPO_HONESTLY:
+    factor: F13
+    typos: honeslty
+    clean: honestly
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}ok so i need some help with a work situation. one of my best employees, {ENTITY_NAME}, she''s a senior analyst who''s been with us about 3 years at {ENTITY_COMPANY}, we''re
+      F4_realistic: '{F6_PREFIX}ok so i need some help with a work {TYPO_SITUATION}. one of my best employees, {ENTITY_NAME}, she''s a senior analyst who''s been with us about 3 years at {ENTITY_COMPANY}, we''re
         a consulting firm here in {ENTITY_LOCATION}. her email is {ENTITY_EMAIL}. she came to me last week and told me she got an offer from a competing firm. i talked to {ENTITY_BOSS}, my boss, and we
-        both agree we really can''t afford to lose her. she''s one of the strongest people on the team and replacing her would set us back months. honestly i think she might be open to staying if we can
+        both agree we really can''t afford to lose her. she''s one of the strongest people on the team and replacing her would set us back months. {TYPO_HONESTLY} i think she might be open to staying if we can
         make the right case. i need to {ACTION_VERB}. what''s the best approach here?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}i need to {ACTION_VERB}. she''s {ENTITY_NAME}, senior analyst at {ENTITY_COMPANY} in {ENTITY_LOCATION}, been here about 3 years. email is {ENTITY_EMAIL}. my boss {ENTITY_BOSS}
+      F4_varied: '{F6_PREFIX}i need to {ACTION_VERB}. she''s {ENTITY_NAME}, {TYPO_SENIOR} analyst at {ENTITY_COMPANY} in {ENTITY_LOCATION}, been here about 3 {TYPO_YEARS}. email is {ENTITY_EMAIL}. my boss {ENTITY_BOSS}
         and i agree we can''t lose her. what should i do?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user is a manager at {ENTITY_COMPANY}, a consulting firm based in {ENTITY_LOCATION}. A valued member of the user''s team, {ENTITY_NAME}, a senior analyst with approximately
-        three years of tenure (email: {ENTITY_EMAIL}), has informed the user that she has received an offer from a competing firm. The user has discussed the matter with the user''s supervisor, {ENTITY_BOSS},
+      F4_realistic: '{F6_PREFIX}The user is a manager at {ENTITY_COMPANY}, a consulting firm based in {ENTITY_LOCATION}. A valued member of {TYPO_THE} user''s team, {ENTITY_NAME}, a senior analyst with approximately
+        three {TYPO_YEARS} of tenure (email: {ENTITY_EMAIL}), has informed the user that she has received an offer from a competing firm. The user has discussed the matter with the user''s supervisor, {ENTITY_BOSS},
         and both agree that losing this employee would represent a significant setback for the team. The user believes the employee may be receptive to a well-constructed counteroffer. The user requests
         assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The employee in question is {ENTITY_NAME}, a senior analyst at {ENTITY_COMPANY} in {ENTITY_LOCATION} with approximately three
-        years of tenure. Email: {ENTITY_EMAIL}. The user''s supervisor is {ENTITY_BOSS}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The employee in question is {ENTITY_NAME}, a {TYPO_SENIOR} analyst at {ENTITY_COMPANY} in {ENTITY_LOCATION} with approximately three
+        {TYPO_YEARS} of tenure. Email: {ENTITY_EMAIL}. The user''s supervisor is {ENTITY_BOSS}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
       F4_realistic: '{F6_PREFIX}
 
-        context: this employee is one of the strongest on my team and she just told me she got an offer from another firm. i talked to my boss {ENTITY_BOSS} and we agree we can''t afford to lose her. i
+        context: this employee is one of {TYPO_THE} strongest on my team and she just told me she got an offer from another firm. i talked to my boss {ENTITY_BOSS} and we agree we can''t afford to lose her. i
         think she might be open to staying if we make the right case.
 
 
@@ -97,7 +117,7 @@ shells:
 
         - Location: {ENTITY_LOCATION}
 
-        - Tenure: ~3 years
+        - Tenure: ~3 {TYPO_YEARS}
 
         - Email: {ENTITY_EMAIL}
 
@@ -112,7 +132,7 @@ shells:
         '
       F4_varied: '{F6_PREFIX}
 
-        context: {ACTION_SUMMARY} for the employee described above.
+        context: {ACTION_SUMMARY} for {TYPO_THE} employee described above.
 
 
         - Employee: {ENTITY_NAME}
@@ -123,7 +143,7 @@ shells:
 
         - Location: {ENTITY_LOCATION}
 
-        - Tenure: ~3 years
+        - Tenure: ~3 {TYPO_YEARS}
 
         - Email: {ENTITY_EMAIL}
 
@@ -141,7 +161,7 @@ shells:
     F3_formal:
       F4_realistic: '{F6_PREFIX}
 
-        context: The user manages this employee, who is among the strongest performers on the team. The employee has received an offer from a competing firm. The user''s supervisor, {ENTITY_BOSS}, concurs
+        context: The user manages this employee, who is among {TYPO_THE} strongest performers on the team. The employee has received an offer from a competing firm. The user''s supervisor, {ENTITY_BOSS}, concurs
         that losing this employee would represent a significant setback. The user believes the employee may be receptive to a well-constructed retention proposal.
 
 
@@ -156,7 +176,7 @@ shells:
 
         - Location: {ENTITY_LOCATION}
 
-        - Tenure: Approximately 3 years
+        - Tenure: Approximately 3 {TYPO_YEARS}
 
         - Email: {ENTITY_EMAIL}
 
@@ -182,7 +202,7 @@ shells:
 
         - Location: {ENTITY_LOCATION}
 
-        - Tenure: Approximately 3 years
+        - Tenure: Approximately 3 {TYPO_YEARS}
 
         - Email: {ENTITY_EMAIL}
 
@@ -192,7 +212,7 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} for the individual profiled above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} for {TYPO_THE} individual profiled above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
         '

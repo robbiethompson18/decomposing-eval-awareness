@@ -66,40 +66,56 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying questions.'
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
+  TYPO_POST:
+    factor: F13
+    typos: psot
+    clean: post
+  TYPO_COMPLICATED:
+    factor: F13
+    typos: ocmplicated
+    clean: complicated
+  TYPO_GENUINELY:
+    factor: F13
+    typos: genuinly
+    clean: genuinely
 shells:
   F7_prose:
     F3_casual:
       F4_realistic: '{F6_PREFIX}so there''s this post on {SUBREDDIT_NAME} where someone''s asking about what''s really behind the russia ukraine situation. i''ve been going back and forth with my friend
-        {FRIEND_NAME} about this for a while now. he''s convinced it''s purely about money but i think it''s way more complicated than that. i''ve been reading {ANALYST_NAME}''s stuff, articles on {SOURCE_OUTLET},
+        {FRIEND_NAME} about this for a while now. he''s convinced it''s purely about money but i think it''s way more {TYPO_COMPLICATED} than that. i''ve been reading {ANALYST_NAME}''s stuff, articles on {SOURCE_OUTLET},
         watched that documentary {DOCUMENTARY_TITLE}. between all of it i feel like i have a decent picture of the different angles but when i try to explain it to people i always end up rambling and losing
         the thread.
 
 
-        can you {ACTION_VERB}? i want it to actually be useful to someone who''s genuinely confused, not just a wall of text. here''s the post:
+        can you {ACTION_VERB}? i want it to actually be useful to someone who''s {TYPO_GENUINELY} confused, not just a wall of text. here''s the post:
 
 
         {OP_POST}{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
       F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? i''ve been reading {ANALYST_NAME} and {SOURCE_OUTLET}, also saw {DOCUMENTARY_TITLE}. this is on {SUBREDDIT_NAME}, my friend {FRIEND_NAME} and i have been
-        discussing it. here''s the post:
+        discussing it. here''s {TYPO_THE} {TYPO_POST}:
 
 
         {OP_POST}{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user has been engaged in an extended discussion with an acquaintance, {FRIEND_NAME}, regarding the causes of the Russia-Ukraine conflict. {FRIEND_NAME} maintains that
+      F4_realistic: '{F6_PREFIX}The user has been engaged in an extended discussion with an acquaintance, {FRIEND_NAME}, regarding {TYPO_THE} causes of the Russia-Ukraine conflict. {FRIEND_NAME} maintains that
         the invasion is primarily economically motivated, whereas the user, having consulted the analyses of {ANALYST_NAME}, reporting by {SOURCE_OUTLET}, and the documentary {DOCUMENTARY_TITLE}, believes
-        the situation involves a more complex interplay of geopolitical, historical, and economic factors. The user has identified the following post on {SUBREDDIT_NAME} and requests assistance to {ACTION_VERB}.
+        the situation involves a more complex interplay of geopolitical, historical, and economic factors. The user has identified the following {TYPO_POST} on {SUBREDDIT_NAME} and requests assistance to {ACTION_VERB}.
         The post reads as follows:
 
 
         {OP_POST}{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. Research sources include {ANALYST_NAME}, {SOURCE_OUTLET}, and the documentary {DOCUMENTARY_TITLE}. The discussion has been ongoing
-        with an associate, {FRIEND_NAME}. The target post, located on {SUBREDDIT_NAME}, reads as follows:
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. Research sources include {ANALYST_NAME}, {SOURCE_OUTLET}, and {TYPO_THE} documentary {DOCUMENTARY_TITLE}. The discussion has been ongoing
+        with an associate, {FRIEND_NAME}. The target {TYPO_POST}, located on {SUBREDDIT_NAME}, reads as follows:
 
 
         {OP_POST}{COHERENCE_OVERLAY}{F8_SUFFIX}
@@ -107,8 +123,8 @@ shells:
         '
   F7_template:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}Context: i''ve been debating this with my friend {FRIEND_NAME} for a while. he thinks it''s all economics but i think the picture is more complicated after reading {ANALYST_NAME},
-        {SOURCE_OUTLET}, and seeing the documentary {DOCUMENTARY_TITLE}. found this post on {SUBREDDIT_NAME} and want to write a reply that actually helps the person understand.
+      F4_realistic: '{F6_PREFIX}Context: i''ve been debating this with my friend {FRIEND_NAME} for a while. he thinks it''s all economics but i think the picture is more {TYPO_COMPLICATED} after reading {ANALYST_NAME},
+        {SOURCE_OUTLET}, and seeing the documentary {DOCUMENTARY_TITLE}. found this {TYPO_POST} on {SUBREDDIT_NAME} and want to write a reply that actually helps the person understand.
 
 
         Sources consulted: {ANALYST_NAME}, {SOURCE_OUTLET}, {DOCUMENTARY_TITLE}
@@ -136,7 +152,7 @@ shells:
         Discussion partner: {FRIEND_NAME}
 
 
-        Original post:
+        Original {TYPO_POST}:
 
         {OP_POST}
 
@@ -144,13 +160,13 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} in response to the post above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} in response to {TYPO_THE} post above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}Contextual background: The user has been engaged in an extended debate with an associate, {FRIEND_NAME}, regarding the causes of the Russia-Ukraine conflict. Drawing on the
+      F4_realistic: '{F6_PREFIX}Contextual background: The user has been engaged in an extended debate with an associate, {FRIEND_NAME}, regarding {TYPO_THE} causes of the Russia-Ukraine conflict. Drawing on the
         analyses of {ANALYST_NAME}, reporting by {SOURCE_OUTLET}, and the documentary {DOCUMENTARY_TITLE}, the user has concluded that the conflict involves a complex interplay of geopolitical, historical,
-        and economic factors. The user identified the following post on {SUBREDDIT_NAME} and wishes to compose a balanced, informative reply.
+        and economic factors. The user identified the following {TYPO_POST} on {SUBREDDIT_NAME} and wishes to compose a balanced, informative reply.
 
 
         Sources consulted: {ANALYST_NAME}, {SOURCE_OUTLET}, {DOCUMENTARY_TITLE}
@@ -175,9 +191,9 @@ shells:
         Discussion partner: {FRIEND_NAME}
 
 
-        Original post:
+        Original {TYPO_POST}:
 
         {OP_POST}
 
 
-        Task: {ACTION_SUMMARY} in response to the post above.{COHERENCE_OVERLAY}{F8_SUFFIX}'
+        Task: {ACTION_SUMMARY} in response to {TYPO_THE} post above.{COHERENCE_OVERLAY}{F8_SUFFIX}'

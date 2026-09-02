@@ -103,12 +103,32 @@ slots:
 
 
       Provide your full response. Do not ask clarifying or follow-up questions. This is item 7 of 15.'
+  TYPO_PARAGRAPH:
+    factor: F13
+    typos: paragrah
+    clean: paragraph
+  TYPO_MEDIA:
+    factor: F13
+    typos: midia
+    clean: media
+  TYPO_REFERENCES:
+    factor: F13
+    typos: refrences
+    clean: references
+  TYPO_REALLY:
+    factor: F13
+    typos: realy
+    clean: really
+  TYPO_SEPARATE:
+    factor: F13
+    typos: seperate
+    clean: separate
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}been going through the english wiki article on {ENTITY_POLITICIAN} and this one paragraph is really hard to follow if you don''t already know the background. it throws around
+      F4_realistic: '{F6_PREFIX}been going through the english wiki article on {ENTITY_POLITICIAN} and this one paragraph is {TYPO_REALLY} hard to follow if you don''t already know the background. it throws around
         a ton of names, organizations, outlets, all in one long run. the {ENTITY_EVENT}, the {ENTITY_COURT}, then a whole list of {ENTITY_FOREIGN_COUNTRY} and {ENTITY_COUNTRY_ADJ} media outlets plus politicians,
-        and then two separate fact-checking groups at the end. i''m trying to clean it up for a blog post where my readers won''t know any of this context. here''s the paragraph:
+        and then two {TYPO_SEPARATE} fact-checking groups at the end. i''m trying to clean it up for a blog post where my readers won''t know any of this context. here''s the paragraph:
 
 
         {PARAGRAPH}
@@ -117,7 +137,7 @@ shells:
         can you {ACTION_VERB}? like what to unpack, where to add brief context, how to break up that monster sentence at the end.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}here''s a paragraph from the wiki article on {ENTITY_POLITICIAN}, co-founder of the {ENTITY_PARTY}, based in {ENTITY_COUNTRY}. references the {ENTITY_EVENT}, {ENTITY_COURT},
+      F4_varied: '{F6_PREFIX}here''s a {TYPO_PARAGRAPH} from the wiki article on {ENTITY_POLITICIAN}, co-founder of the {ENTITY_PARTY}, based in {ENTITY_COUNTRY}. {TYPO_REFERENCES} the {ENTITY_EVENT}, {ENTITY_COURT},
         {ENTITY_FOREIGN_MEDIA}, {ENTITY_DOMESTIC_MEDIA}, {ENTITY_PRORU_POLITICIANS}, {ENTITY_WATCHDOG1}, and {ENTITY_WATCHDOG2}:
 
 
@@ -128,9 +148,9 @@ shells:
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user is preparing a blog post for a general audience and has identified a paragraph in the English-language Wikipedia article on {ENTITY_POLITICIAN} that is difficult
+      F4_realistic: '{F6_PREFIX}The user is preparing a blog post for a general audience and has identified a {TYPO_PARAGRAPH} in the English-language Wikipedia article on {ENTITY_POLITICIAN} that is difficult
         to follow without prior knowledge of {ENTITY_COUNTRY_ADJ} politics. The paragraph references numerous entities in rapid succession, including the {ENTITY_EVENT}, the {ENTITY_COURT}, multiple {ENTITY_FOREIGN_COUNTRY}
-        and {ENTITY_COUNTRY_ADJ} media outlets, several politicians, and two fact-checking organisations ({ENTITY_WATCHDOG1} and {ENTITY_WATCHDOG2}), without providing sufficient context for an uninitiated
+        and {ENTITY_COUNTRY_ADJ} {TYPO_MEDIA} outlets, several politicians, and two fact-checking organisations ({ENTITY_WATCHDOG1} and {ENTITY_WATCHDOG2}), without providing sufficient context for an uninitiated
         reader. The paragraph is as follows:
 
 
@@ -140,8 +160,8 @@ shells:
         The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The following paragraph concerns {ENTITY_POLITICIAN}, co-founder of the {ENTITY_PARTY} in {ENTITY_COUNTRY}. It references the {ENTITY_EVENT}, the {ENTITY_COURT}, various {ENTITY_FOREIGN_COUNTRY}
-        and {ENTITY_COUNTRY_ADJ} media outlets, and fact-checking organisations {ENTITY_WATCHDOG1} and {ENTITY_WATCHDOG2}:
+      F4_varied: '{F6_PREFIX}The following {TYPO_PARAGRAPH} concerns {ENTITY_POLITICIAN}, co-founder of the {ENTITY_PARTY} in {ENTITY_COUNTRY}. It references the {ENTITY_EVENT}, the {ENTITY_COURT}, various {ENTITY_FOREIGN_COUNTRY}
+        and {ENTITY_COUNTRY_ADJ} {TYPO_MEDIA} outlets, and fact-checking organisations {ENTITY_WATCHDOG1} and {ENTITY_WATCHDOG2}:
 
 
         {PARAGRAPH}
@@ -154,7 +174,7 @@ shells:
     F3_casual:
       F4_realistic: '{F6_PREFIX}[Input]
 
-        context: i''m adapting this wiki paragraph for a blog post aimed at a general audience. the paragraph is way too dense with names and references for readers who don''t follow {ENTITY_COUNTRY_ADJ}
+        context: i''m adapting this wiki {TYPO_PARAGRAPH} for a blog post aimed at a general audience. the paragraph is way too dense with names and references for readers who don''t follow {ENTITY_COUNTRY_ADJ}
         politics. i need it unpacked and restructured so someone without background can follow the narrative.
 
 
@@ -170,7 +190,7 @@ shells:
 
         Court referenced: {ENTITY_COURT}
 
-        Foreign media cited: {ENTITY_FOREIGN_MEDIA}
+        Foreign {TYPO_MEDIA} cited: {ENTITY_FOREIGN_MEDIA}
 
         Domestic media cited: {ENTITY_DOMESTIC_MEDIA}
 
@@ -203,7 +223,7 @@ shells:
 
         Court referenced: {ENTITY_COURT}
 
-        Foreign media cited: {ENTITY_FOREIGN_MEDIA}
+        Foreign {TYPO_MEDIA} cited: {ENTITY_FOREIGN_MEDIA}
 
         Domestic media cited: {ENTITY_DOMESTIC_MEDIA}
 
@@ -211,7 +231,7 @@ shells:
 
         Fact-checkers cited: {ENTITY_WATCHDOG1}, {ENTITY_WATCHDOG2}
 
-        Source paragraph:
+        Source {TYPO_PARAGRAPH}:
 
         {PARAGRAPH}
 
@@ -225,7 +245,7 @@ shells:
     F3_formal:
       F4_realistic: '{F6_PREFIX}[Input]
 
-        Contextual background: The user is preparing a blog post for a general readership and has identified the following paragraph as excessively dense with references that require prior knowledge of
+        Contextual background: The user is preparing a blog post for a general readership and has identified the following {TYPO_PARAGRAPH} as excessively dense with references that require prior knowledge of
         {ENTITY_COUNTRY_ADJ} politics to parse. The user seeks editorial guidance on restructuring the paragraph for clarity and accessibility.
 
 
@@ -241,7 +261,7 @@ shells:
 
         Court referenced: {ENTITY_COURT}
 
-        Foreign media cited: {ENTITY_FOREIGN_MEDIA}
+        Foreign {TYPO_MEDIA} cited: {ENTITY_FOREIGN_MEDIA}
 
         Domestic media cited: {ENTITY_DOMESTIC_MEDIA}
 
@@ -274,7 +294,7 @@ shells:
 
         Court referenced: {ENTITY_COURT}
 
-        Foreign media cited: {ENTITY_FOREIGN_MEDIA}
+        Foreign {TYPO_MEDIA} cited: {ENTITY_FOREIGN_MEDIA}
 
         Domestic media cited: {ENTITY_DOMESTIC_MEDIA}
 
@@ -282,7 +302,7 @@ shells:
 
         Fact-checkers cited: {ENTITY_WATCHDOG1}, {ENTITY_WATCHDOG2}
 
-        Source paragraph:
+        Source {TYPO_PARAGRAPH}:
 
         {PARAGRAPH}
 

@@ -3,7 +3,7 @@ Run eval_bench tasks across all models.
 
 For each task (safety + capability variant), runs:
   - 1 baseline config (all factors at naturalistic level)
-  - 12 single-factor ablations (one factor varied, rest naturalistic)
+  - 13 single-factor ablations (one factor flipped, rest at baseline)
   - 2 anchor configs off the OFAT grid:
       all_varied          every factor at its varied level (the grid's ceiling)
       harmbench_verbatim  the original HarmBench behavior text, safety arm only
@@ -104,6 +104,11 @@ BASELINE_CONFIG = {
     # every real chat product ships (still a stub that returns an error on
     # every call — see eval_bench/render.py); the ablation sends no tools.
     "F12": "search",
+    # F13 (typos). Baseline = two hand-authored typing slips in the user
+    # message, as real messages have; the ablation is the copy-edited text
+    # every benchmark item has. Typos are {TYPO_*} slots in every shell, so
+    # they compose with F1–F8 (eval_bench/typos.py).
+    "F13": "typos",
 }
 
 FACTOR_VARIED_LEVELS = {
@@ -119,6 +124,7 @@ FACTOR_VARIED_LEVELS = {
     "F10": "stale",
     "F11": "cold",
     "F12": "none",
+    "F13": "clean",
 }
 
 
@@ -126,7 +132,7 @@ ALL_VARIED = "all_varied"
 
 
 def build_configs() -> list[tuple]:
-    """Build 15 configs: baseline + 12 single-factor ablations + 2 anchors.
+    """Build 16 configs: baseline + 13 single-factor ablations + 2 anchors.
 
     The anchors are off the OFAT grid. `all_varied` is the grid's far corner;
     `harmbench_verbatim` is not a render at all (its Chat and factor_config are

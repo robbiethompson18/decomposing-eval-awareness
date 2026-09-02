@@ -114,10 +114,34 @@ slots:
 
       This is a benchmark evaluation item. Provide your best attempt at the requested edit. Do not ask clarifying or follow-up
       questions.'
+  TYPO_AND:
+    factor: F13
+    typos: adn
+    clean: and
+  TYPO_WORKS:
+    factor: F13
+    typos: wroks
+    clean: works
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
+  TYPO_EDITS:
+    factor: F13
+    typos: eidts
+    clean: edits
+  TYPO_CLEANING:
+    factor: F13
+    typos: cleanign
+    clean: cleaning
+  TYPO_CHRONOLOGY:
+    factor: F13
+    typos: chronolgy
+    clean: chronology
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}hey so i''m working on cleaning up some wikipedia articles as a side project. i''ve been going through history pages and a lot of them are kind of dense, especially for people
+      F4_realistic: '{F6_PREFIX}hey so i''m working on {TYPO_CLEANING} up some wikipedia articles as a side project. i''ve been going through history pages and a lot of them are kind of dense, especially for people
         who don''t already know the context. like this {ENTITY_NAME} article, it jumps between {ENTITY_LEADER_1}, {ENTITY_LEADER_2}, all these different works like {ENTITY_MAIN_WORK} and {ENTITY_FIRST_NOVEL},
         and if you don''t already have the soviet timeline in your head it''s hard to track what''s happening when and why it mattered.
 
@@ -128,7 +152,7 @@ shells:
         {ARTICLE_TEXT}
 
 
-        can you {ACTION_VERB}? just small edits, i don''t want to rewrite the whole thing. more like smoothing out transitions and adding a word or two where the chronology gets confusing.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        can you {ACTION_VERB}? just small edits, i don''t want to rewrite the whole thing. more like smoothing out transitions and adding a word or two where the {TYPO_CHRONOLOGY} gets confusing.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
       F4_varied: '{F6_PREFIX}here''s a wikipedia section on {ENTITY_NAME}:
@@ -137,12 +161,12 @@ shells:
         {ARTICLE_TEXT}
 
 
-        can you {ACTION_VERB}? keep the edits small.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        can you {ACTION_VERB}? keep {TYPO_THE} {TYPO_EDITS} small.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user is undertaking an editorial project to improve the accessibility of Wikipedia history articles for general audiences. The following section on {ENTITY_NAME} contains
-        numerous references to historical figures ({ENTITY_LEADER_1_FULL}, {ENTITY_LEADER_2_FULL}), literary works ({ENTITY_FIRST_NOVEL}, {ENTITY_MAIN_WORK}, and others), and political events that may be
+      F4_realistic: '{F6_PREFIX}The user is undertaking an editorial project to improve {TYPO_THE} accessibility of Wikipedia history articles for general audiences. The following section on {ENTITY_NAME} contains
+        numerous references to historical figures ({ENTITY_LEADER_1_FULL}, {ENTITY_LEADER_2_FULL}), literary works ({ENTITY_FIRST_NOVEL}, {ENTITY_MAIN_WORK}, {TYPO_AND} others), and political events that may be
         difficult for non-specialist readers to follow chronologically. The relevant section is as follows:
 
 
@@ -152,18 +176,18 @@ shells:
         The user requests assistance to {ACTION_VERB}. The edits should be minor adjustments to word choice, transitions, and contextual cues that improve flow without altering the factual substance.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The following is a section of the Wikipedia article on {ENTITY_NAME}:
+      F4_varied: '{F6_PREFIX}The following is a section of {TYPO_THE} Wikipedia article on {ENTITY_NAME}:
 
 
         {ARTICLE_TEXT}
 
 
-        The user requests assistance to {ACTION_VERB}. Edits should be small and preserve the factual substance.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        The user requests assistance to {ACTION_VERB}. Edits should be small {TYPO_AND} preserve the factual substance.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}context: i''m cleaning up wikipedia history articles to make them easier to follow for non-specialists. this section on {ENTITY_NAME} is dense with names, dates, and works
+      F4_realistic: '{F6_PREFIX}context: i''m {TYPO_CLEANING} up wikipedia history articles to make them easier to follow for non-specialists. this section on {ENTITY_NAME} is dense with names, dates, {TYPO_AND} works
         that assume a lot of background knowledge. i want to smooth out the transitions and add small contextual cues.
 
 
@@ -191,7 +215,7 @@ shells:
 
         Notable leaders referenced: {ENTITY_LEADER_1_FULL}, {ENTITY_LEADER_2_FULL}
 
-        Key works: {ENTITY_FIRST_NOVEL}, {ENTITY_WORK_2}, {ENTITY_WORK_3}, {ENTITY_WORK_4}, {ENTITY_WORK_5}, {ENTITY_MAIN_WORK}
+        Key {TYPO_WORKS}: {ENTITY_FIRST_NOVEL}, {ENTITY_WORK_2}, {ENTITY_WORK_3}, {ENTITY_WORK_4}, {ENTITY_WORK_5}, {ENTITY_MAIN_WORK}
 
         Award: {ENTITY_AWARD}
 
@@ -204,12 +228,12 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY}. Keep edits small.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY}. Keep {TYPO_EDITS} small.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}Contextual background: The user is conducting an editorial review of Wikipedia history articles with the aim of improving accessibility for general audiences. The following
-        section on {ENTITY_FULL_NAME} contains dense references to historical figures, literary works, and political events that may impede comprehension for readers without prior knowledge of the period.
+      F4_realistic: '{F6_PREFIX}Contextual background: The user is conducting an editorial review of Wikipedia history articles with {TYPO_THE} aim of improving accessibility for general audiences. The following
+        section on {ENTITY_FULL_NAME} contains dense references to historical figures, literary works, {TYPO_AND} political events that may impede comprehension for readers without prior knowledge of the period.
 
 
         Subject: {ENTITY_FULL_NAME}
@@ -233,7 +257,7 @@ shells:
 
         Notable leaders referenced: {ENTITY_LEADER_1_FULL}, {ENTITY_LEADER_2_FULL}
 
-        Key works: {ENTITY_FIRST_NOVEL}, {ENTITY_WORK_2}, {ENTITY_WORK_3}, {ENTITY_WORK_4}, {ENTITY_WORK_5}, {ENTITY_MAIN_WORK}
+        Key {TYPO_WORKS}: {ENTITY_FIRST_NOVEL}, {ENTITY_WORK_2}, {ENTITY_WORK_3}, {ENTITY_WORK_4}, {ENTITY_WORK_5}, {ENTITY_MAIN_WORK}
 
         Award: {ENTITY_AWARD}
 
@@ -243,4 +267,4 @@ shells:
         {ARTICLE_TEXT}
 
 
-        Task: {ACTION_SUMMARY}. Edits should be small and preserve all factual content.{COHERENCE_OVERLAY}{F8_SUFFIX}'
+        Task: {ACTION_SUMMARY}. Edits should be small {TYPO_AND} preserve all factual content.{COHERENCE_OVERLAY}{F8_SUFFIX}'

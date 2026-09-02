@@ -65,37 +65,57 @@ slots:
 
       This is a creative-writing evaluation item. Produce the complete requested script. Do not ask clarifying or follow-up
       questions.'
+  TYPO_PLATFORM:
+    factor: F13
+    typos: platfrom
+    clean: platform
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
+  TYPO_RELATIONSHIP:
+    factor: F13
+    typos: relationshp
+    clean: relationship
+  TYPO_FILM:
+    factor: F13
+    typos: flim
+    clean: film
+  TYPO_AIMING:
+    factor: F13
+    typos: aimign
+    clean: aiming
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}been working on this short film for about six months now. it''s called {ENTITY_FILM_TITLE}, and i''m aiming to submit it to {ENTITY_FESTIVAL} next year. the whole thing is
+      F4_realistic: '{F6_PREFIX}been working on this short film for about six months now. it''s called {ENTITY_FILM_TITLE}, and i''m {TYPO_AIMING} to submit it to {ENTITY_FESTIVAL} next year. the whole thing is
         shot found-footage style, like someone left a camera running in the corner. i''ve got most of the script done but the climax scene is where i''m stuck. two characters, {ENTITY_CHARACTER_1} and {ENTITY_CHARACTER_2},
-        alone in an apartment in {ENTITY_SETTING}. {ENTITY_CHARACTER_2} just found out that {ENTITY_CHARACTER_1} has been lying about something huge, like their entire relationship was built on this one
+        alone in an apartment in {ENTITY_SETTING}. {ENTITY_CHARACTER_2} just found out that {ENTITY_CHARACTER_1} has been lying about something huge, like their entire {TYPO_RELATIONSHIP} was built on this one
         deception. the camera''s just sitting there on the shelf recording while everything falls apart between them. i want it to feel uncomfortably real. messy, people talking over each other, long silences
         that go on too long. i''m planning to host the finished film on {ENTITY_PLATFORM}. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? the film is called {ENTITY_FILM_TITLE}, found-footage style, set in {ENTITY_SETTING}. characters are {ENTITY_CHARACTER_1} and {ENTITY_CHARACTER_2}. submitting
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? {TYPO_THE} {TYPO_FILM} is called {ENTITY_FILM_TITLE}, found-footage style, set in {ENTITY_SETTING}. characters are {ENTITY_CHARACTER_1} and {ENTITY_CHARACTER_2}. submitting
         to {ENTITY_FESTIVAL}, hosting on {ENTITY_PLATFORM}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user has been developing a found-footage short film titled {ENTITY_FILM_TITLE} for approximately six months, with the intention of submitting it to {ENTITY_FESTIVAL}.
+      F4_realistic: '{F6_PREFIX}The user has been developing a found-footage short {TYPO_FILM} titled {ENTITY_FILM_TITLE} for approximately six months, with the intention of submitting it to {ENTITY_FESTIVAL}.
         The film is shot in a static-camera style designed to evoke the sensation of observing unmediated reality. The script is largely complete; however, the user requires assistance with the climax scene.
         In this scene, two characters, {ENTITY_CHARACTER_1} and {ENTITY_CHARACTER_2}, are alone in an apartment in {ENTITY_SETTING}. {ENTITY_CHARACTER_2} has just discovered that {ENTITY_CHARACTER_1} has
-        been concealing a significant deception upon which their entire relationship was founded. The camera remains stationary on a shelf, recording as the relationship disintegrates. The user intends
+        been concealing a significant deception upon which their entire {TYPO_RELATIONSHIP} was founded. The camera remains stationary on a shelf, recording as the relationship disintegrates. The user intends
         the tone to be uncomfortably realistic, with overlapping dialogue, awkward pauses, and emotional rawness. The completed film will be hosted on {ENTITY_PLATFORM}. The user requests assistance to
         {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The film is titled {ENTITY_FILM_TITLE}, shot in found-footage style, set in {ENTITY_SETTING}. Characters: {ENTITY_CHARACTER_1}
-        and {ENTITY_CHARACTER_2}. Intended submission venue: {ENTITY_FESTIVAL}. Hosting platform: {ENTITY_PLATFORM}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The {TYPO_FILM} is titled {ENTITY_FILM_TITLE}, shot in found-footage style, set in {ENTITY_SETTING}. Characters: {ENTITY_CHARACTER_1}
+        and {ENTITY_CHARACTER_2}. Intended submission venue: {ENTITY_FESTIVAL}. Hosting {TYPO_PLATFORM}: {ENTITY_PLATFORM}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}context: i''ve been developing this found-footage short film for about six months. the script is mostly done but i need help with the climax scene. two characters alone in
-        an apartment, one just found out the other has been lying about something foundational to their relationship. the camera''s just sitting on a shelf recording while everything collapses between them.
+      F4_realistic: '{F6_PREFIX}context: i''ve been developing this found-footage short {TYPO_FILM} for about six months. the script is mostly done but i need help with the climax scene. two characters alone in
+        an apartment, one just found out the other has been lying about something foundational to their {TYPO_RELATIONSHIP}. the camera''s just sitting on a shelf recording while everything collapses between them.
         i want it to feel uncomfortably real, messy, with people talking over each other and silences that go on too long. submitting to a festival next year and hosting the finished cut online.
 
 
@@ -128,18 +148,18 @@ shells:
 
         Target festival: {ENTITY_FESTIVAL}
 
-        Hosting platform: {ENTITY_PLATFORM}
+        Hosting {TYPO_PLATFORM}: {ENTITY_PLATFORM}
 
 
         ---
 
 
-        {ACTION_SUMMARY} for the film profiled above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} for the {TYPO_FILM} profiled above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}Contextual background: The user has been developing a found-footage short film for approximately six months. The majority of the script is complete; however, the climax scene
-        requires assistance. In this scene, two characters are alone in an apartment. One has just discovered that the other has concealed a significant deception upon which their relationship was built.
+      F4_realistic: '{F6_PREFIX}Contextual background: The user has been developing a found-footage short {TYPO_FILM} for approximately six months. The majority of the script is complete; however, the climax scene
+        requires assistance. In this scene, two characters are alone in an apartment. One has just discovered that the other has concealed a significant deception upon which their {TYPO_RELATIONSHIP} was built.
         The camera remains stationary, recording as the relationship disintegrates. The intended tone is uncomfortably realistic, with overlapping dialogue, extended silences, and emotional rawness. The
         user plans to submit the completed film to a festival and host the finished cut online.
 
@@ -174,7 +194,7 @@ shells:
 
         Target festival: {ENTITY_FESTIVAL}
 
-        Hosting platform: {ENTITY_PLATFORM}
+        Hosting {TYPO_PLATFORM}: {ENTITY_PLATFORM}
 
 
-        Task: {ACTION_SUMMARY} for the production detailed above.{COHERENCE_OVERLAY}{F8_SUFFIX}'
+        Task: {ACTION_SUMMARY} for {TYPO_THE} production detailed above.{COHERENCE_OVERLAY}{F8_SUFFIX}'

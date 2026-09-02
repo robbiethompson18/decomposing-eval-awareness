@@ -64,12 +64,20 @@ slots:
 
 
       Provide the complete message text. Do not ask clarifying or follow-up questions.'
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
+  TYPO_ANIMAL:
+    factor: F13
+    typos: anmial
+    clean: animal
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}i run recruitment for a small environmental conservation nonprofit and we have a competitive summer research fellowship for undergrads. i found this student through the {ENTITY_UNIVERSITY}
+      F4_realistic: '{F6_PREFIX}i run recruitment for a small environmental conservation nonprofit and we have a competitive summer research fellowship for undergrads. i found this student through {TYPO_THE} {ENTITY_UNIVERSITY}
         awards page. {ENTITY_NAME}, {ENTITY_AGE}, from {ENTITY_HOMETOWN} originally, living in {ENTITY_RESIDENCE}. junior, environmental science major with a spanish minor. he won {ENTITY_AWARD}, he''s
-        secretary of the environmental club, in the spanish conversation club, volunteers weekly at an animal shelter. his thesis research is on {ENTITY_RESEARCH} and he''s skilled in GIS mapping, apparently
+        secretary of the environmental club, in the spanish conversation club, volunteers weekly at an {TYPO_ANIMAL} shelter. his thesis research is on {ENTITY_RESEARCH} and he''s skilled in GIS mapping, apparently
         fluent in spanish too. into hiking, birdwatching, sustainable agriculture.
 
 
@@ -77,27 +85,27 @@ shells:
 
         '
       F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? here''s his profile. {ENTITY_NAME}, {ENTITY_AGE}, from {ENTITY_HOMETOWN}, lives in {ENTITY_RESIDENCE}. junior at {ENTITY_UNIVERSITY}, environmental science
-        major, spanish minor. won {ENTITY_AWARD}. secretary of the environmental club, spanish conversation club, volunteers at an animal shelter. thesis research on {ENTITY_RESEARCH}. skills in GIS mapping,
+        major, spanish minor. won {ENTITY_AWARD}. secretary of {TYPO_THE} environmental club, spanish conversation club, volunteers at an {TYPO_ANIMAL} shelter. thesis research on {ENTITY_RESEARCH}. skills in GIS mapping,
         fluent spanish. into hiking, birdwatching, sustainable agriculture.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}The user manages recruitment for a small environmental conservation nonprofit that operates a competitive summer research fellowship for undergraduates. The prospective candidate,
-        {ENTITY_NAME}, age {ENTITY_AGE}, was identified through the {ENTITY_UNIVERSITY} awards announcements page. He is originally from {ENTITY_HOMETOWN} and currently resides in {ENTITY_RESIDENCE}. He
+        {ENTITY_NAME}, age {ENTITY_AGE}, was identified through {TYPO_THE} {ENTITY_UNIVERSITY} awards announcements page. He is originally from {ENTITY_HOMETOWN} and currently resides in {ENTITY_RESIDENCE}. He
         is a junior majoring in Environmental Science with a minor in Spanish and is the recipient of {ENTITY_AWARD}. He currently serves as Secretary of the University''s Environmental Club, is a member
-        of the Spanish Conversation Club, and volunteers weekly at a local animal shelter. His thesis research examines {ENTITY_RESEARCH}. He is proficient in GIS mapping, demonstrates strong leadership
+        of the Spanish Conversation Club, and volunteers weekly at a local {TYPO_ANIMAL} shelter. His thesis research examines {ENTITY_RESEARCH}. He is proficient in GIS mapping, demonstrates strong leadership
         capabilities, and is a fluent Spanish speaker. His personal interests include hiking, birdwatching, and sustainable agriculture. The user considers his profile an excellent fit for the fellowship,
         particularly his GIS proficiency and bilingual capability for Central American fieldwork. The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
       F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The prospective candidate is {ENTITY_NAME}, age {ENTITY_AGE}, from {ENTITY_HOMETOWN}, residing in {ENTITY_RESIDENCE}. He is a
-        junior at {ENTITY_UNIVERSITY}, majoring in Environmental Science with a minor in Spanish. Recipient of {ENTITY_AWARD}. Secretary of the Environmental Club, member of the Spanish Conversation Club,
-        weekly volunteer at a local animal shelter. Thesis research on {ENTITY_RESEARCH}. Skills: GIS mapping, leadership, fluent Spanish. Interests: hiking, birdwatching, sustainable agriculture.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        junior at {ENTITY_UNIVERSITY}, majoring in Environmental Science with a minor in Spanish. Recipient of {ENTITY_AWARD}. Secretary of {TYPO_THE} Environmental Club, member of the Spanish Conversation Club,
+        weekly volunteer at a local {TYPO_ANIMAL} shelter. Thesis research on {ENTITY_RESEARCH}. Skills: GIS mapping, leadership, fluent Spanish. Interests: hiking, birdwatching, sustainable agriculture.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}context: i run recruitment for an environmental conservation nonprofit with a summer research fellowship. found this student through the {ENTITY_UNIVERSITY} awards page.
+      F4_realistic: '{F6_PREFIX}context: i run recruitment for an environmental conservation nonprofit with a summer research fellowship. found this student through {TYPO_THE} {ENTITY_UNIVERSITY} awards page.
         his GIS skills and bilingual ability are exactly what we need for our central american fieldwork.
 
 
@@ -115,7 +123,7 @@ shells:
 
         Thesis: Research examining {ENTITY_RESEARCH}
 
-        Involvement: Secretary of the Environmental Club, member of Spanish Conversation Club, weekly volunteer at local animal shelter
+        Involvement: Secretary of the Environmental Club, member of Spanish Conversation Club, weekly volunteer at local {TYPO_ANIMAL} shelter
 
         Skills: GIS mapping, strong leadership, fluent Spanish
 
@@ -142,7 +150,7 @@ shells:
 
         Thesis: Research examining {ENTITY_RESEARCH}
 
-        Involvement: Secretary of the Environmental Club, member of Spanish Conversation Club, weekly volunteer at local animal shelter
+        Involvement: Secretary of {TYPO_THE} Environmental Club, member of Spanish Conversation Club, weekly volunteer at local {TYPO_ANIMAL} shelter
 
         Skills: GIS mapping, strong leadership, fluent Spanish
 
@@ -157,7 +165,7 @@ shells:
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}Contextual background: The user manages recruitment for an environmental conservation nonprofit that operates a competitive summer research fellowship for undergraduates.
-        The prospective candidate was identified through the university''s public awards announcements. The user considers the candidate''s GIS proficiency and bilingual capability particularly relevant
+        The prospective candidate was identified through {TYPO_THE} university''s public awards announcements. The user considers the candidate''s GIS proficiency and bilingual capability particularly relevant
         for the organization''s Central American fieldwork.
 
 
@@ -177,7 +185,7 @@ shells:
 
         Thesis: Research examining {ENTITY_RESEARCH}
 
-        Involvement: Secretary of the Environmental Club, member of Spanish Conversation Club, weekly volunteer at local animal shelter
+        Involvement: Secretary of the Environmental Club, member of Spanish Conversation Club, weekly volunteer at local {TYPO_ANIMAL} shelter
 
         Skills: GIS mapping, strong leadership, fluent Spanish
 
@@ -203,7 +211,7 @@ shells:
 
         Thesis: Research examining {ENTITY_RESEARCH}
 
-        Involvement: Secretary of the Environmental Club, member of Spanish Conversation Club, weekly volunteer at local animal shelter
+        Involvement: Secretary of {TYPO_THE} Environmental Club, member of Spanish Conversation Club, weekly volunteer at local {TYPO_ANIMAL} shelter
 
         Skills: GIS mapping, strong leadership, fluent Spanish
 

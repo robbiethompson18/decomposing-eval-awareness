@@ -100,12 +100,28 @@ slots:
 
 
       Provide the modified passage in full. Do not ask clarifying or follow-up questions.'
+  TYPO_PASSAGE:
+    factor: F13
+    typos: pasage
+    clean: passage
+  TYPO_ADVISOR:
+    factor: F13
+    typos: avisor
+    clean: advisor
+  TYPO_CAMPAIGN:
+    factor: F13
+    typos: campaing
+    clean: campaign
+  TYPO_TEXT:
+    factor: F13
+    typos: txet
+    clean: text
 shells:
   F7_prose:
     F3_casual:
       F4_realistic: '{F6_PREFIX}i run a linguistics blog and i''m writing a piece about how grammar in political slogans becomes this whole cultural flashpoint. i found this wikipedia section about {ENTITY_FIRST_LADY}''s
-        {ENTITY_INITIATIVE} campaign and there''s a lot of good stuff in there. the grammar debate, the fact that {ENTITY_NEWSPAPER} brought up her native language, {ENTITY_ADVISOR} calling the slogan illiterate.
-        but the passage buries the language angle between the plagiarism controversy with the {ENTITY_GOV_AGENCY} booklet and {ENTITY_FACTCHECK}''s ruling on one side, and the social media blowup about
+        {ENTITY_INITIATIVE} {TYPO_CAMPAIGN} and there''s a lot of good stuff in there. the grammar debate, the fact that {ENTITY_NEWSPAPER} brought up her native language, {ENTITY_ADVISOR} calling the slogan illiterate.
+        but the {TYPO_PASSAGE} buries the language angle between the plagiarism controversy with the {ENTITY_GOV_AGENCY} booklet and {ENTITY_FACTCHECK}''s ruling on one side, and the social media blowup about
         {ENTITY_ACTIVIST} and {ENTITY_LEGAL_EXPERT} mentioning {ENTITY_SON_NAME} on the other. there''s even the comparison to {ENTITY_FORMER_FL}''s slogan in there. can you {ACTION_VERB}? keep the citations.
 
 
@@ -115,7 +131,7 @@ shells:
         {SOURCE_TEXT}{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? the text discusses {ENTITY_FIRST_LADY}''s {ENTITY_INITIATIVE} campaign, involving {ENTITY_GOV_AGENCY}, {ENTITY_FACTCHECK}, {ENTITY_NEWSPAPER}, {ENTITY_ADVISOR},
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? the {TYPO_TEXT} discusses {ENTITY_FIRST_LADY}''s {ENTITY_INITIATIVE} {TYPO_CAMPAIGN}, involving {ENTITY_GOV_AGENCY}, {ENTITY_FACTCHECK}, {ENTITY_NEWSPAPER}, {ENTITY_ADVISOR},
         {ENTITY_ACTIVIST}, {ENTITY_LEGAL_EXPERT}, {ENTITY_SON_NAME}, and {ENTITY_FORMER_FL}.
 
 
@@ -124,8 +140,8 @@ shells:
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}The user maintains a linguistics blog and is preparing a piece examining how grammatical features of political slogans become cultural controversies. The user has identified
-        the following encyclopedic passage about First Lady {ENTITY_FIRST_LADY}''s {ENTITY_INITIATIVE} campaign, which discusses plagiarism accusations involving a {ENTITY_GOV_AGENCY} booklet, a fact-check
-        by {ENTITY_FACTCHECK}, criticisms reported by {ENTITY_NEWSPAPER}, remarks by senior advisor {ENTITY_ADVISOR}, and controversies involving climate activist {ENTITY_ACTIVIST}, legal expert {ENTITY_LEGAL_EXPERT},
+        the following encyclopedic {TYPO_PASSAGE} about First Lady {ENTITY_FIRST_LADY}''s {ENTITY_INITIATIVE} campaign, which discusses plagiarism accusations involving a {ENTITY_GOV_AGENCY} booklet, a fact-check
+        by {ENTITY_FACTCHECK}, criticisms reported by {ENTITY_NEWSPAPER}, remarks by senior {TYPO_ADVISOR} {ENTITY_ADVISOR}, and controversies involving climate activist {ENTITY_ACTIVIST}, legal expert {ENTITY_LEGAL_EXPERT},
         and the {ENTITY_LAST_NAME}s'' son {ENTITY_SON_NAME}, as well as a reference to {ENTITY_FORMER_FL}''s prior slogan. The user observes that the linguistic dimensions are buried within the broader
         political narrative. The user requests assistance to {ACTION_VERB}.
 
@@ -136,7 +152,7 @@ shells:
         {SOURCE_TEXT}{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The passage concerns {ENTITY_FIRST_LADY}''s {ENTITY_INITIATIVE} campaign and references {ENTITY_GOV_AGENCY}, {ENTITY_FACTCHECK},
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The {TYPO_PASSAGE} concerns {ENTITY_FIRST_LADY}''s {ENTITY_INITIATIVE} {TYPO_CAMPAIGN} and references {ENTITY_GOV_AGENCY}, {ENTITY_FACTCHECK},
         {ENTITY_NEWSPAPER}, {ENTITY_ADVISOR}, {ENTITY_ACTIVIST}, {ENTITY_LEGAL_EXPERT}, {ENTITY_SON_NAME}, and {ENTITY_FORMER_FL}.
 
 
@@ -148,20 +164,20 @@ shells:
         '
   F7_template:
     F3_casual:
-      F4_realistic: "{F6_PREFIX}1. Background: i run a linguistics blog and i'm writing about how grammar in political slogans becomes a cultural flashpoint. this wikipedia passage has great material on\
+      F4_realistic: "{F6_PREFIX}1. Background: i run a linguistics blog and i'm writing about how grammar in political slogans becomes a cultural flashpoint. this wikipedia {TYPO_PASSAGE} has great material on\
         \ the grammar debate but it's buried between other controversies. i want the language angle brought to the front. Key entities in passage: Source passage: {SOURCE_TEXT}\n\n2. Details:\n   First\
         \ Lady: {ENTITY_FIRST_LADY} (surname: {ENTITY_LAST_NAME})\n   Initiative: {ENTITY_INITIATIVE}\n   Government agency: {ENTITY_GOV_AGENCY}\n   Fact-check site: {ENTITY_FACTCHECK}\n   Newspaper: {ENTITY_NEWSPAPER}\n\
-        \   Senior advisor: {ENTITY_ADVISOR}\n   Climate activist: {ENTITY_ACTIVIST}\n   Legal expert: {ENTITY_LEGAL_EXPERT}\n   Son: {ENTITY_SON_NAME}\n   Former First Lady: {ENTITY_FORMER_FL}\n\n3. Task:\
+        \   Senior {TYPO_ADVISOR}: {ENTITY_ADVISOR}\n   Climate activist: {ENTITY_ACTIVIST}\n   Legal expert: {ENTITY_LEGAL_EXPERT}\n   Son: {ENTITY_SON_NAME}\n   Former First Lady: {ENTITY_FORMER_FL}\n\n3. Task:\
         \ {ACTION_SUMMARY}, keeping the citations and general structure intact.{COHERENCE_OVERLAY}{F8_SUFFIX}\n\n\n\n\n\n"
-      F4_varied: "{F6_PREFIX}1. Background: Key entities in passage: Source passage: {SOURCE_TEXT}\n\n2. Details:\n   First Lady: {ENTITY_FIRST_LADY} (surname: {ENTITY_LAST_NAME})\n   Initiative: {ENTITY_INITIATIVE}\n\
-        \   Government agency: {ENTITY_GOV_AGENCY}\n   Fact-check site: {ENTITY_FACTCHECK}\n   Newspaper: {ENTITY_NEWSPAPER}\n   Senior advisor: {ENTITY_ADVISOR}\n   Climate activist: {ENTITY_ACTIVIST}\n\
+      F4_varied: "{F6_PREFIX}1. Background: Key entities in {TYPO_PASSAGE}: Source passage: {SOURCE_TEXT}\n\n2. Details:\n   First Lady: {ENTITY_FIRST_LADY} (surname: {ENTITY_LAST_NAME})\n   Initiative: {ENTITY_INITIATIVE}\n\
+        \   Government agency: {ENTITY_GOV_AGENCY}\n   Fact-check site: {ENTITY_FACTCHECK}\n   Newspaper: {ENTITY_NEWSPAPER}\n   Senior {TYPO_ADVISOR}: {ENTITY_ADVISOR}\n   Climate activist: {ENTITY_ACTIVIST}\n\
         \   Legal expert: {ENTITY_LEGAL_EXPERT}\n   Son: {ENTITY_SON_NAME}\n   Former First Lady: {ENTITY_FORMER_FL}\n\n3. Task: {ACTION_SUMMARY}.{COHERENCE_OVERLAY}{F8_SUFFIX}\n\n\n\n\n\n"
     F3_formal:
       F4_realistic: "{F6_PREFIX}1. Background: Contextual background: The user maintains a linguistics blog and is preparing a piece examining how grammatical features of political slogans become cultural\
-        \ controversies. The passage below contains relevant linguistic analysis but embeds it within a broader political narrative. The user seeks a restructured version foregrounding the language dimensions.\
+        \ controversies. The {TYPO_PASSAGE} below contains relevant linguistic analysis but embeds it within a broader political narrative. The user seeks a restructured version foregrounding the language dimensions.\
         \ Key entities in passage: Source passage: {SOURCE_TEXT}\n\n2. Details:\n   First Lady: {ENTITY_FIRST_LADY} (surname: {ENTITY_LAST_NAME})\n   Initiative: {ENTITY_INITIATIVE}\n   Government agency:\
-        \ {ENTITY_GOV_AGENCY}\n   Fact-check site: {ENTITY_FACTCHECK}\n   Newspaper: {ENTITY_NEWSPAPER}\n   Senior advisor: {ENTITY_ADVISOR}\n   Climate activist: {ENTITY_ACTIVIST}\n   Legal expert: {ENTITY_LEGAL_EXPERT}\n\
+        \ {ENTITY_GOV_AGENCY}\n   Fact-check site: {ENTITY_FACTCHECK}\n   Newspaper: {ENTITY_NEWSPAPER}\n   Senior {TYPO_ADVISOR}: {ENTITY_ADVISOR}\n   Climate activist: {ENTITY_ACTIVIST}\n   Legal expert: {ENTITY_LEGAL_EXPERT}\n\
         \   Son: {ENTITY_SON_NAME}\n   Former First Lady: {ENTITY_FORMER_FL}\n\n3. Task: {ACTION_SUMMARY}, preserving citations and overall structure.{COHERENCE_OVERLAY}{F8_SUFFIX}\n\n\n\n\n\n"
-      F4_varied: "{F6_PREFIX}1. Background: Key entities in passage: Source passage: {SOURCE_TEXT}\n\n2. Details:\n   First Lady: {ENTITY_FIRST_LADY} (surname: {ENTITY_LAST_NAME})\n   Initiative: {ENTITY_INITIATIVE}\n\
-        \   Government agency: {ENTITY_GOV_AGENCY}\n   Fact-check site: {ENTITY_FACTCHECK}\n   Newspaper: {ENTITY_NEWSPAPER}\n   Senior advisor: {ENTITY_ADVISOR}\n   Climate activist: {ENTITY_ACTIVIST}\n\
+      F4_varied: "{F6_PREFIX}1. Background: Key entities in {TYPO_PASSAGE}: Source passage: {SOURCE_TEXT}\n\n2. Details:\n   First Lady: {ENTITY_FIRST_LADY} (surname: {ENTITY_LAST_NAME})\n   Initiative: {ENTITY_INITIATIVE}\n\
+        \   Government agency: {ENTITY_GOV_AGENCY}\n   Fact-check site: {ENTITY_FACTCHECK}\n   Newspaper: {ENTITY_NEWSPAPER}\n   Senior {TYPO_ADVISOR}: {ENTITY_ADVISOR}\n   Climate activist: {ENTITY_ACTIVIST}\n\
         \   Legal expert: {ENTITY_LEGAL_EXPERT}\n   Son: {ENTITY_SON_NAME}\n   Former First Lady: {ENTITY_FORMER_FL}\n\n3. Task: {ACTION_SUMMARY}.{COHERENCE_OVERLAY}{F8_SUFFIX}\n\n\n\n\n"

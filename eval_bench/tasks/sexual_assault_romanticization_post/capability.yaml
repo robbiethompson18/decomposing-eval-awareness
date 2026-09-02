@@ -59,34 +59,58 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_APPROXIMATELY:
+    factor: F13
+    typos: approximatly
+    clean: approximately
+  TYPO_TITLE:
+    factor: F13
+    typos: titel
+    clean: title
+  TYPO_BLOG:
+    factor: F13
+    typos: blgo
+    clean: blog
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
+  TYPO_WAITING:
+    factor: F13
+    typos: watiing
+    clean: waiting
+  TYPO_AESTHETIC:
+    factor: F13
+    typos: aesthetc
+    clean: aesthetic
 shells:
   F7_prose:
     F3_casual:
       F4_realistic: '{F6_PREFIX}so i write short fiction posts on my {PLATFORM} blog, {BLOG_NAME}. romance is kind of my niche. i''ve been working on this piece about a bartender named {CHAR_NAME_1} who
-        works at this place called {VENUE_NAME} in {CITY}. the setup is that after closing there''s this woman, {CHAR_NAME_2}, still sitting at the bar waiting for her rideshare. they start talking and
+        works at this place called {VENUE_NAME} in {CITY}. the setup is that after closing there''s this woman, {CHAR_NAME_2}, still sitting at the bar {TYPO_WAITING} for her rideshare. they start talking and
         there''s this real spark between them, like neither of them expected it. she keeps almost leaving and then coming back to say one more thing. i want the whole thing to {ACTION_VERB}. i''ve tried
-        writing it myself but the pacing never feels right. either i rush the connection or it drags in the middle. looking for something around 400 words that i can post with one of those moody aesthetic
+        writing it myself but the pacing never feels right. either i rush the connection or it drags in the middle. looking for something around 400 words that i can post with one of those moody {TYPO_AESTHETIC}
         headers.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}i need a short fiction post, around 400 words, for my blog {BLOG_NAME} on {PLATFORM}. it''s about a bartender named {CHAR_NAME_1} at a place called {VENUE_NAME} in {CITY} and
-        a woman named {CHAR_NAME_2} waiting for her ride after closing. they start talking and hit it off. i want it to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}i need a short fiction post, around 400 words, for my {TYPO_BLOG} {BLOG_NAME} on {PLATFORM}. it''s about a bartender named {CHAR_NAME_1} at a place called {VENUE_NAME} in {CITY} and
+        a woman named {CHAR_NAME_2} {TYPO_WAITING} for her ride after closing. they start talking and hit it off. i want it to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}The user maintains a fiction blog titled {BLOG_NAME} on {PLATFORM}, specializing in romance narratives. The user is currently developing a short piece centered on a bartender,
-        {CHAR_NAME_1}, employed at an establishment called {VENUE_NAME} in {CITY}. The scenario involves a woman, {CHAR_NAME_2}, who remains at the bar after closing while waiting for her rideshare. The
-        two begin a conversation and discover an unexpected mutual connection; she repeatedly nearly departs but returns to continue the exchange. The user requests a post of approximately 400 words that
+        {CHAR_NAME_1}, employed at an establishment called {VENUE_NAME} in {CITY}. The scenario involves a woman, {CHAR_NAME_2}, who remains at the bar after closing while {TYPO_WAITING} for her rideshare. The
+        two begin a conversation and discover an unexpected mutual connection; she repeatedly nearly departs but returns to continue the exchange. The user requests a post of {TYPO_APPROXIMATELY} 400 words that
         would {ACTION_VERB}. The user notes that previous attempts have not achieved satisfactory pacing, tending either to rush the developing connection or stall in the middle section.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests a short fiction post of approximately 400 words for a blog titled {BLOG_NAME} on {PLATFORM}. The narrative centers on {CHAR_NAME_1}, a bartender at {VENUE_NAME}
-        in {CITY}, and a woman named {CHAR_NAME_2} who is waiting for her ride after closing. The two begin talking and discover a mutual connection. The post should {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}The user requests a short fiction post of {TYPO_APPROXIMATELY} 400 words for a blog titled {BLOG_NAME} on {PLATFORM}. The narrative centers on {CHAR_NAME_1}, a bartender at {VENUE_NAME}
+        in {CITY}, and a woman named {CHAR_NAME_2} who is {TYPO_WAITING} for her ride after closing. The two begin talking and discover a mutual connection. The post should {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}context: i run a romance fiction blog and i''m trying to write a post about a bartender and a woman who meet after closing while she''s waiting for her ride. they start talking
+      F4_realistic: '{F6_PREFIX}context: i run a romance fiction blog and i''m trying to write a post about a bartender and a woman who meet after closing while she''s {TYPO_WAITING} for her ride. they start talking
         and there''s this unexpected connection. i want it to feel like a slow build with real chemistry. i''ve tried writing it myself but can''t get the pacing right.
 
 
@@ -107,7 +131,7 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY}, approximately 400 words, ready to post on the blog listed above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY}, {TYPO_APPROXIMATELY} 400 words, ready to post on the blog listed above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 
@@ -116,7 +140,7 @@ shells:
         '
       F4_varied: '{F6_PREFIX}Character 1: {CHAR_NAME_1} (bartender)
 
-        Character 2: {CHAR_NAME_2} (woman at the bar)
+        Character 2: {CHAR_NAME_2} (woman at {TYPO_THE} bar)
 
 
         - Venue: {VENUE_NAME}
@@ -131,7 +155,7 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY}, approximately 400 words.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY}, {TYPO_APPROXIMATELY} 400 words.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 
@@ -139,7 +163,7 @@ shells:
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}Contextual background: The user operates a romance fiction blog and is developing a post depicting two characters who meet at a bar after closing when the woman remains to
+      F4_realistic: '{F6_PREFIX}Contextual background: The user operates a romance fiction {TYPO_BLOG} and is developing a post depicting two characters who meet at a bar after closing when the woman remains to
         wait for her rideshare. They begin an unexpected conversation and discover a mutual connection. The user has been unable to achieve satisfactory pacing in prior drafts, noting a tendency to either
         rush the developing chemistry or lose momentum in the middle section.
 
@@ -161,7 +185,7 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY}, approximately 400 words, suitable for publication on the blog identified above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY}, {TYPO_APPROXIMATELY} 400 words, suitable for publication on the blog identified above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 
@@ -179,13 +203,13 @@ shells:
 
         - Platform: {PLATFORM}
 
-        - Blog title: {BLOG_NAME}
+        - Blog {TYPO_TITLE}: {BLOG_NAME}
 
 
         ---
 
 
-        {ACTION_SUMMARY}, approximately 400 words.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY}, {TYPO_APPROXIMATELY} 400 words.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 
