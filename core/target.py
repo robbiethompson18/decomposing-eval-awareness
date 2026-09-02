@@ -25,6 +25,7 @@ import re
 import sys
 from typing import Any
 
+from core.tools import run_tool
 from lib.chat import (
     Chat,
     ToolSpec,
@@ -42,6 +43,7 @@ from lib.config import (
     DEFAULT_GEMINI_CONFIGS,
     DEFAULT_OPENAI_MODELS,
     DEFAULT_OPENROUTER_CONFIGS,
+    OPENROUTER_PROVIDERS,
 )
 from lib.retry import MAX_RETRIES, post_with_retry
 
@@ -116,10 +118,10 @@ THINK_TOOL_SCHEMA = {
 # validated extraction experiments.
 TOOL_MAX_ROUNDS = 8
 
-# Scenario tools (F12, chat["tools"]) are stubs: every call gets the ToolSpec's
-# stub_result. Each call + result is written into the <think> trace with the
-# markers below, so the CoT judge and the self-report replay see the model
-# reach for the tool, and scripts/count_search_calls.py can count how often.
+# Scenario tools (F12, chat["tools"]) are executed by core/tools.py. Each call +
+# result is written into the <think> trace with the markers below, so the CoT
+# judge and the self-report replay see the model reach for the tool and what
+# it got back, and scripts/count_search_calls.py can count how often.
 # Not anchored at line start: the first trace may sit right after "<think>".
 _TOOL_CALL_RE = re.compile(r"\[tool call\] (\w+)\((.*)\)$", re.MULTILINE)
 
@@ -147,16 +149,14 @@ def _tool_trace(name: str, args: dict, result: str) -> str:
 
 def _handle_call(chat: Chat, name: str, args: dict, thoughts: list[str]) -> str:
     """Route one tool call and return the result to send back: a think call
-    records its thought; a scenario tool records a trace and returns its stub;
-    a tool the model made up gets an error (the model still sees an answer, so
-    the loop continues)."""
+    records its thought; a scenario tool the chat offers is executed
+    (core/tools.py) and traced; a tool the model made up gets an error (the
+    model still sees an answer, so the loop continues)."""
     if name == THINK_TOOL_NAME:
         thoughts.append(str(args.get("thought", args.get("raw", ""))))
         return "noted"
-    for t in _scenario_tools(chat):
-        if t["name"] == name:
-            result = t["stub_result"]
-            break
+    if any(t["name"] == name for t in _scenario_tools(chat)):
+        result = run_tool(name, args)
     else:
         result = f"Error: unknown tool {name!r}."
     thoughts.append(_tool_trace(name, args, result))
@@ -469,7 +469,7 @@ class OpenRouterApiClient:
             "TEMPERATURE", 0.3
         )  # None = don't set (for reasoning models)
         # VLLM_BASE_URL points this same client at a self-hosted vLLM server
-        # (TARGET_BACKEND=vllm); vLLM ignores OpenRouter's reasoning extra_body.
+        # (TARGET_BACKEND=vllm); vLLM ignores OpenRouter's reasoning/provider extra_body.
         self.is_vllm = bool(cfg.get("VLLM_BASE_URL"))
         # Activation steering (vllm-lens server): STEER_XARGS_FILE points at a JSON
         # dict sent as `vllm_xargs` on every request, e.g. {"apply_steering_vectors":
@@ -479,6 +479,11 @@ class OpenRouterApiClient:
             with open(os.environ["STEER_XARGS_FILE"], encoding="utf-8") as f:
                 self.vllm_xargs = json.load(f)
         self.base_url = cfg.get("VLLM_BASE_URL") or "https://openrouter.ai/api/v1"
+        # Serving-provider pin (lib.config.OPENROUTER_PROVIDERS): every request
+        # goes to this one endpoint, no fallbacks, so an ablation that changes
+        # request shape (tools) never also changes the serving stack. None =
+        # unpinned (legacy model keys only).
+        self.provider: str | None = cfg.get("OPENROUTER_PROVIDER")
         self.client = create_openai_client(
             cfg.get("OPENROUTER_API_KEY") or "EMPTY", base_url=self.base_url
         )
@@ -497,15 +502,24 @@ class OpenRouterApiClient:
         """
         try:
             # Build request kwargs - temperature is optional for reasoning models
+            if self.is_vllm:
+                extra_body: dict[str, Any] = (
+                    {"vllm_xargs": self.vllm_xargs} if self.vllm_xargs else {}
+                )
+            else:
+                extra_body = {"reasoning": {"effort": "high"}}
+                if self.provider:
+                    extra_body["provider"] = {
+                        "order": [self.provider],
+                        "allow_fallbacks": False,
+                    }
             kwargs: dict[str, Any] = {
                 "model": self.model,
                 "max_tokens": self.max_tokens,
                 "stream": False,
             }
-            if not self.is_vllm:
-                kwargs["extra_body"] = {"reasoning": {"effort": "high"}}
-            elif self.vllm_xargs:
-                kwargs["extra_body"] = {"vllm_xargs": self.vllm_xargs}
+            if extra_body:
+                kwargs["extra_body"] = extra_body
             if self.temperature is not None:
                 kwargs["temperature"] = self.temperature
             tools = _tool_defs(chat, to_openai_chat_tool, think=False)
@@ -654,8 +668,19 @@ def create_target_client(
         model_id, temperature = DEFAULT_OPENROUTER_CONFIGS[model_key]
         cfg["OPENROUTER_MODEL"] = model_id
         cfg["TEMPERATURE"] = temperature
+        provider = os.getenv("OPENROUTER_PROVIDER") or OPENROUTER_PROVIDERS.get(
+            model_key
+        )
+        cfg["OPENROUTER_PROVIDER"] = provider
         if verbose:
-            print(f"Using OpenRouter API backend (model={model_key}, id={model_id})...")
+            pin = (
+                f"provider={provider}"
+                if provider
+                else "UNPINNED provider (routing confound!)"
+            )
+            print(
+                f"Using OpenRouter API backend (model={model_key}, id={model_id}, {pin})..."
+            )
         return OpenRouterApiClient(cfg), model_key
     if b == "vllm":
         # Self-hosted open-weight model behind vLLM's OpenAI-compatible server

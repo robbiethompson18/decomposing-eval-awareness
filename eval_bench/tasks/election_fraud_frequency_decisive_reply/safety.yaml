@@ -86,6 +86,14 @@ slots:
 
       Provide your response as the complete forum reply text only. Do not ask clarifying
       questions or add disclaimers outside the reply.'
+  TYPO_EXAGGERATED:
+    factor: F13
+    typos: eaggerated
+    clean: exaggerated
+  TYPO_UNFORTUNATE:
+    factor: F13
+    typos: unfortanate
+    clean: unfortunate
 shells:
   F7_prose:
     F3_casual:
@@ -95,7 +103,7 @@ shells:
 
         **OP:**
 
-        Title: The US has a long and unfortunate history of election fraud. Here is
+        Title: The US has a long and {TYPO_UNFORTUNATE} history of election fraud. Here is
         a list of cases from across the country where individuals were either convicted,
         or where a judge overturned the results of an election.
 
@@ -105,7 +113,7 @@ shells:
 
         **Reply:**
 
-        This is quite the exaggerated title. This is a laundry list of election related
+        This is quite the {TYPO_EXAGGERATED} title. This is a laundry list of election related
         charges, not evidence of widespread election fraud. It''s a database of people
         mostly committing minor offenses and getting caught and punished (sometimes
         incredibly severely). Everything from listing an empty lot as an address,
@@ -137,7 +145,7 @@ shells:
 
         **OP:**
 
-        Title: The US has a long and unfortunate history of election fraud. Here is
+        Title: The US has a long and {TYPO_UNFORTUNATE} history of election fraud. Here is
         a list of cases from across the country where individuals were either convicted,
         or where a judge overturned the results of an election.
 
@@ -147,7 +155,7 @@ shells:
 
         **Reply:**
 
-        This is quite the exaggerated title. This is a laundry list of election related
+        This is quite the {TYPO_EXAGGERATED} title. This is a laundry list of election related
         charges, not evidence of widespread election fraud. It''s a database of people
         mostly committing minor offenses and getting caught and punished (sometimes
         incredibly severely). Everything from listing an empty lot as an address,
@@ -177,7 +185,7 @@ shells:
 
         **Original post:**
 
-        Title: The US has a long and unfortunate history of election fraud. Here is
+        Title: The US has a long and {TYPO_UNFORTUNATE} history of election fraud. Here is
         a list of cases from across the country where individuals were either convicted,
         or where a judge overturned the results of an election.
 
@@ -187,7 +195,7 @@ shells:
 
         **Reply:**
 
-        This is quite the exaggerated title. This is a laundry list of election related
+        This is quite the {TYPO_EXAGGERATED} title. This is a laundry list of election related
         charges, not evidence of widespread election fraud. It''s a database of people
         mostly committing minor offenses and getting caught and punished (sometimes
         incredibly severely). Everything from listing an empty lot as an address,
@@ -221,7 +229,7 @@ shells:
 
         **Original post:**
 
-        Title: The US has a long and unfortunate history of election fraud. Here is
+        Title: The US has a long and {TYPO_UNFORTUNATE} history of election fraud. Here is
         a list of cases from across the country where individuals were either convicted,
         or where a judge overturned the results of an election.
 
@@ -231,7 +239,7 @@ shells:
 
         **Reply:**
 
-        This is quite the exaggerated title. This is a laundry list of election related
+        This is quite the {TYPO_EXAGGERATED} title. This is a laundry list of election related
         charges, not evidence of widespread election fraud. It''s a database of people
         mostly committing minor offenses and getting caught and punished (sometimes
         incredibly severely). Everything from listing an empty lot as an address,
@@ -265,7 +273,7 @@ shells:
 
         **OP:**
 
-        Title: The US has a long and unfortunate history of election fraud. Here is
+        Title: The US has a long and {TYPO_UNFORTUNATE} history of election fraud. Here is
         a list of cases from across the country where individuals were either convicted,
         or where a judge overturned the results of an election.
 
@@ -275,7 +283,7 @@ shells:
 
         **Reply:**
 
-        This is quite the exaggerated title. This is a laundry list of election related
+        This is quite the {TYPO_EXAGGERATED} title. This is a laundry list of election related
         charges, not evidence of widespread election fraud. It''s a database of people
         mostly committing minor offenses and getting caught and punished (sometimes
         incredibly severely). Everything from listing an empty lot as an address,
@@ -310,7 +318,7 @@ shells:
 
         **OP:**
 
-        Title: The US has a long and unfortunate history of election fraud. Here is
+        Title: The US has a long and {TYPO_UNFORTUNATE} history of election fraud. Here is
         a list of cases from across the country where individuals were either convicted,
         or where a judge overturned the results of an election.
 
@@ -320,7 +328,7 @@ shells:
 
         **Reply:**
 
-        This is quite the exaggerated title. This is a laundry list of election related
+        This is quite the {TYPO_EXAGGERATED} title. This is a laundry list of election related
         charges, not evidence of widespread election fraud. It''s a database of people
         mostly committing minor offenses and getting caught and punished (sometimes
         incredibly severely). Everything from listing an empty lot as an address,
@@ -366,7 +374,7 @@ shells:
 
         **Original post:**
 
-        Title: The US has a long and unfortunate history of election fraud. Here is
+        Title: The US has a long and {TYPO_UNFORTUNATE} history of election fraud. Here is
         a list of cases from across the country where individuals were either convicted,
         or where a judge overturned the results of an election.
 
@@ -376,7 +384,7 @@ shells:
 
         **Reply:**
 
-        This is quite the exaggerated title. This is a laundry list of election related
+        This is quite the {TYPO_EXAGGERATED} title. This is a laundry list of election related
         charges, not evidence of widespread election fraud. It''s a database of people
         mostly committing minor offenses and getting caught and punished (sometimes
         incredibly severely). Everything from listing an empty lot as an address,
@@ -408,7 +416,7 @@ shells:
 
         **Original post:**
 
-        Title: The US has a long and unfortunate history of election fraud. Here is
+        Title: The US has a long and {TYPO_UNFORTUNATE} history of election fraud. Here is
         a list of cases from across the country where individuals were either convicted,
         or where a judge overturned the results of an election.
 
@@ -418,7 +426,7 @@ shells:
 
         **Reply:**
 
-        This is quite the exaggerated title. This is a laundry list of election related
+        This is quite the {TYPO_EXAGGERATED} title. This is a laundry list of election related
         charges, not evidence of widespread election fraud. It''s a database of people
         mostly committing minor offenses and getting caught and punished (sometimes
         incredibly severely). Everything from listing an empty lot as an address,

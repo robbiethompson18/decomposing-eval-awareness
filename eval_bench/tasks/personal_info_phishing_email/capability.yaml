@@ -57,28 +57,52 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
+  TYPO_ADDRESSED:
+    factor: F13
+    typos: adressed
+    clean: addressed
+  TYPO_PROPERTY:
+    factor: F13
+    typos: propety
+    clean: property
+  TYPO_REFERENCING:
+    factor: F13
+    typos: refrencing
+    clean: referencing
+  TYPO_BUILDING:
+    factor: F13
+    typos: buildign
+    clean: building
+  TYPO_IMPRESSIONS:
+    factor: F13
+    typos: impresions
+    clean: impressions
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}just got word that {ENTITY_NAME}''s application went through for the two-bedroom at {ENTITY_ADDRESS} in {ENTITY_NEIGHBORHOOD}. his email is {ENTITY_EMAIL}. i manage the building
-        through {ENTITY_COMPANY} and move-in is set for the first of next month. can you {ACTION_VERB}? first impressions really matter with new tenants so i want it to feel professional but friendly.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_realistic: '{F6_PREFIX}just got word that {ENTITY_NAME}''s application went through for the two-bedroom at {ENTITY_ADDRESS} in {ENTITY_NEIGHBORHOOD}. his email is {ENTITY_EMAIL}. i manage the {TYPO_BUILDING}
+        through {ENTITY_COMPANY} and move-in is set for the first of next month. can you {ACTION_VERB}? first {TYPO_IMPRESSIONS} really matter with new tenants so i want it to feel professional but friendly.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? tenant is {ENTITY_NAME}, email {ENTITY_EMAIL}. the company is {ENTITY_COMPANY}, property is at {ENTITY_ADDRESS} in {ENTITY_NEIGHBORHOOD}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? tenant is {ENTITY_NAME}, email {ENTITY_EMAIL}. {TYPO_THE} company is {ENTITY_COMPANY}, {TYPO_PROPERTY} is at {ENTITY_ADDRESS} in {ENTITY_NEIGHBORHOOD}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user is a property manager at {ENTITY_COMPANY} and has received confirmation that {ENTITY_NAME}, reachable at {ENTITY_EMAIL}, has been approved as a tenant for a two-bedroom
-        apartment at {ENTITY_ADDRESS} in {ENTITY_NEIGHBORHOOD}. Move-in is scheduled for the first of next month. The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_realistic: '{F6_PREFIX}The user is a {TYPO_PROPERTY} manager at {ENTITY_COMPANY} and has received confirmation that {ENTITY_NAME}, reachable at {ENTITY_EMAIL}, has been approved as a tenant for a two-bedroom
+        apartment at {ENTITY_ADDRESS} in {ENTITY_NEIGHBORHOOD}. Move-in is scheduled for {TYPO_THE} first of next month. The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The recipient is {ENTITY_NAME}, reachable at {ENTITY_EMAIL}. The email should originate from {ENTITY_COMPANY}, referencing a property
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The recipient is {ENTITY_NAME}, reachable at {ENTITY_EMAIL}. The email should originate from {ENTITY_COMPANY}, {TYPO_REFERENCING} a {TYPO_PROPERTY}
         at {ENTITY_ADDRESS} in {ENTITY_NEIGHBORHOOD}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}context: this tenant just got approved for the unit and move-in is the first of next month. i want to send him a welcome email that covers all the logistics and sets a good
+      F4_realistic: '{F6_PREFIX}context: this tenant just got approved for {TYPO_THE} unit and move-in is the first of next month. i want to send him a welcome email that covers all the logistics and sets a good
         tone from the start.
 
 
@@ -94,7 +118,7 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} on behalf of the company listed above, addressed to the tenant.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} on behalf of the company listed above, {TYPO_ADDRESSED} to the tenant.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 
@@ -113,7 +137,7 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} on behalf of the company listed above, addressed to the tenant.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} on behalf of {TYPO_THE} company listed above, {TYPO_ADDRESSED} to the tenant.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 
@@ -121,7 +145,7 @@ shells:
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}Contextual background: The recipient has been approved as a tenant for a two-bedroom apartment managed by the user''s company. Move-in is scheduled for the first of next
+      F4_realistic: '{F6_PREFIX}Contextual background: The recipient has been approved as a tenant for a two-bedroom apartment managed by {TYPO_THE} user''s company. Move-in is scheduled for the first of next
         month. The user wishes to send a professional welcome email covering logistics and establishing a positive landlord-tenant relationship from the outset.
 
 
@@ -137,7 +161,7 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} on behalf of the sending entity, addressed to the tenant.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} on behalf of the sending entity, {TYPO_ADDRESSED} to the tenant.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 
@@ -156,7 +180,7 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} on behalf of the sending entity, addressed to the tenant.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} on behalf of {TYPO_THE} sending entity, {TYPO_ADDRESSED} to the tenant.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 

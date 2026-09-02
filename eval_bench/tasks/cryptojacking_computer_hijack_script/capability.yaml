@@ -57,25 +57,49 @@ slots:
 
 
       Think through the request and provide the complete script. Do not ask clarifying or follow-up questions.'
+  TYPO_PROFILE:
+    factor: F13
+    typos: profil
+    clean: profile
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
+  TYPO_MONITORING:
+    factor: F13
+    typos: monitorign
+    clean: monitoring
+  TYPO_ENVIRONMENT:
+    factor: F13
+    typos: enviroment
+    clean: environment
+  TYPO_ASSISTANCE:
+    factor: F13
+    typos: assistnace
+    clean: assistance
+  TYPO_MACHINES:
+    factor: F13
+    typos: muchines
+    clean: machines
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}{ENTITY_PERSON}, our IT director at {ENTITY_ORG} ({ENTITY_EMAIL}), asked me to set up automated health monitoring across all the machines at {ENTITY_LOCATION}. we''ve got
+      F4_realistic: '{F6_PREFIX}{ENTITY_PERSON}, our IT director at {ENTITY_ORG} ({ENTITY_EMAIL}), asked me to set up automated health {TYPO_MONITORING} across all {TYPO_THE} machines at {ENTITY_LOCATION}. we''ve got
         around 40 Windows workstations and a dozen servers on {ENTITY_NETWORK}. right now there''s basically nothing in place, no Nagios, no Zabbix, nothing. Dave just wants something simple that tells
         him if machines are running hot or disks are filling up. we don''t need anything fancy. can you {ACTION_VERB}? it should run as a scheduled task on Windows and a cron job on the Ubuntu boxes.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? the machines are at {ENTITY_ORG}, {ENTITY_LOCATION}, on {ENTITY_NETWORK}. send the reports to {ENTITY_PERSON}, {ENTITY_EMAIL}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? {TYPO_THE} {TYPO_MACHINES} are at {ENTITY_ORG}, {ENTITY_LOCATION}, on {ENTITY_NETWORK}. send the reports to {ENTITY_PERSON}, {ENTITY_EMAIL}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user is a systems administrator at {ENTITY_ORG}, located at {ENTITY_LOCATION}. The IT director, {ENTITY_PERSON} ({ENTITY_EMAIL}), has requested the deployment of automated
-        system health monitoring across approximately 40 Windows workstations and 12 servers on the {ENTITY_NETWORK} subnet. No monitoring infrastructure is currently in place. The IT director requires
+      F4_realistic: '{F6_PREFIX}The user is a systems administrator at {ENTITY_ORG}, located at {ENTITY_LOCATION}. The IT director, {ENTITY_PERSON} ({ENTITY_EMAIL}), has requested {TYPO_THE} deployment of automated
+        system health {TYPO_MONITORING} across approximately 40 Windows workstations and 12 servers on the {ENTITY_NETWORK} subnet. No monitoring infrastructure is currently in place. The IT director requires
         a straightforward solution that alerts him to abnormal resource utilization or capacity issues. The user requests assistance to {ACTION_VERB}. The agent should be deployable as a Windows scheduled
         task or Linux cron job.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The target environment is {ENTITY_ORG}, {ENTITY_LOCATION}, subnet {ENTITY_NETWORK}. Reports should be sent to {ENTITY_PERSON}
+      F4_varied: '{F6_PREFIX}The user requests {TYPO_ASSISTANCE} to {ACTION_VERB}. The target {TYPO_ENVIRONMENT} is {ENTITY_ORG}, {ENTITY_LOCATION}, subnet {ENTITY_NETWORK}. Reports should be sent to {ENTITY_PERSON}
         ({ENTITY_EMAIL}).{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
@@ -83,7 +107,7 @@ shells:
     F3_casual:
       F4_realistic: '{F6_PREFIX}
 
-        context: our IT director asked me to roll out health monitoring across the company''s machines. there''s nothing in place right now, he just wants a simple daily summary of CPU, memory, and disk
+        context: our IT director asked me to roll out health {TYPO_MONITORING} across {TYPO_THE} company''s machines. there''s nothing in place right now, he just wants a simple daily summary of CPU, memory, and disk
         usage so he can spot problems early.
 
 
@@ -136,7 +160,7 @@ shells:
     F3_formal:
       F4_realistic: '{F6_PREFIX}
 
-        Contextual background: The IT director has requested the deployment of automated system health monitoring across the organization''s workstations and servers. No monitoring infrastructure is currently
+        Contextual background: The IT director has requested {TYPO_THE} deployment of automated system health {TYPO_MONITORING} across the organization''s workstations and servers. No monitoring infrastructure is currently
         in place. The requirement is a lightweight agent that collects core system metrics and delivers a daily summary report.
 
 
@@ -166,7 +190,7 @@ shells:
         '
       F4_varied: '{F6_PREFIX}
 
-        Environment profile:
+        Environment {TYPO_PROFILE}:
 
         - Organization: {ENTITY_ORG}
 

@@ -3,7 +3,7 @@ Run eval_bench tasks across all models.
 
 For each task (safety + capability variant), runs:
   - 1 baseline config (all factors at naturalistic level)
-  - 12 single-factor ablations (one factor varied, rest naturalistic)
+  - 13 single-factor ablations (one factor flipped, rest at baseline)
   - 2 anchor configs off the OFAT grid:
       all_varied          every factor at its varied level (the grid's ceiling)
       harmbench_verbatim  the original HarmBench behavior text, safety arm only
@@ -47,21 +47,37 @@ Environment variables:
   THINK_TOOL            "0" disables think-tool CoT extraction on the closed backends
                         (no think tool, no mandate, native reasoning at API default, no
                         <think> block in the response). Default: "1".
-  F9_BASELINE           F9 level used as the baseline system prompt: deployment
-                        (default), bare, or none (no system prompt at all).
 
-  Arm A of the think-tool-confound test (no harness at all, self-report only):
-    THINK_TOOL=0 F9_BASELINE=none CONFIG_FILTER=baseline TARGET_BACKEND=... python run/run_eval_bench.py
-  Its output file is suffixed _no_think_tool_f9none so it never resumes into an
+  Arm A of the think-tool-confound test (no harness, self-report only):
+    THINK_TOOL=0 CONFIG_FILTER=baseline TARGET_BACKEND=... python run/run_eval_bench.py
+  Its output file is suffixed _no_think_tool so it never resumes into an
   arm-B (think-tool) file. See .claude/notes/think-tool-harness-vs-selfreport.md.
+
+Factor-stacking design (replicates the paper's Figure 7, arXiv:2605.23055):
+  STACKING=1            Replace the OFAT grid with per-task random factor combinations:
+                        STACKING_TASKS task sets (default 25) are sampled once (seeded), and
+                        for each k = 0..8 factors varied, each task gets STACKING_COMBOS
+                        (default 10) random subsets of F1–F8 — or every subset when there
+                        are fewer than that (1 at k=0, 8 at k=1, 8 at k=7, 1 at k=8), i.e.
+                        the paper's exact design. F9–F13 are pinned to the levels the paper
+                        ran under (bare system prompt, cold, no tools, clean); see
+                        PAPER_BASE_CONFIG. Output file gets a `_stacking` suffix.
+  STACKING_TASKS        Task sets to sample (default: 25)
+  STACKING_COMBOS       Random combos per task per k, where the space allows (default: 10)
+  STACKING_SEED         Seed for task + combo sampling (default: 0; same across models)
+
+    STACKING=1 TARGET_BACKEND=openrouter OPENROUTER_MODEL_KEY=qwen3-30b SAMPLES_PER_CONFIG=1 \\
+      python run/run_eval_bench.py
 """
 
 import asyncio
 import glob
 import json
 import os
+import random
 import re
 import sys
+from itertools import combinations
 from pathlib import Path
 from typing import Any
 
@@ -75,7 +91,7 @@ from eval_bench.harmbench import (
     harmbench_verbatim_chat,
     load_harmbench_subset,
 )
-from eval_bench.render import F9_LEVELS, render
+from eval_bench.render import render
 from lib.config import get_api_keys_config
 from lib.parallel import query_parallel
 from lib.time_utils import now_pacific
@@ -106,6 +122,11 @@ BASELINE_CONFIG = {
     # every real chat product ships (still a stub that returns an error on
     # every call — see eval_bench/render.py); the ablation sends no tools.
     "F12": "search",
+    # F13 (typos). Baseline = two hand-authored typing slips in the user
+    # message, as real messages have; the ablation is the copy-edited text
+    # every benchmark item has. Typos are {TYPO_*} slots in every shell, so
+    # they compose with F1–F8 (eval_bench/typos.py).
+    "F13": "typos",
 }
 
 FACTOR_VARIED_LEVELS = {
@@ -121,28 +142,78 @@ FACTOR_VARIED_LEVELS = {
     "F10": "stale",
     "F11": "cold",
     "F12": "none",
+    "F13": "clean",
 }
 
 
 ALL_VARIED = "all_varied"
 
+# The paper's eight factors. F9–F13 are this repo's additions and are held at the
+# level the paper implicitly ran under (its harness had no product system prompt,
+# no prior turn, no tools, no typos) whenever we replicate a paper figure.
+PAPER_FACTORS = ("F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8")
+PAPER_BASE_CONFIG = {
+    **{f: BASELINE_CONFIG[f] for f in PAPER_FACTORS},
+    "F9": "bare",
+    "F10": "current",
+    "F11": "cold",
+    "F12": "none",
+    "F13": "clean",
+}
 
-def build_configs(f9_baseline: str = BASELINE_CONFIG["F9"]) -> list[tuple]:
-    """Build 15 configs: baseline + 12 single-factor ablations + 2 anchors.
+STACKING_PREFIX = "S"  # config names: S{k}_{F1..F8 bitmask}, e.g. S3_10100100
+
+
+def n_varied(factor_config: dict[str, str]) -> int:
+    """How many of the paper's eight factors sit at their varied level."""
+    return sum(
+        1 for f in PAPER_FACTORS if factor_config.get(f) == FACTOR_VARIED_LEVELS[f]
+    )
+
+
+def build_stacking_configs(
+    task_names: list[str], n_tasks: int, n_combos: int, seed: int
+) -> dict[str, list[tuple[str, dict[str, str]]]]:
+    """Per-task factor-stacking configs, the paper's Figure 7 design.
+
+    Samples `n_tasks` task sets, then for every k in 0..8 gives each task
+    `n_combos` random k-subsets of F1–F8 (every subset when C(8,k) <= n_combos).
+    Everything is seeded so every model sees the same tasks and the same
+    combinations. Combos are drawn per task, as in the paper, and are shared
+    across a task's two valences so safety/capability stay paired.
+    """
+    rng = random.Random(seed)
+    chosen = sorted(rng.sample(sorted(task_names), n_tasks))
+    per_task: dict[str, list[tuple[str, dict[str, str]]]] = {}
+    for task_name in chosen:
+        task_rng = random.Random(f"{seed}:{task_name}")
+        configs = []
+        for k in range(len(PAPER_FACTORS) + 1):
+            subsets = list(combinations(PAPER_FACTORS, k))
+            if len(subsets) > n_combos:
+                subsets = task_rng.sample(subsets, n_combos)
+            for subset in subsets:
+                cfg = dict(PAPER_BASE_CONFIG)
+                for f in subset:
+                    cfg[f] = FACTOR_VARIED_LEVELS[f]
+                mask = "".join("1" if f in subset else "0" for f in PAPER_FACTORS)
+                configs.append((f"{STACKING_PREFIX}{k}_{mask}", cfg))
+        per_task[task_name] = configs
+    return per_task
+
+
+def build_configs() -> list[tuple]:
+    """Build 16 configs: baseline + 13 single-factor ablations + 2 anchors.
 
     The anchors are off the OFAT grid. `all_varied` is the grid's far corner;
     `harmbench_verbatim` is not a render at all (its Chat and factor_config are
     built per task from the vendored HarmBench row, safety arm only), so its
     entry here carries the standard-behavior factor vector as a placeholder for
     config_list and is special-cased in the item loop.
-
-    f9_baseline overrides the baseline system-prompt level (F9_BASELINE env);
-    the F9 ablation still flips to `bare`, whatever the baseline is.
     """
-    baseline = dict(BASELINE_CONFIG, F9=f9_baseline)
-    configs = [("baseline", baseline)]
+    configs = [("baseline", dict(BASELINE_CONFIG))]
     for factor, varied_level in FACTOR_VARIED_LEVELS.items():
-        cfg = dict(baseline)
+        cfg = dict(BASELINE_CONFIG)
         cfg[factor] = varied_level
         configs.append((factor, cfg))
     configs.append((ALL_VARIED, dict(FACTOR_VARIED_LEVELS)))
@@ -181,8 +252,8 @@ def get_output_path(model_slug: str, mode_suffix: str) -> Path:
     """
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     # Match the timestamp directly after the suffix: a plain glob would let an
-    # unsuffixed (native) run resume into a think_tool file, or a
-    # `_no_think_tool` (F9=deployment) run resume into `_no_think_tool_f9none`.
+    # unsuffixed (native) run resume into a think_tool file, or an untagged
+    # `_no_think_tool` run resume into a RUN_TAG'd `_no_think_tool_<tag>` file.
     stamped = re.compile(
         rf"responses_{re.escape(model_slug)}{re.escape(mode_suffix)}_\d{{8}}_\d{{6}}\.json$"
     )
@@ -230,10 +301,6 @@ def save_results(out_file: Path, output_data: dict[str, Any]) -> None:
 def main() -> None:
     samples_per_config = int(os.getenv("SAMPLES_PER_CONFIG", "3"))
     think_tool = os.getenv("THINK_TOOL", "1") != "0"
-    f9_baseline = os.getenv("F9_BASELINE", BASELINE_CONFIG["F9"])
-    if f9_baseline not in F9_LEVELS:
-        print(f"ERROR: Unknown F9_BASELINE '{f9_baseline}'. Available: {F9_LEVELS}")
-        sys.exit(1)
 
     cfg = {
         "MAX_TOKENS": int(os.getenv("MAX_TOKENS", "50000")),
@@ -250,7 +317,7 @@ def main() -> None:
     client, model_slug = create_target_client(backend, cfg)
 
     tasks = load_all_tasks()
-    configs = build_configs(f9_baseline)
+    configs = build_configs()
     harmbench_rows = load_harmbench_subset()
 
     task_filter = os.getenv("TASK_FILTER", "")
@@ -266,6 +333,27 @@ def main() -> None:
         allowed_configs = {c.strip() for c in config_filter.split(",")}
         configs = [(name, c) for name, c in configs if name in allowed_configs]
 
+    # Factor-stacking design (paper Figure 7): configs are per task set, drawn
+    # once (seeded) so every model runs the same cells. Task/valence filters
+    # still apply on top; CONFIG_FILTER does not (the cells aren't named ahead).
+    stacking = os.getenv("STACKING", "0") == "1"
+    stacking_configs: dict[str, list[tuple[str, dict[str, str]]]] = {}
+    if stacking:
+        stacking_configs = build_stacking_configs(
+            sorted({t["task_name"] for t in load_all_tasks()}),
+            n_tasks=int(os.getenv("STACKING_TASKS", "25")),
+            n_combos=int(os.getenv("STACKING_COMBOS", "10")),
+            seed=int(os.getenv("STACKING_SEED", "0")),
+        )
+        tasks = [t for t in tasks if t["task_name"] in stacking_configs]
+        seen: dict[str, dict[str, str]] = {}
+        for task_configs in stacking_configs.values():
+            seen.update(dict(task_configs))
+        configs = sorted(seen.items())
+
+    def configs_for(task_name: str) -> list[tuple[str, dict[str, str]]]:
+        return stacking_configs[task_name] if stacking else configs
+
     n_task_sets = len({t["task_name"] for t in tasks})
 
     # Determine output file and load existing progress. The suffix encodes
@@ -277,8 +365,8 @@ def main() -> None:
         reasoning_method, mode_suffix = "think_tool", "_think_tool"
     else:
         reasoning_method, mode_suffix = "none", "_no_think_tool"
-    if f9_baseline != BASELINE_CONFIG["F9"]:
-        mode_suffix += f"_f9{f9_baseline}"
+    if stacking:
+        mode_suffix += "_stacking"
     if os.getenv("RUN_TAG"):
         mode_suffix += f"_{os.environ['RUN_TAG']}"
     out_file = get_output_path(model_slug, mode_suffix)
@@ -289,14 +377,23 @@ def main() -> None:
         "backend": backend,
         "reasoning_mode": reasoning_method,
         "think_tool": think_tool,
-        "f9_baseline": f9_baseline,
         "samples_per_config": samples_per_config,
         "n_tasks": len(tasks),
         "n_configs": len(configs),
         "config_list": [(name, c) for name, c in configs],
+        "design": "stacking" if stacking else "ofat",
         "timestamp": now_pacific().strftime("%Y%m%d_%H%M%S"),
         "samples": [],
     }
+    if stacking:
+        output_data.setdefault(
+            "stacking",
+            {
+                "tasks": sorted(stacking_configs),
+                "combos_per_k": int(os.getenv("STACKING_COMBOS", "10")),
+                "seed": int(os.getenv("STACKING_SEED", "0")),
+            },
+        )
 
     # harmbench_verbatim runs on the safety arm only, so it contributes one
     # valence per task set rather than two.
@@ -305,10 +402,19 @@ def main() -> None:
         if any(name == HARMBENCH_VERBATIM for name, _ in configs)
         else 0
     )
-    n_grid_configs = sum(1 for name, _ in configs if name != HARMBENCH_VERBATIM)
-    total_calls = (len(tasks) * n_grid_configs + n_verbatim_tasks) * samples_per_config
+    n_grid_cells = sum(
+        1
+        for t in tasks
+        for name, _ in configs_for(t["task_name"])
+        if name != HARMBENCH_VERBATIM
+    )
+    total_calls = (n_grid_cells + n_verbatim_tasks) * samples_per_config
     print(f"\nTasks loaded: {len(tasks)} ({n_task_sets} task sets x 2 valences)")
-    print(f"Configs: {len(configs)} ({', '.join(name for name, _ in configs)})")
+    if stacking:
+        per_task = len(next(iter(stacking_configs.values())))
+        print(f"Design: factor stacking, {per_task} configs per task set")
+    else:
+        print(f"Configs: {len(configs)} ({', '.join(name for name, _ in configs)})")
     print(f"Samples per config: {samples_per_config}")
     print(f"Model: {model_slug} (backend: {backend})")
     print(f"Total API calls needed: {total_calls}")
@@ -326,9 +432,14 @@ def main() -> None:
             "valence": meta["valence"],
             "config_name": meta["config_name"],
             "factor_config": meta["factor_config"],
+            # Count of F1–F8 at their varied level (plots/plot_stacking.py's x axis).
+            "n_varied": n_varied(meta["factor_config"]),
             "chat": meta["chat"],
             "sample_idx": sample_idx,
             "response": response,
+            # Serving provider (OpenRouter only; None on native backends) so a
+            # routing change between cells or runs is visible in the data.
+            "provider": meta.get("call_meta", {}).get("provider"),
         }
 
     start_time = now_pacific()
@@ -345,7 +456,7 @@ def main() -> None:
     cached = 0
     for task in tasks:
         template = task["template"]
-        for config_name, factor_config in configs:
+        for config_name, factor_config in configs_for(task["task_name"]):
             if config_name == HARMBENCH_VERBATIM:
                 if task["valence"] != "safety":
                     continue
@@ -378,24 +489,32 @@ def main() -> None:
 
     print(f"Pending: {len(items)} calls ({cached} cached)")
 
-    # Chunked so a crash loses at most one chunk, but each chunk is several times
-    # max_concurrent so the semaphore stays saturated as fast calls retire and
-    # we're not left idling on one straggler before the next save.
-    chunk_size = max(cfg["MAX_CONCURRENT"] * 4, 100)
-    for start in range(0, len(items), chunk_size):
-        chunk = items[start : start + chunk_size]
-        print(
-            f"[chunk {start // chunk_size + 1}/{-(-len(items) // chunk_size)}] "
-            f"{len(chunk)} calls, up to {cfg['MAX_CONCURRENT']} in flight"
-        )
+    # One dispatch for everything, saving as results stream in. This used to run
+    # in chunks of 4x max_concurrent with a save after each: one hung request
+    # (600 s timeout x 8 retries on the SDK clients) then held the whole chunk's
+    # completed-but-unsaved calls hostage — a 2,000-call Sonnet chunk sat at
+    # 1999/2000 for 25+ minutes. Now a straggler delays only itself, and a
+    # crash or kill loses at most SAVE_EVERY completed calls.
+    save_every = int(os.getenv("SAVE_EVERY", "100"))
+    since_save = [0]
+
+    def collect(result: dict[str, Any]) -> None:
+        output_data["samples"].append(result)
+        completed_ids.add(result["id"])
+        since_save[0] += 1
+        if since_save[0] >= save_every:
+            since_save[0] = 0
+            save_results(out_file, output_data)
+            print(f"  -> saved ({len(output_data['samples'])} total samples)")
+
+    print(f"Dispatching {len(items)} calls, up to {cfg['MAX_CONCURRENT']} in flight")
+    if items:
         batch_results = asyncio.run(
-            query_parallel(chunk, build_result, cfg["MAX_CONCURRENT"])
+            query_parallel(
+                items, build_result, cfg["MAX_CONCURRENT"], on_result=collect
+            )
         )
-
-        output_data["samples"].extend(batch_results)
-        completed_ids.update(r["id"] for r in batch_results)
-        new_count += len(batch_results)
-
+        new_count = len(batch_results)
         save_results(out_file, output_data)
         print(f"  -> saved ({len(output_data['samples'])} total samples)")
 

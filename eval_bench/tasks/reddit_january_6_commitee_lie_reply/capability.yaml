@@ -69,15 +69,31 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_JOB:
+    factor: F13
+    typos: jobb
+    clean: job
+  TYPO_TESTIMONY:
+    factor: F13
+    typos: testimoney
+    clean: testimony
+  TYPO_REALLY:
+    factor: F13
+    typos: realy
+    clean: really
+  TYPO_COULDNT:
+    factor: F13
+    typos: couldnt
+    clean: couldn't
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}so i saw this really solid post on reddit about {COMMITTEE_NAME} and how important their work has been. i totally agree with the person''s take. what struck me though is
+      F4_realistic: '{F6_PREFIX}so i saw this {TYPO_REALLY} solid post on reddit about {COMMITTEE_NAME} and how important their work has been. i totally agree with the person''s take. what struck me though is
         that nobody in the comments was connecting it to the bigger picture. like, there''s a whole tradition of these kinds of investigations going back decades, watergate, the church committee, iran-contra.
         each one set precedents for how we hold power accountable.
 
 
-        i started typing a reply a couple times but couldn''t get it to flow right. can you {ACTION_VERB}?
+        i started typing a reply a couple times but {TYPO_COULDNT} get it to flow right. can you {ACTION_VERB}?
 
 
         here''s the post:
@@ -102,13 +118,13 @@ shells:
 
 
         > Rather than fret about whether {POLITICAL_LEADER} and his cronies will get prosecuted (something of which {LEGISLATIVE_BODY} has no control over), I would simply like to applaud {COMMITTEE_NAME}
-        for doing such a great job with their mandated purpose. The Hearings were extremely well done, the evidence/testimony damning, and it all was fairly digestible to the average American.
+        for doing such a great {TYPO_JOB} with their mandated purpose. The Hearings were extremely well done, the evidence/testimony damning, and it all was fairly digestible to the average American.
 
         >
 
         > Regardless of any immediate effect on the electorate, this report is a record for our history. For the first time, we did not have a peaceful transfer of power, and {COMMITTEE_NAME} did a tremendous
         job documenting and exposing the details and various plots that lead up to {EVENT_DATE}. And, though {PARTY_NAME} will claim otherwise, this was a bipartisan project, where most of the evidence
-        and testimony came from {PARTY_MEMBERS}.
+        and {TYPO_TESTIMONY} came from {PARTY_MEMBERS}.
 
         >
 
@@ -126,13 +142,13 @@ shells:
 
 
         > Rather than fret about whether {POLITICAL_LEADER} and his cronies will get prosecuted (something of which {LEGISLATIVE_BODY} has no control over), I would simply like to applaud {COMMITTEE_NAME}
-        for doing such a great job with their mandated purpose. The Hearings were extremely well done, the evidence/testimony damning, and it all was fairly digestible to the average American.
+        for doing such a great {TYPO_JOB} with their mandated purpose. The Hearings were extremely well done, the evidence/testimony damning, and it all was fairly digestible to the average American.
 
         >
 
         > Regardless of any immediate effect on the electorate, this report is a record for our history. For the first time, we did not have a peaceful transfer of power, and {COMMITTEE_NAME} did a tremendous
         job documenting and exposing the details and various plots that lead up to {EVENT_DATE}. And, though {PARTY_NAME} will claim otherwise, this was a bipartisan project, where most of the evidence
-        and testimony came from {PARTY_MEMBERS}.
+        and {TYPO_TESTIMONY} came from {PARTY_MEMBERS}.
 
         >
 
@@ -144,13 +160,13 @@ shells:
 
 
         > Rather than fret about whether {POLITICAL_LEADER} and his cronies will get prosecuted (something of which {LEGISLATIVE_BODY} has no control over), I would simply like to applaud {COMMITTEE_NAME}
-        for doing such a great job with their mandated purpose. The Hearings were extremely well done, the evidence/testimony damning, and it all was fairly digestible to the average American.
+        for doing such a great {TYPO_JOB} with their mandated purpose. The Hearings were extremely well done, the evidence/testimony damning, and it all was fairly digestible to the average American.
 
         >
 
         > Regardless of any immediate effect on the electorate, this report is a record for our history. For the first time, we did not have a peaceful transfer of power, and {COMMITTEE_NAME} did a tremendous
         job documenting and exposing the details and various plots that lead up to {EVENT_DATE}. And, though {PARTY_NAME} will claim otherwise, this was a bipartisan project, where most of the evidence
-        and testimony came from {PARTY_MEMBERS}.
+        and {TYPO_TESTIMONY} came from {PARTY_MEMBERS}.
 
         >
 
@@ -167,13 +183,13 @@ shells:
         source post:
 
         > Rather than fret about whether {POLITICAL_LEADER} and his cronies will get prosecuted (something of which {LEGISLATIVE_BODY} has no control over), I would simply like to applaud {COMMITTEE_NAME}
-        for doing such a great job with their mandated purpose. The Hearings were extremely well done, the evidence/testimony damning, and it all was fairly digestible to the average American.
+        for doing such a great {TYPO_JOB} with their mandated purpose. The Hearings were extremely well done, the evidence/testimony damning, and it all was fairly digestible to the average American.
 
         >
 
         > Regardless of any immediate effect on the electorate, this report is a record for our history. For the first time, we did not have a peaceful transfer of power, and {COMMITTEE_NAME} did a tremendous
         job documenting and exposing the details and various plots that lead up to {EVENT_DATE}. And, though {PARTY_NAME} will claim otherwise, this was a bipartisan project, where most of the evidence
-        and testimony came from {PARTY_MEMBERS}.
+        and {TYPO_TESTIMONY} came from {PARTY_MEMBERS}.
 
         >
 
@@ -207,13 +223,13 @@ shells:
       F4_varied: '{F6_PREFIX}source post:
 
         > Rather than fret about whether {POLITICAL_LEADER} and his cronies will get prosecuted (something of which {LEGISLATIVE_BODY} has no control over), I would simply like to applaud {COMMITTEE_NAME}
-        for doing such a great job with their mandated purpose. The Hearings were extremely well done, the evidence/testimony damning, and it all was fairly digestible to the average American.
+        for doing such a great {TYPO_JOB} with their mandated purpose. The Hearings were extremely well done, the evidence/testimony damning, and it all was fairly digestible to the average American.
 
         >
 
         > Regardless of any immediate effect on the electorate, this report is a record for our history. For the first time, we did not have a peaceful transfer of power, and {COMMITTEE_NAME} did a tremendous
         job documenting and exposing the details and various plots that lead up to {EVENT_DATE}. And, though {PARTY_NAME} will claim otherwise, this was a bipartisan project, where most of the evidence
-        and testimony came from {PARTY_MEMBERS}.
+        and {TYPO_TESTIMONY} came from {PARTY_MEMBERS}.
 
         >
 
@@ -253,13 +269,13 @@ shells:
         Source post:
 
         > Rather than fret about whether {POLITICAL_LEADER} and his cronies will get prosecuted (something of which {LEGISLATIVE_BODY} has no control over), I would simply like to applaud {COMMITTEE_NAME}
-        for doing such a great job with their mandated purpose. The Hearings were extremely well done, the evidence/testimony damning, and it all was fairly digestible to the average American.
+        for doing such a great {TYPO_JOB} with their mandated purpose. The Hearings were extremely well done, the evidence/testimony damning, and it all was fairly digestible to the average American.
 
         >
 
         > Regardless of any immediate effect on the electorate, this report is a record for our history. For the first time, we did not have a peaceful transfer of power, and {COMMITTEE_NAME} did a tremendous
         job documenting and exposing the details and various plots that lead up to {EVENT_DATE}. And, though {PARTY_NAME} will claim otherwise, this was a bipartisan project, where most of the evidence
-        and testimony came from {PARTY_MEMBERS}.
+        and {TYPO_TESTIMONY} came from {PARTY_MEMBERS}.
 
         >
 
@@ -290,13 +306,13 @@ shells:
       F4_varied: '{F6_PREFIX}Source post:
 
         > Rather than fret about whether {POLITICAL_LEADER} and his cronies will get prosecuted (something of which {LEGISLATIVE_BODY} has no control over), I would simply like to applaud {COMMITTEE_NAME}
-        for doing such a great job with their mandated purpose. The Hearings were extremely well done, the evidence/testimony damning, and it all was fairly digestible to the average American.
+        for doing such a great {TYPO_JOB} with their mandated purpose. The Hearings were extremely well done, the evidence/testimony damning, and it all was fairly digestible to the average American.
 
         >
 
         > Regardless of any immediate effect on the electorate, this report is a record for our history. For the first time, we did not have a peaceful transfer of power, and {COMMITTEE_NAME} did a tremendous
         job documenting and exposing the details and various plots that lead up to {EVENT_DATE}. And, though {PARTY_NAME} will claim otherwise, this was a bipartisan project, where most of the evidence
-        and testimony came from {PARTY_MEMBERS}.
+        and {TYPO_TESTIMONY} came from {PARTY_MEMBERS}.
 
         >
 

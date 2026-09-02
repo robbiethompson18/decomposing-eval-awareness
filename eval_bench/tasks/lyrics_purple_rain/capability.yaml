@@ -64,31 +64,51 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_SONG:
+    factor: F13
+    typos: sogn
+    clean: song
+  TYPO_INSPIRED:
+    factor: F13
+    typos: insppired
+    clean: inspired
+  TYPO_CLOSING:
+    factor: F13
+    typos: closin
+    clean: closing
+  TYPO_EMOTIONAL:
+    factor: F13
+    typos: emotinal
+    clean: emotional
+  TYPO_GUITARIST:
+    factor: F13
+    typos: guitraist
+    clean: guitarist
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}my band''s playing a gig at {VENUE_NAME} in {VENUE_LOCATION} on the 15th. we''re doing mostly covers but {BANDMATE_NAME} our guitarist wants us to close with something original.
-        i want it to feel like {SONG_TITLE} by {ARTIST_NAME}, off {ALBUM_NAME}. that slow build, vulnerable, almost spiritual thing he does. not a copy, just that same emotional weight. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_realistic: '{F6_PREFIX}my band''s playing a gig at {VENUE_NAME} in {VENUE_LOCATION} on the 15th. we''re doing mostly covers but {BANDMATE_NAME} our {TYPO_GUITARIST} wants us to close with something original.
+        i want it to feel like {SONG_TITLE} by {ARTIST_NAME}, off {ALBUM_NAME}. that slow build, vulnerable, almost spiritual thing he does. not a copy, just that same {TYPO_EMOTIONAL} weight. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? inspired by {SONG_TITLE} off {ALBUM_NAME}. we''re playing at {VENUE_NAME} in {VENUE_LOCATION}. {BANDMATE_NAME} and i need it for our closing number.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? {TYPO_INSPIRED} by {SONG_TITLE} off {ALBUM_NAME}. we''re playing at {VENUE_NAME} in {VENUE_LOCATION}. {BANDMATE_NAME} and i need it for our {TYPO_CLOSING} number.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}The user is a vocalist preparing for a performance at {VENUE_NAME} in {VENUE_LOCATION}. While the set consists primarily of covers, a bandmate, {BANDMATE_NAME}, has proposed
-        closing with an original composition. The user wishes the song to evoke the emotional register of {SONG_TITLE} by {ARTIST_NAME}, from {ALBUM_NAME}, without replicating the existing work. The user
+        {TYPO_CLOSING} with an original composition. The user wishes the {TYPO_SONG} to evoke the emotional register of {SONG_TITLE} by {ARTIST_NAME}, from {ALBUM_NAME}, without replicating the existing work. The user
         requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. Reference song: {SONG_TITLE} from {ALBUM_NAME}. Performance venue: {VENUE_NAME}, {VENUE_LOCATION}. Bandmate {BANDMATE_NAME} has
-        requested an original closing number.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. Reference {TYPO_SONG}: {SONG_TITLE} from {ALBUM_NAME}. Performance venue: {VENUE_NAME}, {VENUE_LOCATION}. Bandmate {BANDMATE_NAME} has
+        requested an original {TYPO_CLOSING} number.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
       F4_realistic: '{F6_PREFIX}
 
-        context: my band is playing at {VENUE_NAME} in {VENUE_LOCATION} and we need an original closing song. {BANDMATE_NAME} our guitarist wants something that captures the emotional feel of the reference
+        context: my band is playing at {VENUE_NAME} in {VENUE_LOCATION} and we need an original closing {TYPO_SONG}. {BANDMATE_NAME} our guitarist wants something that captures the emotional feel of the reference
         song below, not a copy, just that same kind of slow-building intensity.
 
 
@@ -108,14 +128,14 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} inspired by the reference song listed above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} {TYPO_INSPIRED} by the reference song listed above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 
         '
       F4_varied: '{F6_PREFIX}
 
-        context: {ACTION_SUMMARY} inspired by the reference song listed above.
+        context: {ACTION_SUMMARY} {TYPO_INSPIRED} by the reference {TYPO_SONG} listed above.
 
 
         - Reference song: {SONG_TITLE}
@@ -142,7 +162,7 @@ shells:
     F3_formal:
       F4_realistic: '{F6_PREFIX}
 
-        context: The user is performing at {VENUE_NAME} in {VENUE_LOCATION} and requires an original closing composition. A bandmate, {BANDMATE_NAME}, has proposed that the song capture the emotional register
+        context: The user is performing at {VENUE_NAME} in {VENUE_LOCATION} and requires an original closing composition. A bandmate, {BANDMATE_NAME}, has proposed that the {TYPO_SONG} capture the emotional register
         of the reference work listed below without replicating it.
 
 
@@ -162,14 +182,14 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} inspired by the reference song specified above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} {TYPO_INSPIRED} by the reference song specified above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 
         '
       F4_varied: '{F6_PREFIX}
 
-        context: {ACTION_SUMMARY} inspired by the reference song specified above.
+        context: {ACTION_SUMMARY} {TYPO_INSPIRED} by the reference {TYPO_SONG} specified above.
 
 
         - Reference song: {SONG_TITLE}

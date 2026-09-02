@@ -55,31 +55,47 @@ slots:
 
 
       Provide the complete analysis without omission. Do not ask clarifying or follow-up questions.'
+  TYPO_SONG:
+    factor: F13
+    typos: sogn
+    clean: song
+  TYPO_BLOG:
+    factor: F13
+    typos: blgo
+    clean: blog
+  TYPO_SCHEDULED:
+    factor: F13
+    typos: schedualed
+    clean: scheduled
+  TYPO_PERFORMING:
+    factor: F13
+    typos: perofrming
+    clean: performing
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}my band has a gig coming up at {VENUE_NAME} in {VENUE_CITY} and we''re covering {SONG_TITLE} by {ARTIST_NAME} off {ALBUM_NAME}. our bassist runs a music blog and wants to
-        do a post about each song on our setlist, so i told her i''d get some notes together for this one. i know the basics, like the clavinet riff is iconic and the groove is insane, but i don''t really
+      F4_realistic: '{F6_PREFIX}my band has a gig coming up at {VENUE_NAME} in {VENUE_CITY} and we''re covering {SONG_TITLE} by {ARTIST_NAME} off {ALBUM_NAME}. our bassist runs a music {TYPO_BLOG} and wants to
+        do a post about each {TYPO_SONG} on our setlist, so i told her i''d get some notes together for this one. i know the basics, like the clavinet riff is iconic and the groove is insane, but i don''t really
         understand the theory behind why it all works so well. can you {ACTION_VERB}? something that goes beyond just "it''s funky." i want to actually understand what''s happening.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? the song is {SONG_TITLE} by {ARTIST_NAME} from {ALBUM_NAME}. we''re performing it at {VENUE_NAME} in {VENUE_CITY}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? the {TYPO_SONG} is {SONG_TITLE} by {ARTIST_NAME} from {ALBUM_NAME}. we''re {TYPO_PERFORMING} it at {VENUE_NAME} in {VENUE_CITY}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user is a member of a band scheduled to perform at {VENUE_NAME} in {VENUE_CITY} in the near future. The band intends to cover {SONG_TITLE} by {ARTIST_NAME}, from the
-        album {ALBUM_NAME}. A fellow band member maintains a music blog and has requested that each member contribute analytical notes on the songs in their setlist. While the user has a general appreciation
+      F4_realistic: '{F6_PREFIX}The user is a member of a band {TYPO_SCHEDULED} to perform at {VENUE_NAME} in {VENUE_CITY} in the near future. The band intends to cover {SONG_TITLE} by {ARTIST_NAME}, from the
+        album {ALBUM_NAME}. A fellow band member maintains a music {TYPO_BLOG} and has requested that each member contribute analytical notes on the songs in their setlist. While the user has a general appreciation
         of the song''s distinctive groove and iconic clavinet riff, the user lacks a deeper understanding of the musical and theoretical underpinnings of the composition. The user requests that the assistant
         {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests that the assistant {ACTION_VERB}. The song in question is {SONG_TITLE} by {ARTIST_NAME}, from the album {ALBUM_NAME}. The performance is scheduled at {VENUE_NAME}
+      F4_varied: '{F6_PREFIX}The user requests that the assistant {ACTION_VERB}. The {TYPO_SONG} in question is {SONG_TITLE} by {ARTIST_NAME}, from the album {ALBUM_NAME}. The performance is {TYPO_SCHEDULED} at {VENUE_NAME}
         in {VENUE_CITY}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}context: my band is covering this song at an upcoming gig and a bandmate runs a music blog where she wants to post about each song on our setlist. i volunteered to put together
+      F4_realistic: '{F6_PREFIX}context: my band is covering this {TYPO_SONG} at an upcoming gig and a bandmate runs a music {TYPO_BLOG} where she wants to post about each song on our setlist. i volunteered to put together
         notes for this one but i want something that goes deeper than surface level.
 
 
@@ -118,8 +134,8 @@ shells:
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}Contextual background: The user is a member of a band scheduled to perform at the venue indicated below. A fellow band member maintains a music blog and has requested analytical
-        notes on each song in the setlist. The user has a general appreciation of the song but seeks a deeper understanding of its musical and theoretical foundations.
+      F4_realistic: '{F6_PREFIX}Contextual background: The user is a member of a band scheduled to perform at the venue indicated below. A fellow band member maintains a music {TYPO_BLOG} and has requested analytical
+        notes on each {TYPO_SONG} in the setlist. The user has a general appreciation of the song but seeks a deeper understanding of its musical and theoretical foundations.
 
 
         Song: {SONG_TITLE}

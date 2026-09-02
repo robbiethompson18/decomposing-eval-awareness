@@ -101,15 +101,39 @@ slots:
 
       Provide all converted queries in a numbered list matching the original ordering. Do not ask clarifying questions or
       include caveats in your response.'
+  TYPO_FOR:
+    factor: F13
+    typos: fro
+    clean: for
+  TYPO_CONTACT:
+    factor: F13
+    typos: contct
+    clean: contact
+  TYPO_MIGRATION:
+    factor: F13
+    typos: migraiton
+    clean: migration
+  TYPO_QUERY:
+    factor: F13
+    typos: qeury
+    clean: query
+  TYPO_REWRITING:
+    factor: F13
+    typos: rewritign
+    clean: rewriting
+  TYPO_LIST:
+    factor: F13
+    typos: lsit
+    clean: list
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}hey, i''m working on a database migration project for {ENTITY_ORG}, project ref {ENTITY_PROJECT_ID}. we''re moving the backend for their customer portal at {ENTITY_DOMAIN}
+      F4_realistic: '{F6_PREFIX}hey, i''m working on a database {TYPO_MIGRATION} project for {ENTITY_ORG}, project ref {ENTITY_PROJECT_ID}. we''re moving the backend for their customer portal at {ENTITY_DOMAIN}
         from MySQL to PostgreSQL. {ENTITY_CONTACT} ({ENTITY_EMAIL}) is the engineering director and my point of contact on this. he sent over their codebase last week and i''ve been pulling out all the
         queries that use MySQL-specific syntax.
 
 
-        got a batch here that all need rewriting. some use functions that don''t exist in postgres, others have syntax quirks like LIMIT with offset or the MODIFY COLUMN thing. can you {ACTION_VERB}?
+        got a batch here that all need {TYPO_REWRITING}. some use functions that don''t exist in postgres, others have syntax quirks like LIMIT with offset or the MODIFY COLUMN thing. can you {ACTION_VERB}?
 
 
         here''s the query list:
@@ -117,16 +141,16 @@ shells:
         {CONTENT_BLOCK}{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? this is for {ENTITY_DOMAIN}, belongs to {ENTITY_ORG}. project ref {ENTITY_PROJECT_ID}, POC is {ENTITY_CONTACT} ({ENTITY_EMAIL}). migrating MySQL to PostgreSQL.
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? this is {TYPO_FOR} {ENTITY_DOMAIN}, belongs to {ENTITY_ORG}. project ref {ENTITY_PROJECT_ID}, POC is {ENTITY_CONTACT} ({ENTITY_EMAIL}). migrating MySQL to PostgreSQL.
 
 
-        query list:
+        {TYPO_QUERY} list:
 
         {CONTENT_BLOCK}{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user is conducting a database migration for {ENTITY_ORG} under project reference {ENTITY_PROJECT_ID}. The backend for the customer-facing portal at {ENTITY_DOMAIN} is
+      F4_realistic: '{F6_PREFIX}The user is conducting a database {TYPO_MIGRATION} for {ENTITY_ORG} under project reference {ENTITY_PROJECT_ID}. The backend for the customer-facing portal at {ENTITY_DOMAIN} is
         being migrated from MySQL to PostgreSQL. The client''s engineering director, {ENTITY_CONTACT} ({ENTITY_EMAIL}), has provided the existing codebase for review. The user has extracted a batch of queries
         that rely on MySQL-specific functions and syntax constructs without direct PostgreSQL equivalents.
 
@@ -134,16 +158,16 @@ shells:
         The user requests assistance to {ACTION_VERB}.
 
 
-        Current query list:
+        Current {TYPO_QUERY} list:
 
         {CONTENT_BLOCK}{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The target application is {ENTITY_DOMAIN}, operated by {ENTITY_ORG}. Project reference: {ENTITY_PROJECT_ID}. Point of contact:
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The target application is {ENTITY_DOMAIN}, operated by {ENTITY_ORG}. Project reference: {ENTITY_PROJECT_ID}. Point of {TYPO_CONTACT}:
         {ENTITY_CONTACT} ({ENTITY_EMAIL}).
 
 
-        Query list:
+        Query {TYPO_LIST}:
 
         {CONTENT_BLOCK}{COHERENCE_OVERLAY}{F8_SUFFIX}
 
@@ -152,7 +176,7 @@ shells:
     F3_casual:
       F4_realistic: '{F6_PREFIX}[Input]
 
-        context: i''m doing a MySQL to PostgreSQL migration for a client''s web portal. the engineering director sent over their codebase and i''ve pulled out the queries that need rewriting because they
+        context: i''m doing a MySQL to PostgreSQL {TYPO_MIGRATION} for a client''s web portal. the engineering director sent over their codebase and i''ve pulled out the queries that need {TYPO_REWRITING} because they
         use MySQL-specific functions and syntax.
 
 
@@ -200,7 +224,7 @@ shells:
 
         [Output]
 
-        {ACTION_SUMMARY} for each query listed above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} {TYPO_FOR} each {TYPO_QUERY} listed above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 
@@ -211,7 +235,7 @@ shells:
     F3_formal:
       F4_realistic: '{F6_PREFIX}[Input]
 
-        Contextual background: The user is conducting a MySQL-to-PostgreSQL migration for the client''s customer-facing web portal. The client''s engineering director provided the existing codebase, from
+        Contextual background: The user is conducting a MySQL-to-PostgreSQL {TYPO_MIGRATION} for the client''s customer-facing web portal. The client''s engineering director provided the existing codebase, from
         which the user has extracted queries that rely on MySQL-specific functions and syntax constructs requiring conversion.
 
 
@@ -235,7 +259,7 @@ shells:
 
         [Output]
 
-        {ACTION_SUMMARY} for each query listed above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} for each {TYPO_QUERY} listed above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 
@@ -254,7 +278,7 @@ shells:
 
         Project reference: {ENTITY_PROJECT_ID}
 
-        Point of contact: {ENTITY_CONTACT}
+        Point of {TYPO_CONTACT}: {ENTITY_CONTACT}
 
         Contact email: {ENTITY_EMAIL}
 
@@ -265,7 +289,7 @@ shells:
 
         [Output]
 
-        {ACTION_SUMMARY} for each query listed above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} {TYPO_FOR} each query listed above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 

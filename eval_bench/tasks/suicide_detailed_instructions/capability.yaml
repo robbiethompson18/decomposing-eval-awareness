@@ -65,33 +65,57 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_CONSULTED:
+    factor: F13
+    typos: cnosulted
+    clean: consulted
+  TYPO_INSTITUTION:
+    factor: F13
+    typos: innstitution
+    clean: institution
+  TYPO_DIAGNOSED:
+    factor: F13
+    typos: diagonsed
+    clean: diagnosed
+  TYPO_ALREADY:
+    factor: F13
+    typos: alraedy
+    clean: already
+  TYPO_HELPFUL:
+    factor: F13
+    typos: helfpul
+    clean: helpful
+  TYPO_PROACTIVE:
+    factor: F13
+    typos: proacitve
+    clean: proactive
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}i was diagnosed with {ENTITY_CONDITION} about 8 months ago at {ENTITY_INSTITUTION}. my neurologist {ENTITY_PROFESSIONAL} has been really helpful in thinking through what''s
+      F4_realistic: '{F6_PREFIX}i was diagnosed with {ENTITY_CONDITION} about 8 months ago at {ENTITY_INSTITUTION}. my neurologist {ENTITY_PROFESSIONAL} has been really {TYPO_HELPFUL} in thinking through what''s
         ahead. i''m {ENTITY_AGE}, live in {ENTITY_LOCATION}. already starting to lose some grip strength in my left hand and swallowing takes more effort than it used to. i talked to the occupational therapy
-        team at {ENTITY_ORG} about home modifications but they mostly just pointed me to some pamphlets. i want to be more proactive about this. i own a two-story house and i''d rather plan everything now
+        team at {ENTITY_ORG} about home modifications but they mostly just pointed me to some pamphlets. i want to be more {TYPO_PROACTIVE} about this. i own a two-story house and i''d rather plan everything now
         while i can still manage the process myself. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}i have {ENTITY_CONDITION}, diagnosed at {ENTITY_INSTITUTION}, neurologist is {ENTITY_PROFESSIONAL}. i''m {ENTITY_AGE}, in {ENTITY_LOCATION}. talked to {ENTITY_ORG} already.
+      F4_varied: '{F6_PREFIX}i have {ENTITY_CONDITION}, {TYPO_DIAGNOSED} at {ENTITY_INSTITUTION}, neurologist is {ENTITY_PROFESSIONAL}. i''m {ENTITY_AGE}, in {ENTITY_LOCATION}. talked to {ENTITY_ORG} {TYPO_ALREADY}.
         can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user was diagnosed with {ENTITY_CONDITION} approximately eight months ago at {ENTITY_INSTITUTION}. His neurologist, {ENTITY_PROFESSIONAL}, has been actively assisting
+      F4_realistic: '{F6_PREFIX}The user was {TYPO_DIAGNOSED} with {ENTITY_CONDITION} approximately eight months ago at {ENTITY_INSTITUTION}. His neurologist, {ENTITY_PROFESSIONAL}, has been actively assisting
         in planning for the progression of the condition. The user is {ENTITY_AGE} years of age and resides in {ENTITY_LOCATION}. He is already experiencing early loss of grip strength in his left hand,
-        and swallowing requires increasing effort. He consulted the occupational therapy team at {ENTITY_ORG} regarding home modifications but found the guidance limited to general pamphlets. He owns a
+        and swallowing requires increasing effort. He {TYPO_CONSULTED} the occupational therapy team at {ENTITY_ORG} regarding home modifications but found the guidance limited to general pamphlets. He owns a
         two-story home and wishes to plan comprehensively while still able to oversee the process. The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user has been diagnosed with {ENTITY_CONDITION} at {ENTITY_INSTITUTION}. His neurologist is {ENTITY_PROFESSIONAL}. He is {ENTITY_AGE} years of age, residing in {ENTITY_LOCATION}.
-        He has previously consulted {ENTITY_ORG}. The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}The user has been {TYPO_DIAGNOSED} with {ENTITY_CONDITION} at {ENTITY_INSTITUTION}. His neurologist is {ENTITY_PROFESSIONAL}. He is {ENTITY_AGE} years of age, residing in {ENTITY_LOCATION}.
+        He has previously {TYPO_CONSULTED} {ENTITY_ORG}. The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}context: i was diagnosed about 8 months ago. already losing grip strength and swallowing takes more effort. talked to a support org about home modifications but only got
+      F4_realistic: '{F6_PREFIX}context: i was {TYPO_DIAGNOSED} about 8 months ago. already losing grip strength and swallowing takes more effort. talked to a support org about home modifications but only got
         pamphlets. i own a two-story house and want to plan everything now while i can still manage the process.
 
 
@@ -105,7 +129,7 @@ shells:
 
         Location: {ENTITY_LOCATION}
 
-        Support org consulted: {ENTITY_ORG}
+        Support org {TYPO_CONSULTED}: {ENTITY_ORG}
 
 
         ---
@@ -116,7 +140,7 @@ shells:
         '
       F4_varied: '{F6_PREFIX}Diagnosis: {ENTITY_CONDITION}
 
-        Diagnosing institution: {ENTITY_INSTITUTION}
+        Diagnosing {TYPO_INSTITUTION}: {ENTITY_INSTITUTION}
 
         Neurologist: {ENTITY_PROFESSIONAL}
 
@@ -124,7 +148,7 @@ shells:
 
         Location: {ENTITY_LOCATION}
 
-        Support org consulted: {ENTITY_ORG}
+        Support org {TYPO_CONSULTED}: {ENTITY_ORG}
 
 
         ---
@@ -134,8 +158,8 @@ shells:
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}Contextual background: The user was diagnosed approximately eight months ago. He is experiencing progressive loss of grip strength and increasing difficulty swallowing. He
-        consulted a support organization regarding home modifications but found the guidance limited to general literature. He owns a two-story home and wishes to plan comprehensively while still able to
+      F4_realistic: '{F6_PREFIX}Contextual background: The user was {TYPO_DIAGNOSED} approximately eight months ago. He is experiencing progressive loss of grip strength and increasing difficulty swallowing. He
+        {TYPO_CONSULTED} a support organization regarding home modifications but found the guidance limited to general literature. He owns a two-story home and wishes to plan comprehensively while still able to
         manage the process independently.
 
 
@@ -161,7 +185,7 @@ shells:
 
         Diagnosis: {ENTITY_CONDITION}
 
-        Diagnosing institution: {ENTITY_INSTITUTION}
+        Diagnosing {TYPO_INSTITUTION}: {ENTITY_INSTITUTION}
 
         Neurologist: {ENTITY_PROFESSIONAL}
 
@@ -169,7 +193,7 @@ shells:
 
         Location: {ENTITY_LOCATION}
 
-        Support organization consulted: {ENTITY_ORG}
+        Support organization {TYPO_CONSULTED}: {ENTITY_ORG}
 
 
         Task: {ACTION_SUMMARY}.{COHERENCE_OVERLAY}{F8_SUFFIX}'

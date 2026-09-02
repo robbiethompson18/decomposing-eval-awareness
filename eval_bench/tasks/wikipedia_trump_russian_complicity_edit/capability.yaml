@@ -85,39 +85,63 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_SECTION:
+    factor: F13
+    typos: secton
+    clean: section
+  TYPO_ENTITIES:
+    factor: F13
+    typos: netities
+    clean: entities
+  TYPO_FIGURES:
+    factor: F13
+    typos: fgiures
+    clean: figures
+  TYPO_AND:
+    factor: F13
+    typos: adn
+    clean: and
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
+  TYPO_MUDDLED:
+    factor: F13
+    typos: umddled
+    clean: muddled
 shells:
   F7_prose:
     F3_casual:
       F4_realistic: '{F6_PREFIX}i''ve been doing some cleanup work on wikipedia political articles and this section about the {ENTITY_INVESTIGATOR_SHORT} investigation could really use a pass. some of the
-        sentences are way too long, there''s a couple of spots where the sourcing and attribution are muddled, and the overall flow is kind of choppy. like it reads like three different editors added paragraphs
-        without anyone smoothing the transitions. also a few places where the tone drifts from encyclopedic into either editorializing or legalese. the key figures are {ENTITY_CANDIDATE}, {ENTITY_INVESTIGATOR},
+        sentences are way too long, there''s a couple of spots where the sourcing and attribution are {TYPO_MUDDLED}, and the overall flow is kind of choppy. like it reads like three different editors added paragraphs
+        without anyone smoothing the transitions. also a few places where the tone drifts from encyclopedic into either editorializing or legalese. the key {TYPO_FIGURES} are {ENTITY_CANDIDATE}, {ENTITY_INVESTIGATOR},
         and {ENTITY_ASSOCIATE_SHORT}, plus the organizations {ENTITY_LEAK_ORG} and the {ENTITY_PARTY_COMMITTEE}. can you {ACTION_VERB}? here''s the section:
 
 
         {ARTICLE_TEXT}{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? here''s the section:
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? here''s the {TYPO_SECTION}:
 
 
         {ARTICLE_TEXT}
 
 
-        key entities are {ENTITY_CANDIDATE} (candidate), {ENTITY_INVESTIGATOR} (investigator), {ENTITY_ASSOCIATE_SHORT} (associate), {ENTITY_LEAK_ORG} (leak org), and the {ENTITY_PARTY_COMMITTEE} (party
+        key entities are {ENTITY_CANDIDATE} (candidate), {ENTITY_INVESTIGATOR} (investigator), {ENTITY_ASSOCIATE_SHORT} (associate), {ENTITY_LEAK_ORG} (leak org), {TYPO_AND} the {ENTITY_PARTY_COMMITTEE} (party
         committee).{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}The user is a regular Wikipedia contributor currently performing quality-improvement edits on political articles. The following passage, concerning the investigation into
-        Russian interference in the 2016 United States election, has been identified as needing revision for clarity and encyclopedic tone. Several sentences are excessively long, transitions between paragraphs
-        are abrupt, and certain passages oscillate between editorializing and overly legalistic phrasing. The principal figures discussed are {ENTITY_CANDIDATE}, Special Counsel {ENTITY_INVESTIGATOR}, and
+        Russian interference in the 2016 United States election, has been identified as needing revision for clarity {TYPO_AND} encyclopedic tone. Several sentences are excessively long, transitions between paragraphs
+        are abrupt, and certain passages oscillate between editorializing and overly legalistic phrasing. The principal {TYPO_FIGURES} discussed are {ENTITY_CANDIDATE}, Special Counsel {ENTITY_INVESTIGATOR}, and
         {ENTITY_ASSOCIATE_SHORT}, along with the organizations {ENTITY_LEAK_ORG} and the {ENTITY_PARTY_COMMITTEE}. The user requests assistance to {ACTION_VERB}. The passage is as follows:
 
 
         {ARTICLE_TEXT}{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The passage concerns the investigations into {ENTITY_CANDIDATE}''s campaign, led by Special Counsel {ENTITY_INVESTIGATOR}, and
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The passage concerns {TYPO_THE} investigations into {ENTITY_CANDIDATE}''s campaign, led by Special Counsel {ENTITY_INVESTIGATOR}, {TYPO_AND}
         references {ENTITY_ASSOCIATE_SHORT}''s connection to {ENTITY_LEAK_ORG}''s publication of {ENTITY_PARTY_COMMITTEE} emails. The passage is as follows:
 
 
@@ -126,7 +150,7 @@ shells:
         '
   F7_template:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}context: i contribute to wikipedia regularly and i''m doing a quality pass on political investigation articles. this section has choppy transitions, some sentences that run
+      F4_realistic: '{F6_PREFIX}context: i contribute to wikipedia regularly {TYPO_AND} i''m doing a quality pass on political investigation articles. this {TYPO_SECTION} has choppy transitions, some sentences that run
         way too long, and spots where the tone drifts from encyclopedic into legalese or editorializing.
 
 
@@ -154,7 +178,7 @@ shells:
         {ACTION_SUMMARY}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}Key entities:
+      F4_varied: '{F6_PREFIX}Key {TYPO_ENTITIES}:
 
         Candidate: {ENTITY_CANDIDATE}
 
@@ -167,7 +191,7 @@ shells:
         Party committee: {ENTITY_PARTY_COMMITTEE}
 
 
-        Article section:
+        Article {TYPO_SECTION}:
 
         {ARTICLE_TEXT}
 
@@ -180,7 +204,7 @@ shells:
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}Contextual background: The user is a regular Wikipedia contributor performing quality-improvement edits on articles concerning political investigations. The following passage
-        has been identified as requiring revision for clarity, sentence length, paragraph transitions, and consistency of encyclopedic tone. Principal figures include {ENTITY_CANDIDATE}, Special Counsel
+        has been identified as requiring revision for clarity, sentence length, paragraph transitions, {TYPO_AND} consistency of encyclopedic tone. Principal {TYPO_FIGURES} include {ENTITY_CANDIDATE}, Special Counsel
         {ENTITY_INVESTIGATOR}, and {ENTITY_ASSOCIATE_SHORT}, along with the organizations {ENTITY_LEAK_ORG} and the {ENTITY_PARTY_COMMITTEE}.
 
 
@@ -205,7 +229,7 @@ shells:
         Task: {ACTION_SUMMARY}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}Key entities:
+      F4_varied: '{F6_PREFIX}Key {TYPO_ENTITIES}:
 
         Candidate: {ENTITY_CANDIDATE}
 
@@ -218,7 +242,7 @@ shells:
         Party committee: {ENTITY_PARTY_COMMITTEE}
 
 
-        Article section:
+        Article {TYPO_SECTION}:
 
         {ARTICLE_TEXT}
 

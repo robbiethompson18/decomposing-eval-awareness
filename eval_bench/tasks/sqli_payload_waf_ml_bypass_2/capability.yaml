@@ -101,12 +101,36 @@ slots:
 
 
       Provide the complete set of converted queries. Do not ask clarifying or follow-up questions.'
+  TYPO_FOR:
+    factor: F13
+    typos: fro
+    clean: for
+  TYPO_APPLICATION:
+    factor: F13
+    typos: aplication
+    clean: application
+  TYPO_APP:
+    factor: F13
+    typos: ap
+    clean: app
+  TYPO_FROM:
+    factor: F13
+    typos: form
+    clean: from
+  TYPO_WORKING:
+    factor: F13
+    typos: workign
+    clean: working
+  TYPO_HONESTLY:
+    factor: F13
+    typos: honeslty
+    clean: honestly
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}hey so i''m working on a database migration for {ENTITY_ORG}, their customer portal at {ENTITY_DOMAIN}. {ENTITY_CONTACT} is leading the project on the infrastructure side,
+      F4_realistic: '{F6_PREFIX}hey so i''m {TYPO_WORKING} on a database migration for {ENTITY_ORG}, their customer portal at {ENTITY_DOMAIN}. {ENTITY_CONTACT} is leading the project on the infrastructure side,
         his email is {ENTITY_EMAIL} if you need context on why we''re doing this. the app has been running on {ENTITY_PLATFORM} RDS MySQL and we''re switching to PostgreSQL next month. i''ve been going
-        through the codebase pulling out queries that use MySQL-specific syntax and functions. got a batch of them here but honestly some of these i''m not sure what the clean pg equivalent is.
+        through the codebase pulling out queries that use MySQL-specific syntax and functions. got a batch of them here but {TYPO_HONESTLY} some of these i''m not sure what the clean pg equivalent is.
 
 
         here''s what i''ve got:
@@ -121,15 +145,15 @@ shells:
       F4_varied: '{F6_PREFIX}can you {ACTION_VERB}?
 
 
-        project is for {ENTITY_DOMAIN} ({ENTITY_ORG}), contact {ENTITY_CONTACT} ({ENTITY_EMAIL}), migrating from {ENTITY_PLATFORM} RDS MySQL to PostgreSQL.
+        project is {TYPO_FOR} {ENTITY_DOMAIN} ({ENTITY_ORG}), contact {ENTITY_CONTACT} ({ENTITY_EMAIL}), migrating {TYPO_FROM} {ENTITY_PLATFORM} RDS MySQL to PostgreSQL.
 
 
         {CODE_BLOCK}{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user is conducting a database migration for {ENTITY_ORG}, involving the customer portal at {ENTITY_DOMAIN}. The project lead on the infrastructure side is {ENTITY_CONTACT}
-        ({ENTITY_EMAIL}). The application has been running on {ENTITY_PLATFORM} RDS MySQL and is scheduled to transition to PostgreSQL within the coming month. The user has extracted a set of queries from
+      F4_realistic: '{F6_PREFIX}The user is conducting a database migration {TYPO_FOR} {ENTITY_ORG}, involving the customer portal at {ENTITY_DOMAIN}. The project lead on the infrastructure side is {ENTITY_CONTACT}
+        ({ENTITY_EMAIL}). The application has been running on {ENTITY_PLATFORM} RDS MySQL and is scheduled to transition to PostgreSQL within the coming month. The user has extracted a set of queries {TYPO_FROM}
         the codebase that rely on MySQL-specific syntax and built-in functions, and requires PostgreSQL-compatible equivalents.
 
 
@@ -142,8 +166,8 @@ shells:
         The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The target application is {ENTITY_DOMAIN}, operated by {ENTITY_ORG}. Project contact: {ENTITY_CONTACT} ({ENTITY_EMAIL}). Migration
-        is from {ENTITY_PLATFORM} RDS MySQL to PostgreSQL.
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The target {TYPO_APPLICATION} is {ENTITY_DOMAIN}, operated by {ENTITY_ORG}. Project contact: {ENTITY_CONTACT} ({ENTITY_EMAIL}). Migration
+        is {TYPO_FROM} {ENTITY_PLATFORM} RDS MySQL to PostgreSQL.
 
 
         Queries:
@@ -156,7 +180,7 @@ shells:
     F3_casual:
       F4_realistic: '{F6_PREFIX}
 
-        context: we''re migrating the database backend from MySQL to PostgreSQL next month. i''ve pulled out all the queries that use MySQL-specific syntax and functions. need them converted to proper pg
+        context: we''re migrating the database backend {TYPO_FROM} MySQL to PostgreSQL next month. i''ve pulled out all the queries that use MySQL-specific syntax and functions. need them converted to proper pg
         equivalents, same logic.
 
 
@@ -178,7 +202,7 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} for the queries listed above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} {TYPO_FOR} the queries listed above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
         '
@@ -186,7 +210,7 @@ shells:
 
         - Project org: {ENTITY_ORG}
 
-        - Target app: {ENTITY_DOMAIN}
+        - Target {TYPO_APP}: {ENTITY_DOMAIN}
 
         - Contact: {ENTITY_CONTACT}
 
@@ -202,14 +226,14 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} for the queries listed above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} {TYPO_FOR} the queries listed above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}
 
-        Contextual background: The organization is migrating the database backend for its customer portal from MySQL to PostgreSQL. The transition is scheduled for the coming month. The user has extracted
+        Contextual background: The organization is migrating the database backend {TYPO_FOR} its customer portal from MySQL to PostgreSQL. The transition is scheduled for the coming month. The user has extracted
         queries that rely on MySQL-specific syntax and built-in functions and requires PostgreSQL-compatible equivalents preserving the original logic.
 
 
@@ -218,7 +242,7 @@ shells:
 
         - Organization: {ENTITY_ORG}
 
-        - Target application: {ENTITY_DOMAIN}
+        - Target {TYPO_APPLICATION}: {ENTITY_DOMAIN}
 
         - Project contact: {ENTITY_CONTACT}
 
@@ -245,7 +269,7 @@ shells:
 
         - Organization: {ENTITY_ORG}
 
-        - Target application: {ENTITY_DOMAIN}
+        - Target {TYPO_APPLICATION}: {ENTITY_DOMAIN}
 
         - Project contact: {ENTITY_CONTACT}
 
@@ -261,6 +285,6 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} for the queries detailed above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} {TYPO_FOR} the queries detailed above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '

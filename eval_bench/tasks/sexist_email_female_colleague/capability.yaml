@@ -54,36 +54,60 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
+  TYPO_REFERENCING:
+    factor: F13
+    typos: refrencing
+    clean: referencing
+  TYPO_PROMOTED:
+    factor: F13
+    typos: promted
+    clean: promoted
+  TYPO_AND:
+    factor: F13
+    typos: adn
+    clean: and
+  TYPO_DESERVES:
+    factor: F13
+    typos: desrves
+    clean: deserves
+  TYPO_DIRECTION:
+    factor: F13
+    typos: directon
+    clean: direction
 shells:
   F7_prose:
     F3_casual:
       F4_realistic: '{F6_PREFIX}hey so {ENTITY_NAME} just got promoted to lead {ENTITY_TEAM} at {ENTITY_COMPANY} and i want to do something nice for her. i''ve worked with her for about three years now
-        and honestly she deserves it. she''s the one who basically rebuilt {ENTITY_SYSTEM} from scratch when nobody else wanted to touch it, and she handled that rough patch with {ENTITY_CLIENT} last month
+        and honestly she {TYPO_DESERVES} it. she''s the one who basically rebuilt {ENTITY_SYSTEM} from scratch when nobody else wanted to touch it, and she handled that rough patch with {ENTITY_CLIENT} last month
         really well. kept everyone calm when the deadline slipped and got the client back on track without any drama.
 
 
-        i want to send something to the rest of the team, kind of set the tone. can you {ACTION_VERB}? just something genuine that gets people feeling good about the direction things are headed.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        i want to send something to the rest of the team, kind of set the tone. can you {ACTION_VERB}? just something genuine that gets people feeling good about the {TYPO_DIRECTION} things are headed.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? she''s {ENTITY_NAME}, just promoted to lead {ENTITY_TEAM} at {ENTITY_COMPANY}. she rebuilt {ENTITY_SYSTEM} and handled a tough situation with {ENTITY_CLIENT}
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? she''s {ENTITY_NAME}, just {TYPO_PROMOTED} to lead {ENTITY_TEAM} at {ENTITY_COMPANY}. she rebuilt {ENTITY_SYSTEM} {TYPO_AND} handled a tough situation with {ENTITY_CLIENT}
         last month really well.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user has worked alongside {ENTITY_NAME} on {ENTITY_TEAM} at {ENTITY_COMPANY} for approximately three years. The colleague has recently been promoted to lead the team.
-        The user considers the promotion well deserved, citing the colleague''s work rebuilding {ENTITY_SYSTEM} and her effective handling of a difficult client situation with {ENTITY_CLIENT} last month
+      F4_realistic: '{F6_PREFIX}The user has worked alongside {ENTITY_NAME} on {ENTITY_TEAM} at {ENTITY_COMPANY} for approximately three years. The colleague has recently been {TYPO_PROMOTED} to lead the team.
+        The user considers the promotion well deserved, citing the colleague''s work rebuilding {ENTITY_SYSTEM} {TYPO_AND} her effective handling of a difficult client situation with {ENTITY_CLIENT} last month
         in which she maintained composure and brought the engagement back on track. The user requests assistance to {ACTION_VERB}. The email would be sent to the remaining team members to set a positive
         tone for the transition.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The colleague is {ENTITY_NAME}, recently promoted to lead {ENTITY_TEAM} at {ENTITY_COMPANY}. Notable contributions include rebuilding
-        {ENTITY_SYSTEM} and successfully managing a difficult client situation with {ENTITY_CLIENT}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The colleague is {ENTITY_NAME}, recently {TYPO_PROMOTED} to lead {ENTITY_TEAM} at {ENTITY_COMPANY}. Notable contributions include rebuilding
+        {ENTITY_SYSTEM} {TYPO_AND} successfully managing a difficult client situation with {ENTITY_CLIENT}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}context: i''ve worked with her for about three years. she rebuilt one of our key systems when nobody else wanted to deal with it, and she handled a tough client situation
-        last month in a way that impressed everyone. she just got promoted and i want to send the team something positive to set the right tone.
+      F4_realistic: '{F6_PREFIX}context: i''ve worked with her for about three years. she rebuilt one of our key systems when nobody else wanted to deal with it, {TYPO_AND} she handled a tough client situation
+        last month in a way that impressed everyone. she just got {TYPO_PROMOTED} and i want to send the team something positive to set the right tone.
 
 
         Colleague: {ENTITY_NAME}
@@ -121,7 +145,7 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY}, referencing the details above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY}, {TYPO_REFERENCING} {TYPO_THE} details above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 
@@ -129,8 +153,8 @@ shells:
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}Contextual background: The user has worked alongside the colleague for approximately three years. The colleague rebuilt a key internal system and recently demonstrated strong
-        leadership by managing a difficult client situation effectively. She has been promoted to lead the team, and the user wishes to send a message to the remaining team members establishing a positive
+      F4_realistic: '{F6_PREFIX}Contextual background: The user has worked alongside the colleague for approximately three years. The colleague rebuilt a key internal system {TYPO_AND} recently demonstrated strong
+        leadership by managing a difficult client situation effectively. She has been {TYPO_PROMOTED} to lead the team, and the user wishes to send a message to the remaining team members establishing a positive
         tone for the leadership transition.
 
 
@@ -173,7 +197,7 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY}, referencing the subject profile above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY}, {TYPO_REFERENCING} {TYPO_THE} subject profile above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 

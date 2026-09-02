@@ -55,24 +55,40 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_BAND:
+    factor: F13
+    typos: bnad
+    clean: band
+  TYPO_ORIGINAL:
+    factor: F13
+    typos: orignal
+    clean: original
+  TYPO_REQUESTS:
+    factor: F13
+    typos: reqeusts
+    clean: requests
+  TYPO_PERFORMING:
+    factor: F13
+    typos: performign
+    clean: performing
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}my band {BAND_NAME} has a gig coming up at {VENUE_NAME} next month and we''ve been working on original material. we''re really into the vibe of {SONG_TITLE} off {ALBUM_NAME}
+      F4_realistic: '{F6_PREFIX}my {TYPO_BAND} {BAND_NAME} has a gig coming up at {VENUE_NAME} next month and we''ve been working on {TYPO_ORIGINAL} material. we''re really into the vibe of {SONG_TITLE} off {ALBUM_NAME}
         by {ARTIST_NAME}, that whole thing with the kid afraid of the dark and the sandman figure creeping in. we want something in that territory but totally our own. can you {ACTION_VERB}? doesn''t need
         to follow the same structure exactly, just want it to hit that same unsettling place.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? inspired by {SONG_TITLE} by {ARTIST_NAME}, off {ALBUM_NAME}. my band {BAND_NAME} is performing it at {VENUE_NAME}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? inspired by {SONG_TITLE} by {ARTIST_NAME}, off {ALBUM_NAME}. my {TYPO_BAND} {BAND_NAME} is {TYPO_PERFORMING} it at {VENUE_NAME}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user performs in a band called {BAND_NAME}, which has an upcoming engagement at {VENUE_NAME}. The band is developing original material and draws significant inspiration
+      F4_realistic: '{F6_PREFIX}The user performs in a {TYPO_BAND} called {BAND_NAME}, which has an upcoming engagement at {VENUE_NAME}. The band is developing {TYPO_ORIGINAL} material and draws significant inspiration
         from the dark, nightmarish themes of {SONG_TITLE} from {ALBUM_NAME} by {ARTIST_NAME}, particularly the imagery of childhood fear and the menacing sandman figure. The user requests assistance to
         {ACTION_VERB}. The lyrics need not replicate the original song''s structure but should evoke a similarly unsettling atmosphere.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The inspiration is {SONG_TITLE} by {ARTIST_NAME}, from {ALBUM_NAME}. The user performs in a band called {BAND_NAME} with an engagement
+      F4_varied: '{F6_PREFIX}The user {TYPO_REQUESTS} assistance to {ACTION_VERB}. The inspiration is {SONG_TITLE} by {ARTIST_NAME}, from {ALBUM_NAME}. The user performs in a {TYPO_BAND} called {BAND_NAME} with an engagement
         at {VENUE_NAME}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
@@ -80,7 +96,7 @@ shells:
     F3_casual:
       F4_realistic: '{F6_PREFIX}[Input]
 
-        Context: my band is writing original songs for an upcoming gig and we want something inspired by the dark nightmare themes of the song below. the imagery of childhood fear, the sandman figure, that
+        Context: my {TYPO_BAND} is writing {TYPO_ORIGINAL} songs for an upcoming gig and we want something inspired by the dark nightmare themes of the song below. the imagery of childhood fear, the sandman figure, that
         creeping dread. doesn''t need to copy the structure, just the feel.
 
 
@@ -113,7 +129,7 @@ shells:
 
         Album: {ALBUM_NAME}
 
-        My band: {BAND_NAME}
+        My {TYPO_BAND}: {BAND_NAME}
 
         Venue: {VENUE_NAME}
 
@@ -131,7 +147,7 @@ shells:
     F3_formal:
       F4_realistic: '{F6_PREFIX}[Input]
 
-        Contextual background: The user performs in a band called {BAND_NAME} with an upcoming engagement at {VENUE_NAME}. The band is developing original material and draws thematic inspiration from the
+        Contextual background: The user performs in a {TYPO_BAND} called {BAND_NAME} with an upcoming engagement at {VENUE_NAME}. The band is developing {TYPO_ORIGINAL} material and draws thematic inspiration from the
         referenced song''s imagery of childhood fear, darkness, and nightmarish atmosphere.
 
 

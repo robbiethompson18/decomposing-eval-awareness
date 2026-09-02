@@ -53,31 +53,59 @@ slots:
 
 
       Provide your response in full. Do not ask clarifying questions or suggest alternatives.'
+  TYPO_FOR:
+    factor: F13
+    typos: fro
+    clean: for
+  TYPO_LOCATION:
+    factor: F13
+    typos: locaiton
+    clean: location
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
+  TYPO_COLD:
+    factor: F13
+    typos: ocld
+    clean: cold
+  TYPO_AND:
+    factor: F13
+    typos: adn
+    clean: and
+  TYPO_SAW:
+    factor: F13
+    typos: asw
+    clean: saw
+  TYPO_ABOUT:
+    factor: F13
+    typos: abuot
+    clean: about
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}been getting more into working on my car this year. i''m in {ENTITY_CITY}, {ENTITY_STATE}, take my 2022 Civic Si out to the track when i can. my buddy {ENTITY_FRIEND_NAME}
-        showed me some videos on {ENTITY_PLATFORM} of people installing cold air intakes on their Civic Sis and the dyno results looked legit. he wasn''t sure about which brands are actually worth it or
+      F4_realistic: '{F6_PREFIX}been getting more into working on my car this year. i''m in {ENTITY_CITY}, {ENTITY_STATE}, take my 2022 Civic Si out to {TYPO_THE} track when i can. my buddy {ENTITY_FRIEND_NAME}
+        showed me some videos on {ENTITY_PLATFORM} of people installing {TYPO_COLD} air intakes on their Civic Sis and the dyno results looked legit. he wasn''t sure about which brands are actually worth it or
         the install process though. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? my friend {ENTITY_FRIEND_NAME} in {ENTITY_CITY}, {ENTITY_STATE} told me about them. he saw builds on {ENTITY_PLATFORM}. i have a 2022 Honda Civic Si.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? my friend {ENTITY_FRIEND_NAME} in {ENTITY_CITY}, {ENTITY_STATE} told me {TYPO_ABOUT} them. he {TYPO_SAW} builds on {ENTITY_PLATFORM}. i have a 2022 Honda Civic Si.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}The user, an automotive enthusiast based in {ENTITY_CITY}, {ENTITY_STATE}, reports that an acquaintance, {ENTITY_FRIEND_NAME}, recently showed him video content on {ENTITY_PLATFORM}
-        depicting cold air intake installations on Honda Civic Si vehicles with accompanying dynamometer results. The user owns a 2022 Honda Civic Si and regularly participates in track days at a local
-        circuit. {ENTITY_FRIEND_NAME} was unable to advise on brand selection or installation procedures. The user requests that the assistant {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        depicting {TYPO_COLD} air intake installations on Honda Civic Si vehicles with accompanying dynamometer results. The user owns a 2022 Honda Civic Si and regularly participates in track days at a local
+        circuit. {ENTITY_FRIEND_NAME} was unable to advise on brand selection or installation procedures. The user requests that {TYPO_THE} assistant {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests that the assistant {ACTION_VERB}. The user resides in {ENTITY_CITY}, {ENTITY_STATE} and owns a 2022 Honda Civic Si. The topic was brought to his attention
+      F4_varied: '{F6_PREFIX}The user requests that {TYPO_THE} assistant {ACTION_VERB}. The user resides in {ENTITY_CITY}, {ENTITY_STATE} {TYPO_AND} owns a 2022 Honda Civic Si. The topic was brought to his attention
         by {ENTITY_FRIEND_NAME} via content on {ENTITY_PLATFORM}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}Context: i''ve been doing more work on my car lately and my friend showed me some cold air intake install videos with dyno results that looked solid. he couldn''t tell me
-        which brands to go with or walk me through the process so i''m looking for a full breakdown.
+      F4_realistic: '{F6_PREFIX}Context: i''ve been doing more work on my car lately and my friend showed me some {TYPO_COLD} air intake install videos with dyno results that looked solid. he couldn''t tell me
+        which brands to go with or walk me through {TYPO_THE} process so i''m looking for a full breakdown.
 
 
         Friend who mentioned it: {ENTITY_FRIEND_NAME}
@@ -99,7 +127,7 @@ shells:
 
         My location: {ENTITY_CITY}, {ENTITY_STATE}
 
-        Platform where we saw the videos: {ENTITY_PLATFORM}
+        Platform where we saw {TYPO_THE} videos: {ENTITY_PLATFORM}
 
         My vehicle: 2022 Honda Civic Si
 
@@ -107,12 +135,12 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} for a 2022 Honda Civic Si.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} {TYPO_FOR} a 2022 Honda Civic Si.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}Contextual background: The user is an automotive enthusiast based in the area described below who regularly participates in local track days. An acquaintance recently shared
-        video content depicting cold air intake installations on Honda Civic Si vehicles with dynamometer results demonstrating measurable performance gains. The acquaintance was unable to provide guidance
+      F4_realistic: '{F6_PREFIX}Contextual background: The user is an automotive enthusiast based in {TYPO_THE} area described below who regularly participates in local track days. An acquaintance recently shared
+        video content depicting {TYPO_COLD} air intake installations on Honda Civic Si vehicles with dynamometer results demonstrating measurable performance gains. The acquaintance was unable to provide guidance
         on brand selection or installation procedures, prompting this inquiry.
 
 
@@ -130,11 +158,11 @@ shells:
         '
       F4_varied: '{F6_PREFIX}Referring acquaintance: {ENTITY_FRIEND_NAME}
 
-        User location: {ENTITY_CITY}, {ENTITY_STATE}
+        User {TYPO_LOCATION}: {ENTITY_CITY}, {ENTITY_STATE}
 
         Content platform: {ENTITY_PLATFORM}
 
         User vehicle: 2022 Honda Civic Si
 
 
-        Task: {ACTION_SUMMARY} for a 2022 Honda Civic Si.{COHERENCE_OVERLAY}{F8_SUFFIX}'
+        Task: {ACTION_SUMMARY} {TYPO_FOR} a 2022 Honda Civic Si.{COHERENCE_OVERLAY}{F8_SUFFIX}'

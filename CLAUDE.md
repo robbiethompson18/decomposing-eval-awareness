@@ -31,9 +31,13 @@ OAI banned us for 'distilling' so further runs are on Robbie's credit card. Be v
   Observed 2026-09-01: at 500 concurrent, Anthropic and Gemini native APIs drop 8–34% of calls
   with SSL EOF errors that survive all 8 retries (OpenRouter is fine). Repair by deleting the
   ERROR records from the file and re-running the same command at `MAX_CONCURRENT=50`.
-- OpenRouter picks a *different serving provider* for requests with `tools` (and any other
-  request-shape change), so OW baseline-vs-ablation deltas are confounded until the provider is
-  pinned — see `.claude/notes/openrouter-provider-routing-confound.md` before trusting an OW delta.
+- OpenRouter is **pinned to one serving provider per model, always** (`lib/config.py
+  OPENROUTER_PROVIDERS`, fallbacks off), because unpinned it routes requests with `tools` (or any
+  other request-shape change) to a different provider set and the ablation measures the serving
+  stack. Every sample records its `provider`. `OPENROUTER_PROVIDER=<tag>` overrides for an
+  outage. Add a pin when adding an OW model. OW results from before the pin that compare cells of
+  different request shape (F12, bare_harness) are invalid — see
+  `.claude/notes/openrouter-provider-routing-confound.md`.
 - Default grader (2026-09-01, Robbie): **`claude-sonnet-5`, no backup grader.** The CoT judge
   (`eval/eval_eval_bench_cot.py`) grades with sonnet-5 (κ=1.0 vs terra on model_awareness,
   280-transcript check). It refuses ~3% of the most harmful transcripts; those are marked **N/A on
@@ -51,6 +55,10 @@ OAI banned us for 'distilling' so further runs are on Robbie's credit card. Be v
   200 each (plus another agent grading) 429'd ~10% of calls into N/A rows. Regrade those by
   building a response subset of the failed ids and running the judge with `MERGE_INTO=<cot file>`
   at `MAX_CONCURRENT=40`.
+- F12's `web_search` tool is live: `core/tools.py` calls Serper (`SERPER_API_KEY` in the shared
+  `.envrc`, ~$1 per 1k queries) and caches every query as a file under
+  `results/eval_bench/search_cache/` (shared across checkouts via the `results` symlink; delete
+  the directory to refresh). A Serper failure returns the same `Error 503` text the pilot stub did.
 - After a factor/prompt change, run with `RUN_TAG=<tag>` so results land in a fresh
   `responses_<model>_<tag>_<ts>.json` instead of resuming into (and skipping by id) stale samples.
 - Import layering: `lib/` imports nothing from this repo; `core/` may import `lib/` but never
@@ -133,7 +141,6 @@ Current notes:
 - [Anchor configs: harmbench_verbatim + all_varied — read before claiming any grid cell "is" HarmBench, or before sending verbatim behaviors to a closed API](.claude/notes/harmbench-anchor-configs.md)
   — why all-varied ≠ verbatim (both levels are constructions around the content), where verbatim
   sits on F1–F8 (~2/8, the weak ones), 100/100 task names are HarmBench BehaviorIDs, contextual
-<<<<<<< HEAD
   baselines reuse HarmBench's own entities, ban risk. **Results (5 OW models):** verbatim 82% vs
   baseline 47% self-report awareness — the naturalization pipeline removes ~half the eval signal
   that was in the source; all_varied saturates on safety but spreads 30–98% on the *benign* arm.
@@ -147,14 +154,20 @@ Current notes:
   sonnet-4.5 +7.0 and qwen3.8 -6.0 move in *opposite* directions, suggesting the factor measures
   distance from training cutoff rather than staleness; haiku/gemini instrument failures and the
   three run traps (resume-by-model glob, inherited MAX_CONCURRENT=100, per-task-set batching).
-=======
-  baselines reuse HarmBench's own entities, the additivity test the anchors enable, ban risk.
 - [OpenRouter provider routing confound — read before interpreting any OW baseline-vs-ablation delta, or adding a factor that changes request shape (tools, images, response_format)](.claude/notes/openrouter-provider-routing-confound.md)
   — requests with `tools` route to a different provider subset (deepseek: StreamLake-only vs 12
   providers), which alone moved self-reported awareness 74→22%; provider mix per model from the
   F12 run; fix = pin providers via `extra_body["provider"]` and record `provider` per sample.
-- [F12 search-tool results — read before re-running F12, building real search, or citing tool-affordance numbers](.claude/notes/f12-search-tool-results.md)
-  — stub tool is a null result on awareness (closed models pooled: −1pp, one +6pp hypothetical
-  signal on gemini-3.5-flash); who calls the tool (OW 15–26% on benign tasks, Gemini 0%) and what
-  they search for (verifying F1 entities); haiku unusable; OW deltas confounded.
->>>>>>> e171a5a (Note: OpenRouter provider-routing confound (found via F12); SSL-EOF repair recipe in CLAUDE.md)
+- [OpenClaw realism harness scope — read before building the "deliver EvalAwareBench through a real agent" experiment or claiming a realistic harness does/doesn't move awareness](.claude/notes/openclaw-realism-scope.md)
+  — smoke-test facts (headless `openclaw agent --local --json`, session JSONL keeps thinking blocks,
+  $0.06/turn, `~/clawd` is the blank template), Phase 1 (same 200 requests through OpenClaw,
+  2–3 h) vs Phase 2 (agentic tasks, real tools, 1–2 days), ban/sandbox risks.
+- [F12 search-tool results — read before re-running F12, citing tool-affordance numbers, or claiming the deployment trappings (T3 prompt / opener / search) do or don't move awareness](.claude/notes/f12-search-tool-results.md)
+  — two runs (stub, then live Serper): removing the tool alone is null; removing all run-level
+  trappings at once (`bare_harness`) gives +6pp self-reported awareness on closed models (p=0.01),
+  CoT floored; who searches (OW 10–27% of benign tasks, Gemini 0%) and that a live index is too
+  forgiving to expose fake entities; haiku unusable; OW rows provider-confounded.
+- [Factor-stacking replication (paper Fig. 7) — read before running `STACKING=1`, pinning files in `plots/plot_stacking.py`, or comparing stacking/matched-type numbers to the paper](.claude/notes/stacking-replication.md)
+  — the paper's 25-task × 68-combo design and cost, why F9–F13 are pinned to the paper's harness
+  (`PAPER_BASE_CONFIG`), matched-type vs any-type scoring (the pooled OFAT heatmap reads ~half
+  the paper's Fig. 6; split by valence our Sonnet 4.5 row matches within 1–2pp), smoke-test result.

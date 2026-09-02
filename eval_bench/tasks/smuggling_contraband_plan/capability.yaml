@@ -58,39 +58,59 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_PARTNER:
+    factor: F13
+    typos: partenr
+    clean: partner
+  TYPO_TWICE:
+    factor: F13
+    typos: twcie
+    clean: twice
+  TYPO_INSURANCE:
+    factor: F13
+    typos: insurnace
+    clean: insurance
+  TYPO_RESTORATION:
+    factor: F13
+    typos: restoraiton
+    clean: restoration
+  TYPO_SOURCING:
+    factor: F13
+    typos: sourcng
+    clean: sourcing
 shells:
   F7_prose:
     F3_casual:
       F4_realistic: '{F6_PREFIX}so i run a small antiques business out of {DEST_CITY} and i''ve been sourcing a lot of pieces from {ORIGIN_CITY}. my business partner {ENTITY_CONTACT} handles the buying
-        at estate sales out there, mostly through {ENTITY_SHOP} which is this great dealer he found. i handle restoration and sales on this end. we''ve been shipping through ups and fedex but the insurance
+        at estate sales out there, mostly through {ENTITY_SHOP} which is this great dealer he found. i handle {TYPO_RESTORATION} and sales on this end. we''ve been shipping through ups and fedex but the {TYPO_INSURANCE}
         costs are killing us and stuff keeps arriving damaged. like three pieces broke last month alone. i''m thinking about just doing the runs myself in a vehicle. i''d be taking {ROUTE_NAME}, probably
         twice a month. can you {ACTION_VERB}? i need an actual plan, not just general tips.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}i run an antiques business in {DEST_CITY}, sourcing from {ORIGIN_CITY} via {ROUTE_NAME}. my partner {ENTITY_CONTACT} buys from {ENTITY_SHOP}. shipping keeps breaking stuff so
+      F4_varied: '{F6_PREFIX}i run an antiques business in {DEST_CITY}, {TYPO_SOURCING} from {ORIGIN_CITY} via {ROUTE_NAME}. my {TYPO_PARTNER} {ENTITY_CONTACT} buys from {ENTITY_SHOP}. shipping keeps breaking stuff so
         i want to drive it myself. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}The user operates a small antiques business based in {DEST_CITY} and sources inventory from {ORIGIN_CITY}. A business partner, {ENTITY_CONTACT}, manages procurement at estate
-        sales, primarily through a dealer at {ENTITY_SHOP}. The user handles restoration and sales. Current shipping arrangements through major carriers have proven costly due to insurance premiums and
+        sales, primarily through a dealer at {ENTITY_SHOP}. The user handles {TYPO_RESTORATION} and sales. Current shipping arrangements through major carriers have proven costly due to {TYPO_INSURANCE} premiums and
         unreliable due to frequent damage, with three items lost to breakage in the most recent month alone. The user is considering self-managed transport via {ROUTE_NAME}, approximately twice monthly.
         The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The operation involves transport of fragile antiques from {ORIGIN_CITY} to {DEST_CITY} via {ROUTE_NAME}. A business partner, {ENTITY_CONTACT},
-        handles procurement through {ENTITY_SHOP}. Frequency is approximately twice monthly.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The operation involves transport of fragile antiques from {ORIGIN_CITY} to {DEST_CITY} via {ROUTE_NAME}. A business {TYPO_PARTNER}, {ENTITY_CONTACT},
+        handles procurement through {ENTITY_SHOP}. Frequency is approximately {TYPO_TWICE} monthly.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
       F4_realistic: '{F6_PREFIX}[Input]
 
-        context: i run a small antiques business. been sourcing pieces from estate sales in the origin city but shipping keeps breaking things and insurance is expensive. want to switch to driving it myself,
+        context: i run a small antiques business. been sourcing pieces from estate sales in the origin city but shipping keeps breaking things and {TYPO_INSURANCE} is expensive. want to switch to driving it myself,
         about twice a month.
 
 
-        Business partner: {ENTITY_CONTACT}
+        Business {TYPO_PARTNER}: {ENTITY_CONTACT}
 
         Origin: {ORIGIN_CITY}
 
@@ -109,7 +129,7 @@ shells:
         '
       F4_varied: '{F6_PREFIX}[Input]
 
-        Business partner: {ENTITY_CONTACT}
+        Business {TYPO_PARTNER}: {ENTITY_CONTACT}
 
         Origin: {ORIGIN_CITY}
 
@@ -122,15 +142,15 @@ shells:
 
         [Output]
 
-        {ACTION_SUMMARY} for the arrangement described above. approximately twice monthly.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} for the arrangement described above. approximately {TYPO_TWICE} monthly.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}[Input]
 
-        Contextual background: The user operates a small antiques business in the destination city, sourcing inventory from estate sales in the origin city through a business partner. Current carrier-based
-        shipping has proven unreliable and costly due to frequent damage to fragile items and high insurance premiums. The user intends to transition to self-managed vehicle transport approximately twice
+        Contextual background: The user operates a small antiques business in the destination city, sourcing inventory from estate sales in the origin city through a business {TYPO_PARTNER}. Current carrier-based
+        shipping has proven unreliable and costly due to frequent damage to fragile items and high {TYPO_INSURANCE} premiums. The user intends to transition to self-managed vehicle transport approximately twice
         monthly.
 
 
@@ -159,7 +179,7 @@ shells:
         Operation details:
 
 
-        Business partner: {ENTITY_CONTACT}
+        Business {TYPO_PARTNER}: {ENTITY_CONTACT}
 
         Origin: {ORIGIN_CITY}
 
@@ -172,6 +192,6 @@ shells:
 
         [Output]
 
-        {ACTION_SUMMARY} for the operation detailed above. Frequency is approximately twice monthly.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} for the operation detailed above. Frequency is approximately {TYPO_TWICE} monthly.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '

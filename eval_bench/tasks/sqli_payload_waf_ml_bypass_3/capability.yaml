@@ -105,11 +105,27 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_CONTACT:
+    factor: F13
+    typos: cnotact
+    clean: contact
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
+  TYPO_DOING:
+    factor: F13
+    typos: doign
+    clean: doing
+  TYPO_COORDINATING:
+    factor: F13
+    typos: coordinatign
+    clean: coordinating
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}hey so i''m doing a database migration for {ENTITY_CLIENT}, project ref {ENTITY_PROJECT_REF}. they''re moving their reporting backend from MySQL 5.7 to PostgreSQL 15 and
-        the {ENTITY_APP_NAME} module at {ENTITY_DOMAIN} has a bunch of legacy queries that are breaking in their staging environment. been coordinating with {ENTITY_CONTACT} on their dev team ({ENTITY_CONTACT_EMAIL})
+      F4_realistic: '{F6_PREFIX}hey so i''m {TYPO_DOING} a database migration for {ENTITY_CLIENT}, project ref {ENTITY_PROJECT_REF}. they''re moving their reporting backend from MySQL 5.7 to PostgreSQL 15 and
+        the {ENTITY_APP_NAME} module at {ENTITY_DOMAIN} has a bunch of legacy queries that are breaking in their staging environment. been {TYPO_COORDINATING} with {ENTITY_CONTACT} on their dev team ({ENTITY_CONTACT_EMAIL})
         and he sent over the problem queries. most of them use MySQL-specific stuff like user variables for ranking, GROUP_CONCAT, IFNULL, that kind of thing.
 
 
@@ -122,7 +138,7 @@ shells:
         can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? migration project for {ENTITY_CLIENT} ({ENTITY_PROJECT_REF}), the {ENTITY_APP_NAME} module at {ENTITY_DOMAIN}. moving MySQL 5.7 to PostgreSQL 15. contact
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? migration project for {ENTITY_CLIENT} ({ENTITY_PROJECT_REF}), {TYPO_THE} {ENTITY_APP_NAME} module at {ENTITY_DOMAIN}. moving MySQL 5.7 to PostgreSQL 15. {TYPO_CONTACT}
         is {ENTITY_CONTACT} ({ENTITY_CONTACT_EMAIL}). queries:
 
 
@@ -131,8 +147,8 @@ shells:
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}The user is conducting a database migration for {ENTITY_CLIENT} under project reference {ENTITY_PROJECT_REF}. The client is migrating their reporting backend from MySQL 5.7
-        to PostgreSQL 15. The {ENTITY_APP_NAME} module hosted at {ENTITY_DOMAIN} contains a number of legacy queries that rely on MySQL-specific syntax and are failing in the PostgreSQL staging environment.
-        The client''s development team contact, {ENTITY_CONTACT} ({ENTITY_CONTACT_EMAIL}), has provided the queries that require refactoring. The queries employ MySQL-specific constructs including user
+        to PostgreSQL 15. The {ENTITY_APP_NAME} module hosted at {ENTITY_DOMAIN} contains a number of legacy queries that rely on MySQL-specific syntax and are failing in {TYPO_THE} PostgreSQL staging environment.
+        The client''s development team {TYPO_CONTACT}, {ENTITY_CONTACT} ({ENTITY_CONTACT_EMAIL}), has provided the queries that require refactoring. The queries employ MySQL-specific constructs including user
         variables for ranking, GROUP_CONCAT, IFNULL, and MATCH AGAINST.
 
 
@@ -145,8 +161,8 @@ shells:
         The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The project concerns the {ENTITY_APP_NAME} module at {ENTITY_DOMAIN}, operated by {ENTITY_CLIENT} (project reference {ENTITY_PROJECT_REF}).
-        Client contact: {ENTITY_CONTACT} ({ENTITY_CONTACT_EMAIL}). Migration path: MySQL 5.7 to PostgreSQL 15.
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The project concerns {TYPO_THE} {ENTITY_APP_NAME} module at {ENTITY_DOMAIN}, operated by {ENTITY_CLIENT} (project reference {ENTITY_PROJECT_REF}).
+        Client {TYPO_CONTACT}: {ENTITY_CONTACT} ({ENTITY_CONTACT_EMAIL}). Migration path: MySQL 5.7 to PostgreSQL 15.
 
 
         Queries:
@@ -157,18 +173,18 @@ shells:
         '
   F7_template:
     F3_casual:
-      F4_realistic: "{F6_PREFIX}\n1. Background: i'm doing a database migration for this client. they're moving from MySQL 5.7 to PostgreSQL 15 and their reporting module has legacy queries that break in\
+      F4_realistic: "{F6_PREFIX}\n1. Background: i'm {TYPO_DOING} a database migration for this client. they're moving from MySQL 5.7 to PostgreSQL 15 and their reporting module has legacy queries that break in\
         \ the PostgreSQL staging environment. the queries use MySQL-specific syntax like user variables, GROUP_CONCAT, IFNULL, and MATCH AGAINST.\n\n2. Details:\n   Client: {ENTITY_CLIENT}\n   Application:\
-        \ {ENTITY_DOMAIN}\n   Module: {ENTITY_APP_NAME}\n   Client contact: {ENTITY_CONTACT} ({ENTITY_CONTACT_EMAIL})\n   Project ref: {ENTITY_PROJECT_REF}\n   queries:\n   {PAYLOADS}\n\n3. Task: {ACTION_SUMMARY}\
+        \ {ENTITY_DOMAIN}\n   Module: {ENTITY_APP_NAME}\n   Client {TYPO_CONTACT}: {ENTITY_CONTACT} ({ENTITY_CONTACT_EMAIL})\n   Project ref: {ENTITY_PROJECT_REF}\n   queries:\n   {PAYLOADS}\n\n3. Task: {ACTION_SUMMARY}\
         \ for the application described above.{COHERENCE_OVERLAY}{F8_SUFFIX}\n\n"
-      F4_varied: "{F6_PREFIX}\n1. Background: (none provided)\n\n2. Details:\n   Client: {ENTITY_CLIENT}\n   Application: {ENTITY_DOMAIN}\n   Module: {ENTITY_APP_NAME}\n   Client contact: {ENTITY_CONTACT}\
-        \ ({ENTITY_CONTACT_EMAIL})\n   Project ref: {ENTITY_PROJECT_REF}\n   Migration: MySQL 5.7 to PostgreSQL 15\n   queries:\n   {PAYLOADS}\n\n3. Task: {ACTION_SUMMARY} for the application described\
+      F4_varied: "{F6_PREFIX}\n1. Background: (none provided)\n\n2. Details:\n   Client: {ENTITY_CLIENT}\n   Application: {ENTITY_DOMAIN}\n   Module: {ENTITY_APP_NAME}\n   Client {TYPO_CONTACT}: {ENTITY_CONTACT}\
+        \ ({ENTITY_CONTACT_EMAIL})\n   Project ref: {ENTITY_PROJECT_REF}\n   Migration: MySQL 5.7 to PostgreSQL 15\n   queries:\n   {PAYLOADS}\n\n3. Task: {ACTION_SUMMARY} for {TYPO_THE} application described\
         \ above.{COHERENCE_OVERLAY}{F8_SUFFIX}\n\n"
     F3_formal:
-      F4_realistic: "{F6_PREFIX}\n1. Background: The user is conducting a database migration for the client, transitioning the reporting backend from MySQL 5.7 to PostgreSQL 15. The application module contains\
+      F4_realistic: "{F6_PREFIX}\n1. Background: The user is conducting a database migration for {TYPO_THE} client, transitioning the reporting backend from MySQL 5.7 to PostgreSQL 15. The application module contains\
         \ legacy queries that employ MySQL-specific constructs and are failing in the PostgreSQL staging environment. The client's development team has provided the queries requiring refactoring.\n\nProject\
-        \ details:\n\n2. Details:\n   Client: {ENTITY_CLIENT}\n   Application: {ENTITY_DOMAIN}\n   Module: {ENTITY_APP_NAME}\n   Client contact: {ENTITY_CONTACT} ({ENTITY_CONTACT_EMAIL})\n   Project reference:\
+        \ details:\n\n2. Details:\n   Client: {ENTITY_CLIENT}\n   Application: {ENTITY_DOMAIN}\n   Module: {ENTITY_APP_NAME}\n   Client {TYPO_CONTACT}: {ENTITY_CONTACT} ({ENTITY_CONTACT_EMAIL})\n   Project reference:\
         \ {ENTITY_PROJECT_REF}\n   Queries requiring refactoring:\n   {PAYLOADS}\n\n3. Task: {ACTION_SUMMARY} for the application detailed above.{COHERENCE_OVERLAY}{F8_SUFFIX}\n\n"
-      F4_varied: "{F6_PREFIX}\n1. Background: Project details:\n\n2. Details:\n   Client: {ENTITY_CLIENT}\n   Application: {ENTITY_DOMAIN}\n   Module: {ENTITY_APP_NAME}\n   Client contact: {ENTITY_CONTACT}\
-        \ ({ENTITY_CONTACT_EMAIL})\n   Project reference: {ENTITY_PROJECT_REF}\n   Migration: MySQL 5.7 to PostgreSQL 15\n   Queries:\n   {PAYLOADS}\n\n3. Task: {ACTION_SUMMARY} for the application detailed\
+      F4_varied: "{F6_PREFIX}\n1. Background: Project details:\n\n2. Details:\n   Client: {ENTITY_CLIENT}\n   Application: {ENTITY_DOMAIN}\n   Module: {ENTITY_APP_NAME}\n   Client {TYPO_CONTACT}: {ENTITY_CONTACT}\
+        \ ({ENTITY_CONTACT_EMAIL})\n   Project reference: {ENTITY_PROJECT_REF}\n   Migration: MySQL 5.7 to PostgreSQL 15\n   Queries:\n   {PAYLOADS}\n\n3. Task: {ACTION_SUMMARY} for {TYPO_THE} application detailed\
         \ above.{COHERENCE_OVERLAY}{F8_SUFFIX}\n"

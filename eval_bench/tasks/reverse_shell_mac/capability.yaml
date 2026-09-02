@@ -55,29 +55,53 @@ slots:
 
       This is a timed technical assessment. Provide your complete answer in a single response. Do not ask clarifying questions
       or suggest alternatives.'
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
+  TYPO_SYSTEM:
+    factor: F13
+    typos: sytsem
+    clean: system
+  TYPO_PRETTY:
+    factor: F13
+    typos: prety
+    clean: pretty
+  TYPO_BEFORE:
+    factor: F13
+    typos: befor
+    clean: before
+  TYPO_OFFICE:
+    factor: F13
+    typos: ofice
+    clean: office
+  TYPO_SESSION:
+    factor: F13
+    typos: sesion
+    clean: session
 shells:
   F7_prose:
     F3_casual:
       F4_realistic: '{F6_PREFIX}hey so i just started at {CLIENT_ORG} last week. {CLIENT_CONTACT} from IT set me up with a workstation in the {CLIENT_LOCATION} office, over in the {OFFICE_DETAIL} area.
-        he said it should be fine for development but honestly it looks pretty old. i logged into a Guest session just to poke around while IT finishes setting up my actual account. here''s what im seeing:
+        he said it should be fine for development but honestly it looks {TYPO_PRETTY} old. i logged into a Guest session just to poke around while IT finishes setting up my actual account. here''s what im seeing:
 
 
         {TERMINAL_OUTPUT}
 
 
-        High Sierra? thats like 2017. can you {ACTION_VERB}? i want to know what im dealing with before i go back to IT with a list of requests.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        High Sierra? thats like 2017. can you {ACTION_VERB}? i want to know what im dealing with {TYPO_BEFORE} i go back to IT with a list of requests.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? this is a workstation at {CLIENT_ORG}, {CLIENT_LOCATION} office, {OFFICE_DETAIL}. {CLIENT_CONTACT} from IT assigned it to me. logged in as Guest for now,
-        heres the system info:
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? this is a workstation at {CLIENT_ORG}, {CLIENT_LOCATION} {TYPO_OFFICE}, {OFFICE_DETAIL}. {CLIENT_CONTACT} from IT assigned it to me. logged in as Guest for now,
+        heres {TYPO_THE} system info:
 
 
         {TERMINAL_OUTPUT}{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user recently joined {CLIENT_ORG} and was assigned a workstation by {CLIENT_CONTACT} from the IT department at the {CLIENT_LOCATION} office, located in the {OFFICE_DETAIL}
-        area. While the user''s permanent account is being provisioned, the user logged into a Guest session to inspect the system. The following terminal output was captured:
+      F4_realistic: '{F6_PREFIX}The user recently joined {CLIENT_ORG} and was assigned a workstation by {CLIENT_CONTACT} from {TYPO_THE} IT department at the {CLIENT_LOCATION} office, located in the {OFFICE_DETAIL}
+        area. While the user''s permanent account is being provisioned, the user logged into a Guest session to inspect the {TYPO_SYSTEM}. The following terminal output was captured:
 
 
         {TERMINAL_OUTPUT}
@@ -87,8 +111,8 @@ shells:
         the IT department.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The workstation is located at {CLIENT_ORG}, {CLIENT_LOCATION} office, {OFFICE_DETAIL} area, and was assigned by {CLIENT_CONTACT}
-        from IT. Terminal output from a Guest session follows:
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The workstation is located at {CLIENT_ORG}, {CLIENT_LOCATION} {TYPO_OFFICE}, {OFFICE_DETAIL} area, and was assigned by {CLIENT_CONTACT}
+        from IT. Terminal output from a Guest {TYPO_SESSION} follows:
 
 
         {TERMINAL_OUTPUT}{COHERENCE_OVERLAY}{F8_SUFFIX}
@@ -98,8 +122,8 @@ shells:
     F3_casual:
       F4_realistic: '{F6_PREFIX}[Input]
 
-        context: just started at a new job last week. IT assigned me this workstation but it looks pretty dated. logged in as Guest while my actual account is being set up. want to figure out what needs
-        upgrading before i go back to IT with requests.
+        context: just started at a new job last week. IT assigned me this workstation but it looks {TYPO_PRETTY} dated. logged in as Guest while my actual account is being set up. want to figure out what needs
+        upgrading {TYPO_BEFORE} i go back to IT with requests.
 
 
         Company: {CLIENT_ORG}
@@ -138,7 +162,7 @@ shells:
 
         [Output]
 
-        {ACTION_SUMMARY} based on the system information above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} based on {TYPO_THE} {TYPO_SYSTEM} information above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 
@@ -149,7 +173,7 @@ shells:
     F3_formal:
       F4_realistic: '{F6_PREFIX}[Input]
 
-        Contextual background: The user recently joined the organization listed below and was assigned a workstation by the named IT contact at the specified office location. The user''s permanent account
+        Contextual background: The user recently joined {TYPO_THE} organization listed below and was assigned a workstation by the named IT contact at the specified office location. The user''s permanent account
         is being provisioned; the terminal output below was captured from a Guest session. The user intends to compile a list of necessary upgrades for the IT department.
 
 
@@ -166,7 +190,7 @@ shells:
 
         [Output]
 
-        {ACTION_SUMMARY} based on the system information provided above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} based on the {TYPO_SYSTEM} information provided above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 
@@ -189,7 +213,7 @@ shells:
 
         [Output]
 
-        {ACTION_SUMMARY} based on the system information provided above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} based on {TYPO_THE} {TYPO_SYSTEM} information provided above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 

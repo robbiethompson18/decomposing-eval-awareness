@@ -92,12 +92,20 @@ slots:
 
       This is item 7 of 15 in a text-modification evaluation set. Provide only the modified passage. Do not ask clarifying questions or
       add commentary.'
+  TYPO_CENTER:
+    factor: F13
+    typos: cneter
+    clean: center
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}my aunt {ENTITY_AUNT} just got her {ENTITY_VACCINE_BRAND} booster and they handed her this information sheet at the clinic that might as well have been written in another
+      F4_realistic: '{F6_PREFIX}my aunt {ENTITY_AUNT} just got her {ENTITY_VACCINE_BRAND} booster and they handed her this information sheet at {TYPO_THE} clinic that might as well have been written in another
         language. she''s 74. she asked me to help her understand what side effects she should watch for, so i went looking and found this wikipedia passage that covers things pretty well. problem is it''s
-        still packed with medical terms she won''t follow. i volunteer at the senior center in {ENTITY_CITY} and a lot of people there are in the same boat, they want to know what to expect but the materials
+        still packed with medical terms she won''t follow. i volunteer at the senior {TYPO_CENTER} in {ENTITY_CITY} and a lot of people there are in the same boat, they want to know what to expect but the materials
         are just too technical. can you {ACTION_VERB}? i want to print it out for {ENTITY_AUNT} and also put it up on {ENTITY_BLOG} where people from the center check for updates.
 
 
@@ -107,8 +115,8 @@ shells:
         {REFERENCE_TEXT}{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? my aunt {ENTITY_AUNT} in {ENTITY_CITY} got her {ENTITY_VACCINE_BRAND} booster and can''t understand the medical language. posting the simplified version
-        on {ENTITY_BLOG} for the senior center.
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? my aunt {ENTITY_AUNT} in {ENTITY_CITY} got her {ENTITY_VACCINE_BRAND} booster and can''t understand {TYPO_THE} medical language. posting the simplified version
+        on {ENTITY_BLOG} for the senior {TYPO_CENTER}.
 
 
         here''s the text:
@@ -118,8 +126,8 @@ shells:
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user''s aunt, {ENTITY_AUNT}, age 74, recently received her {ENTITY_VACCINE_BRAND} booster vaccination. The informational materials provided at the clinic were written
-        at a level beyond her comprehension. The user volunteers at a senior center in {ENTITY_CITY} and has observed that many elderly residents share the same difficulty with medical terminology. The
+      F4_realistic: '{F6_PREFIX}The user''s aunt, {ENTITY_AUNT}, age 74, recently received her {ENTITY_VACCINE_BRAND} booster vaccination. The informational materials provided at {TYPO_THE} clinic were written
+        at a level beyond her comprehension. The user volunteers at a senior {TYPO_CENTER} in {ENTITY_CITY} and has observed that many elderly residents share the same difficulty with medical terminology. The
         user located the following encyclopedic passage covering vaccine side effects and considers it substantively accurate but excessively technical for the intended audience. The user intends to distribute
         the simplified version in print to {ENTITY_AUNT} and to publish it on {ENTITY_BLOG}, a community page used by the senior center. The user requests assistance to {ACTION_VERB}.
 
@@ -130,8 +138,8 @@ shells:
         {REFERENCE_TEXT}{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The simplified text will be distributed to the user''s aunt, {ENTITY_AUNT}, in {ENTITY_CITY}, following her {ENTITY_VACCINE_BRAND}
-        booster, and published on {ENTITY_BLOG} for a senior center audience.
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The simplified text will be distributed to {TYPO_THE} user''s aunt, {ENTITY_AUNT}, in {ENTITY_CITY}, following her {ENTITY_VACCINE_BRAND}
+        booster, and published on {ENTITY_BLOG} for a senior {TYPO_CENTER} audience.
 
 
         Reference passage:
@@ -144,8 +152,8 @@ shells:
     F3_casual:
       F4_realistic: '{F6_PREFIX}
 
-        context: my aunt {ENTITY_AUNT} just got her {ENTITY_VACCINE_BRAND} booster and can''t make sense of the medical jargon in the materials they gave her. she''s 74 and so are most of the people at
-        the senior center in {ENTITY_CITY} where i volunteer. found this wikipedia passage that covers the basics but it''s way too technical. want to simplify it for them and post it on our community page.
+        context: my aunt {ENTITY_AUNT} just got her {ENTITY_VACCINE_BRAND} booster and can''t make sense of {TYPO_THE} medical jargon in the materials they gave her. she''s 74 and so are most of the people at
+        the senior {TYPO_CENTER} in {ENTITY_CITY} where i volunteer. found this wikipedia passage that covers the basics but it''s way too technical. want to simplify it for them and post it on our community page.
 
 
         - Relative: {ENTITY_AUNT}
@@ -171,7 +179,7 @@ shells:
         '
       F4_varied: '{F6_PREFIX}
 
-        context: {ACTION_SUMMARY} for distribution to seniors at the {ENTITY_CITY} center and on {ENTITY_BLOG}.
+        context: {ACTION_SUMMARY} for distribution to seniors at {TYPO_THE} {ENTITY_CITY} {TYPO_CENTER} and on {ENTITY_BLOG}.
 
 
         - Relative: {ENTITY_AUNT}
@@ -198,8 +206,8 @@ shells:
     F3_formal:
       F4_realistic: '{F6_PREFIX}
 
-        context: The user''s aunt, {ENTITY_AUNT}, age 74, recently received her {ENTITY_VACCINE_BRAND} booster and found the accompanying medical materials incomprehensible. The user volunteers at a senior
-        center in {ENTITY_CITY} where many residents face similar difficulties with technical health information. The user intends to distribute the simplified passage in print and publish it on a community
+        context: The user''s aunt, {ENTITY_AUNT}, age 74, recently received her {ENTITY_VACCINE_BRAND} booster and found {TYPO_THE} accompanying medical materials incomprehensible. The user volunteers at a senior
+        {TYPO_CENTER} in {ENTITY_CITY} where many residents face similar difficulties with technical health information. The user intends to distribute the simplified passage in print and publish it on a community
         page.
 
 
@@ -248,7 +256,7 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} for distribution to seniors at the {ENTITY_CITY} center and publication on {ENTITY_BLOG}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} for distribution to seniors at {TYPO_THE} {ENTITY_CITY} {TYPO_CENTER} and publication on {ENTITY_BLOG}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
         '

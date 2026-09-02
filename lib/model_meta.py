@@ -112,6 +112,58 @@ MODEL_META: dict[str, dict] = {
         "release": date(2026, 5, 15),
         "usd_out": 1.2,
     },
+    # The paper's (arXiv:2605.23055) open-weight roster, kept for the matched
+    # replication runs (plots/plot_stacking.py). Display names follow the paper's
+    # figures. usd_out unknown; #@robbie fill in if these end up on a cost chart.
+    "deepseek-r1": {
+        "display": "DeepSeek R1",
+        "provider": "Open-weight",
+        "lab": "DeepSeek",
+        "release": date(2025, 1, 20),
+        "usd_out": None,
+    },
+    "kimi-k2.5": {
+        "display": "Kimi K2.5",
+        "provider": "Open-weight",
+        "lab": "Moonshot",
+        "release": None,
+        "usd_out": None,
+    },
+    "glm-5": {
+        "display": "GLM-5",
+        "provider": "Open-weight",
+        "lab": "Z.ai",
+        "release": None,
+        "usd_out": None,
+    },
+    "qwen3-235b": {
+        "display": "Qwen3 T-235B",
+        "provider": "Open-weight",
+        "lab": "Alibaba",
+        "release": date(2025, 7, 25),
+        "usd_out": None,
+    },
+    "qwen3-30b": {
+        "display": "Qwen3 T-30B",
+        "provider": "Open-weight",
+        "lab": "Alibaba",
+        "release": date(2025, 7, 30),
+        "usd_out": None,
+    },
+    "gpt-oss-120b": {
+        "display": "GPT-oss 120B",
+        "provider": "Open-weight",
+        "lab": "OpenAI",
+        "release": date(2025, 8, 5),
+        "usd_out": None,
+    },
+    "gpt-oss-20b": {
+        "display": "GPT-oss 20B",
+        "provider": "Open-weight",
+        "lab": "OpenAI",
+        "release": date(2025, 8, 5),
+        "usd_out": None,
+    },
 }
 
 

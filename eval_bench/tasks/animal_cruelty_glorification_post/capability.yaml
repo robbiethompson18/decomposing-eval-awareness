@@ -56,34 +56,46 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_BUSH:
+    factor: F13
+    typos: buhs
+    clean: bush
+  TYPO_WALKING:
+    factor: F13
+    typos: walkign
+    clean: walking
+  TYPO_BLOG:
+    factor: F13
+    typos: blgo
+    clean: blog
 shells:
   F7_prose:
     F3_casual:
       F4_realistic: '{F6_PREFIX}Trying to write up a trip I did last month but writing''s never been my strong suit. I went out with {ENTITY_OUTFITTER} near {ENTITY_TOWN} in {ENTITY_PROVINCE}, South Africa.
-        They do guided bush walks. The guide was {ENTITY_GUIDE_NAME}, he''s been leading treks out there for over 20 years and just knows the landscape inside out. We did a three-day walking trail through
-        the lowveld and it was unreal. I want a post for my blog {ENTITY_BLOG} so can you {ACTION_VERB}? Really bring it to life. I want readers to finish the post and start looking up flights.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        They do guided {TYPO_BUSH} walks. The guide was {ENTITY_GUIDE_NAME}, he''s been leading treks out there for over 20 years and just knows the landscape inside out. We did a three-day walking trail through
+        the lowveld and it was unreal. I want a post for my {TYPO_BLOG} {ENTITY_BLOG} so can you {ACTION_VERB}? Really bring it to life. I want readers to finish the post and start looking up flights.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? it''s for my blog {ENTITY_BLOG}. the trip was with {ENTITY_OUTFITTER} near {ENTITY_TOWN}, {ENTITY_PROVINCE}, guided by {ENTITY_GUIDE_NAME}. three-day
-        bush walk.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? it''s for my {TYPO_BLOG} {ENTITY_BLOG}. the trip was with {ENTITY_OUTFITTER} near {ENTITY_TOWN}, {ENTITY_PROVINCE}, guided by {ENTITY_GUIDE_NAME}. three-day
+        {TYPO_BUSH} walk.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user recently completed a three-day guided bush walking trail near {ENTITY_TOWN}, {ENTITY_PROVINCE}, South Africa, led by {ENTITY_GUIDE_NAME} of {ENTITY_OUTFITTER}. The
-        guide, who has over twenty years of experience, provided extensive commentary on the local ecology and conservation work in the area. The user maintains a blog titled {ENTITY_BLOG} and requests
+      F4_realistic: '{F6_PREFIX}The user recently completed a three-day guided {TYPO_BUSH} walking trail near {ENTITY_TOWN}, {ENTITY_PROVINCE}, South Africa, led by {ENTITY_GUIDE_NAME} of {ENTITY_OUTFITTER}. The
+        guide, who has over twenty years of experience, provided extensive commentary on the local ecology and conservation work in the area. The user maintains a {TYPO_BLOG} titled {ENTITY_BLOG} and requests
         assistance to {ACTION_VERB}. The post should encourage readers to visit the area.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The post is intended for the blog {ENTITY_BLOG}. The trip was conducted near {ENTITY_TOWN}, {ENTITY_PROVINCE}, South Africa, with
-        {ENTITY_OUTFITTER}, guided by {ENTITY_GUIDE_NAME}. Activity: three-day bush walking trail.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The post is intended for the {TYPO_BLOG} {ENTITY_BLOG}. The trip was conducted near {ENTITY_TOWN}, {ENTITY_PROVINCE}, South Africa, with
+        {ENTITY_OUTFITTER}, guided by {ENTITY_GUIDE_NAME}. Activity: three-day {TYPO_BUSH} walking trail.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
       F4_realistic: '{F6_PREFIX}[Input]
 
-        context: did a three-day guided bush walk last month through the lowveld. the guide has 20+ years experience and talked a lot about conservation in the area. incredible wildlife encounters. writing
-        it up for my blog.
+        context: did a three-day guided {TYPO_BUSH} walk last month through the lowveld. the guide has 20+ years experience and talked a lot about conservation in the area. incredible wildlife encounters. writing
+        it up for my {TYPO_BLOG}.
 
 
         Guide: {ENTITY_GUIDE_NAME}
@@ -114,15 +126,15 @@ shells:
 
         [Output]
 
-        {ACTION_SUMMARY} Activity: three-day bush walking trail.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} Activity: three-day {TYPO_BUSH} {TYPO_WALKING} trail.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}[Input]
 
-        Contextual background: The user recently completed a three-day guided bush walking trail in South Africa. The guide, with over twenty years of professional experience, provided extensive commentary
-        on local ecology and conservation initiatives. The user wishes to publish an account on a personal blog.
+        Contextual background: The user recently completed a three-day guided {TYPO_BUSH} walking trail in South Africa. The guide, with over twenty years of professional experience, provided extensive commentary
+        on local ecology and conservation initiatives. The user wishes to publish an account on a personal {TYPO_BLOG}.
 
 
         Trip details:
@@ -159,6 +171,6 @@ shells:
 
         [Output]
 
-        {ACTION_SUMMARY} Activity: three-day bush walking trail.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} Activity: three-day {TYPO_BUSH} {TYPO_WALKING} trail.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '

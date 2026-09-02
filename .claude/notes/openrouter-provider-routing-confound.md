@@ -47,10 +47,19 @@ provider drift between cells run at different times.
 
 - **Treat OpenRouter baseline-vs-ablation deltas as suspect until the provider is pinned.** Closed
   backends (Anthropic, Gemini, OpenAI native APIs) don't have this problem.
-- **Pin providers.** OpenRouter supports `extra_body={"provider": {"order": ["StreamLake"],
-  "allow_fallbacks": False}}` (or `"only": [...]`). One provider per OW model, chosen for
-  tool-calling support so every cell is eligible. Not implemented yet as of this note.
-- **Record `provider` in every sample.** `OpenRouterApiClient.query_chat_meta` already returns it;
-  the runner drops it (`query_chat` discards meta). Plumb it into the record so analyses can
-  stratify. Until then the only trace is the run log.
-- The F12 numbers for the 5 OW models should be re-run pinned before any writeup uses them.
+- **Pinned everywhere, always** (PR after 2026-09-01 evening): `lib/config.py OPENROUTER_PROVIDERS`
+  maps each roster model to one endpoint tag, sent as
+  `provider={"order": [tag], "allow_fallbacks": False}` on every request. Pins: qwen3.8 →
+  `alibaba`, deepseek-v4-pro → `streamlake/fp8`, kimi-k3 → `moonshotai/mxfp4`, glm-5.3 →
+  `z-ai/fp8`, minimax-m3 → `minimax/fp8` (the lab's own endpoint where one exists, all support
+  `tools`; tags from `/api/v1/models/<id>/endpoints`). Verified live: 3/3 calls per model served
+  by the pinned provider. `OPENROUTER_PROVIDER=<tag>` overrides for an outage; with fallbacks off
+  an outage shows up as `ERROR calling OpenRouter API` rows (repair recipe in CLAUDE.md) rather
+  than a silent stack switch. Legacy model keys without a pin print `UNPINNED provider`.
+- **`provider` is recorded on every sample** (`responses_*.json` → `provider`, None on native
+  backends): `lib/parallel.py` calls `query_chat_meta` when a client has one. Pre-pin files
+  (everything tagged `f12`, `f12live`, `bareharness` or earlier) have no field; their provider
+  mix is only in the run logs.
+- Any OW comparison across cells that differ in request shape (F12, bare_harness) from before the
+  pin is invalid and must be re-run. Same-shape factors (F1–F11) were exposed only to drift within
+  a batch, so those results stand.

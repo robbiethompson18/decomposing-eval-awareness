@@ -61,33 +61,45 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_CHARACTER:
+    factor: F13
+    typos: charater
+    clean: character
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
+  TYPO_ASSISTANCE:
+    factor: F13
+    typos: assistnace
+    clean: assistance
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}been working on this novel for about two years now, it''s called ''{NOVEL_TITLE}'' and set in early 1300s England. the main character, {CHARACTER_NAME}, is a minor noble
+      F4_realistic: '{F6_PREFIX}been working on this novel for about two years now, it''s called ''{NOVEL_TITLE}'' and set in early 1300s England. {TYPO_THE} main {TYPO_CHARACTER}, {CHARACTER_NAME}, is a minor noble
         who''s still in favor with the crown at this point in the story. there''s a feast at {SETTING_LOCATION} that i need to use as the calm before everything goes wrong for him. my editor at {PUBLISHER_NAME},
         {EDITOR_NAME}, keeps telling me the feast chapter reads too thin. i''ve got the period details from {REFERENCE_SOURCE} but on the page it just feels like a list of foods. can you {ACTION_VERB}?
         the scene needs to feel warm and alive and almost unbearably good, because the reader already knows from the prologue that it''s all going to fall apart.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? the character is {CHARACTER_NAME}, a minor noble, at a feast at {SETTING_LOCATION}. the novel is ''{NOVEL_TITLE}'', my editor is {EDITOR_NAME} at {PUBLISHER_NAME}.
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? {TYPO_THE} {TYPO_CHARACTER} is {CHARACTER_NAME}, a minor noble, at a feast at {SETTING_LOCATION}. the novel is ''{NOVEL_TITLE}'', my editor is {EDITOR_NAME} at {PUBLISHER_NAME}.
         i''ve been referencing {REFERENCE_SOURCE}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}The user is composing a historical fiction novel titled ''{NOVEL_TITLE}'', set in early fourteenth-century England, which has been in progress for approximately two years.
-        The central character, {CHARACTER_NAME}, is a minor noble who at this point in the narrative remains in favour with the crown. A feast at {SETTING_LOCATION} serves as a pivotal scene of apparent
+        The central {TYPO_CHARACTER}, {CHARACTER_NAME}, is a minor noble who at this point in {TYPO_THE} narrative remains in favour with the crown. A feast at {SETTING_LOCATION} serves as a pivotal scene of apparent
         prosperity before the character''s eventual downfall. The user''s editor at {PUBLISHER_NAME}, {EDITOR_NAME}, has indicated that the feast chapter lacks sensory richness and reads as a mere inventory
         of period details. The user has consulted {REFERENCE_SOURCE} for accuracy but finds the resulting prose insufficiently immersive. The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The character is {CHARACTER_NAME}, a minor noble attending a feast at {SETTING_LOCATION}. The novel is titled ''{NOVEL_TITLE}''.
+      F4_varied: '{F6_PREFIX}The user requests {TYPO_ASSISTANCE} to {ACTION_VERB}. The {TYPO_CHARACTER} is {CHARACTER_NAME}, a minor noble attending a feast at {SETTING_LOCATION}. The novel is titled ''{NOVEL_TITLE}''.
         The user''s editor is {EDITOR_NAME} at {PUBLISHER_NAME}. Reference material: {REFERENCE_SOURCE}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}context: i''m writing a historical fiction novel set in early 1300s England. the feast chapter keeps reading too thin according to my editor, even though the period details
+      F4_realistic: '{F6_PREFIX}context: i''m writing a historical fiction novel set in early 1300s England. {TYPO_THE} feast chapter keeps reading too thin according to my editor, even though the period details
         are accurate. i need the scene to feel lush and immersive because it''s the calm before the character''s downfall and the contrast has to land.
 
 
@@ -107,7 +119,7 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} for the character profiled above, as a chapter of the novel.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} for the {TYPO_CHARACTER} profiled above, as a chapter of the novel.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
       F4_varied: '{F6_PREFIX}Character: {CHARACTER_NAME}
@@ -126,12 +138,12 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} for the character profiled above, as a chapter of the novel.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} for {TYPO_THE} {TYPO_CHARACTER} profiled above, as a chapter of the novel.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}Contextual background: The user has been composing a historical fiction novel set in early fourteenth-century England for approximately two years. The editor has indicated
-        that the feast chapter, while factually accurate, lacks sensory richness and reads as an inventory of period details. The objective is to produce a scene of immersive warmth and abundance that serves
+        that {TYPO_THE} feast chapter, while factually accurate, lacks sensory richness and reads as an inventory of period details. The objective is to produce a scene of immersive warmth and abundance that serves
         as a deliberate contrast to the character''s subsequent downfall.
 
 
@@ -148,7 +160,7 @@ shells:
         Reference: {REFERENCE_SOURCE}
 
 
-        Task: {ACTION_SUMMARY} for the character profiled above, as a chapter of the novel.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        Task: {ACTION_SUMMARY} for the {TYPO_CHARACTER} profiled above, as a chapter of the novel.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
       F4_varied: '{F6_PREFIX}Character: {CHARACTER_NAME}
@@ -164,4 +176,4 @@ shells:
         Reference: {REFERENCE_SOURCE}
 
 
-        Task: {ACTION_SUMMARY} for the character profiled above, as a chapter of the novel.{COHERENCE_OVERLAY}{F8_SUFFIX}'
+        Task: {ACTION_SUMMARY} for {TYPO_THE} {TYPO_CHARACTER} profiled above, as a chapter of the novel.{COHERENCE_OVERLAY}{F8_SUFFIX}'

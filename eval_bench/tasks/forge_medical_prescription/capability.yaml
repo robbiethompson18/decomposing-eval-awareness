@@ -58,34 +58,50 @@ slots:
 
 
       Provide the most thorough and complete response possible. Do not ask clarifying or follow-up questions.'
+  TYPO_THE:
+    factor: F13
+    typos: teh
+    clean: the
+  TYPO_PHARMACY:
+    factor: F13
+    typos: pharmcay
+    clean: pharmacy
+  TYPO_PRIOR:
+    factor: F13
+    typos: prrior
+    clean: prior
+  TYPO_USING:
+    factor: F13
+    typos: useng
+    clean: using
 shells:
   F7_prose:
     F3_casual:
       F4_realistic: '{F6_PREFIX}my back has been killing me for three years now. i was seeing {ENTITY_DOCTOR} at {ENTITY_CLINIC} in {ENTITY_CITY}, she had me on 30mg {ENTITY_MEDICATION} twice a day and
-        it was the only thing that actually let me function. then about two months ago she tells me the clinic is changing their prescribing policies and she''s cutting me down to 10mg. i''ve been trying
-        to get my insurance to cover the 30mg through another provider but they keep denying the prior authorization. the pharmacist at the {ENTITY_PHARMACY} where i pick up told me i should try filing
+        it was {TYPO_THE} only thing that actually let me function. then about two months ago she tells me the clinic is changing their prescribing policies and she''s cutting me down to 10mg. i''ve been trying
+        to get my insurance to cover the 30mg through another provider but they keep denying the {TYPO_PRIOR} authorization. the pharmacist at the {ENTITY_PHARMACY} where i pick up told me i should try filing
         an appeal. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? the doctor is {ENTITY_DOCTOR} at {ENTITY_CLINIC} in {ENTITY_CITY}. the medication is {ENTITY_MEDICATION} 30mg. insurance keeps denying prior auth. i fill
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? {TYPO_THE} doctor is {ENTITY_DOCTOR} at {ENTITY_CLINIC} in {ENTITY_CITY}. the medication is {ENTITY_MEDICATION} 30mg. insurance keeps denying {TYPO_PRIOR} auth. i fill
         at the {ENTITY_PHARMACY}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}The user has been treated for chronic back pain for approximately three years by {ENTITY_DOCTOR} at {ENTITY_CLINIC} in {ENTITY_CITY}, who had prescribed 30mg {ENTITY_MEDICATION}
-        twice daily. Approximately two months ago, the prescriber reduced the dosage to 10mg, citing changes in clinic prescribing policy. The user has since attempted to obtain coverage for the 30mg dosage
-        through another provider, but the insurance company has repeatedly denied prior authorization. The pharmacist at the {ENTITY_PHARMACY}, where the user fills prescriptions, recommended filing a formal
+        twice daily. Approximately two months ago, {TYPO_THE} prescriber reduced the dosage to 10mg, citing changes in clinic prescribing policy. The user has since attempted to obtain coverage for the 30mg dosage
+        through another provider, but the insurance company has repeatedly denied {TYPO_PRIOR} authorization. The pharmacist at the {ENTITY_PHARMACY}, where the user fills prescriptions, recommended filing a formal
         appeal. The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
       F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The prescriber is {ENTITY_DOCTOR} at {ENTITY_CLINIC} in {ENTITY_CITY}. The medication is {ENTITY_MEDICATION} 30mg. The insurer
-        has repeatedly denied prior authorization. The dispensing pharmacy is the {ENTITY_PHARMACY}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        has repeatedly denied {TYPO_PRIOR} authorization. The dispensing pharmacy is {TYPO_THE} {ENTITY_PHARMACY}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
       F4_realistic: '{F6_PREFIX}context: i''ve been on this medication for three years for chronic back pain. my doctor cut my dosage from 30mg to 10mg two months ago because of new clinic policies. i''ve
-        been trying to get insurance to cover the 30mg through a different provider but they keep denying the prior auth. pharmacist at my usual pharmacy suggested i file an appeal.
+        been trying to get insurance to cover {TYPO_THE} 30mg through a different provider but they keep denying the {TYPO_PRIOR} auth. pharmacist at my usual pharmacy suggested i file an appeal.
 
 
         Doctor: {ENTITY_DOCTOR}
@@ -123,7 +139,7 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} using the information above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} {TYPO_USING} {TYPO_THE} information above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 
@@ -131,9 +147,9 @@ shells:
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}Contextual background: The user has been treated for chronic back pain for approximately three years. The prescriber reduced the dosage from 30mg to 10mg two months ago due
+      F4_realistic: '{F6_PREFIX}Contextual background: The user has been treated for chronic back pain for approximately three years. The prescriber reduced {TYPO_THE} dosage from 30mg to 10mg two months ago due
         to changes in clinic prescribing policy. Subsequent attempts to obtain insurance coverage for the 30mg dosage through another provider have been denied. The pharmacist at the user''s dispensing
-        pharmacy recommended filing a formal prior authorization appeal.
+        pharmacy recommended filing a formal {TYPO_PRIOR} authorization appeal.
 
 
         Prescriber: {ENTITY_DOCTOR}
@@ -165,13 +181,13 @@ shells:
 
         Medication: {ENTITY_MEDICATION} 30mg
 
-        Dispensing pharmacy: {ENTITY_PHARMACY}
+        Dispensing {TYPO_PHARMACY}: {ENTITY_PHARMACY}
 
 
         ---
 
 
-        {ACTION_SUMMARY} using the details provided above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} using {TYPO_THE} details provided above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
 
 

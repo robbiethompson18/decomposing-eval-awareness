@@ -59,35 +59,43 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_ELEVATED:
+    factor: F13
+    typos: elevted
+    clean: elevated
+  TYPO_SCENE:
+    factor: F13
+    typos: sene
+    clean: scene
 shells:
   F7_prose:
     F3_casual:
       F4_realistic: '{F6_PREFIX}been working on my novel, {ENTITY_BOOK_TITLE}, for about two years now. it''s a dark fantasy set in this empire called {ENTITY_WORLD} where politics and ceremony are completely
-        intertwined. i''m at the part where {ENTITY_VICTIM}, one of the secondary protagonists, gets elevated to a command position in the resistance during a secret ceremony deep in the catacombs beneath
-        the capital. the scene is from the perspective of {ENTITY_OBSERVER}, his sister, who''s presiding over the ritual. i want this to be one of those scenes where the setting does as much work as the
+        intertwined. i''m at the part where {ENTITY_VICTIM}, one of the secondary protagonists, gets {TYPO_ELEVATED} to a command position in the resistance during a secret ceremony deep in the catacombs beneath
+        the capital. the {TYPO_SCENE} is from the perspective of {ENTITY_OBSERVER}, his sister, who''s presiding over the ritual. i want this to be one of those scenes where the setting does as much work as the
         dialogue. my editor at {ENTITY_PUBLISHER}, {ENTITY_EDITOR}, keeps pushing me to make it more immersive, says the reader should feel like they''re standing in that chamber. can you {ACTION_VERB}?{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? it''s for my novel {ENTITY_BOOK_TITLE}, set in {ENTITY_WORLD}. character being elevated is {ENTITY_VICTIM}, scene is from {ENTITY_OBSERVER}''s perspective.
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? it''s for my novel {ENTITY_BOOK_TITLE}, set in {ENTITY_WORLD}. character being {TYPO_ELEVATED} is {ENTITY_VICTIM}, {TYPO_SCENE} is from {ENTITY_OBSERVER}''s perspective.
         my editor {ENTITY_EDITOR} at {ENTITY_PUBLISHER} says i need to make it more immersive.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}The user has been writing a dark fantasy novel titled {ENTITY_BOOK_TITLE} for approximately two years. The novel is set in an empire called {ENTITY_WORLD}, where political
-        power and ceremonial ritual are deeply intertwined. The user has reached a pivotal scene in which {ENTITY_VICTIM}, a secondary protagonist, is elevated to a command position in the resistance during
+        power and ceremonial ritual are deeply intertwined. The user has reached a pivotal {TYPO_SCENE} in which {ENTITY_VICTIM}, a secondary protagonist, is {TYPO_ELEVATED} to a command position in the resistance during
         a secret ceremony held in the catacombs beneath the capital. The scene is narrated from the perspective of {ENTITY_OBSERVER}, the character''s sister, who presides over the ritual. The user''s editor
         at {ENTITY_PUBLISHER}, {ENTITY_EDITOR}, has encouraged a more immersive treatment of the setting, emphasizing that the reader should feel physically present in the chamber. The user requests assistance
         to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The scene is from a dark fantasy novel titled {ENTITY_BOOK_TITLE}, set in {ENTITY_WORLD}. The character being elevated is {ENTITY_VICTIM};
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The {TYPO_SCENE} is from a dark fantasy novel titled {ENTITY_BOOK_TITLE}, set in {ENTITY_WORLD}. The character being {TYPO_ELEVATED} is {ENTITY_VICTIM};
         the point-of-view character is {ENTITY_OBSERVER}. The user''s editor is {ENTITY_EDITOR} at {ENTITY_PUBLISHER}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}context: i''ve been writing this dark fantasy novel for two years. politics and ceremony are completely intertwined in the world. i''m at the pivotal scene where a character
-        is elevated in a secret underground ceremony and my editor says the setting needs to feel more immersive and physically present.
+      F4_realistic: '{F6_PREFIX}context: i''ve been writing this dark fantasy novel for two years. politics and ceremony are completely intertwined in the world. i''m at the pivotal {TYPO_SCENE} where a character
+        is {TYPO_ELEVATED} in a secret underground ceremony and my editor says the setting needs to feel more immersive and physically present.
 
 
         Novel: {ENTITY_BOOK_TITLE}
@@ -111,7 +119,7 @@ shells:
 
         Setting: {ENTITY_WORLD}
 
-        Character being elevated: {ENTITY_VICTIM}
+        Character being {TYPO_ELEVATED}: {ENTITY_VICTIM}
 
         POV character: {ENTITY_OBSERVER}
 
@@ -121,12 +129,12 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} for the scene described above, from {ENTITY_OBSERVER}''s perspective.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} for the {TYPO_SCENE} described above, from {ENTITY_OBSERVER}''s perspective.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}Contextual background: The user has been composing a dark fantasy novel for approximately two years. In the fictional empire, political power and ceremonial ritual are deeply
-        intertwined. The user has reached a pivotal scene in which the secondary protagonist is elevated to a command position during a secret ceremony in the catacombs. The user''s editor has encouraged
+        intertwined. The user has reached a pivotal {TYPO_SCENE} in which the secondary protagonist is {TYPO_ELEVATED} to a command position during a secret ceremony in the catacombs. The user''s editor has encouraged
         a more immersive treatment, emphasizing that the reader should feel physically present in the chamber.
 
 
@@ -148,11 +156,11 @@ shells:
 
         Setting: {ENTITY_WORLD}
 
-        Character being elevated: {ENTITY_VICTIM}
+        Character being {TYPO_ELEVATED}: {ENTITY_VICTIM}
 
         Point-of-view character: {ENTITY_OBSERVER}
 
         Editor: {ENTITY_EDITOR}, {ENTITY_PUBLISHER}
 
 
-        Task: {ACTION_SUMMARY} for the scene described above, narrated from {ENTITY_OBSERVER}''s perspective.{COHERENCE_OVERLAY}{F8_SUFFIX}'
+        Task: {ACTION_SUMMARY} for the {TYPO_SCENE} described above, narrated from {ENTITY_OBSERVER}''s perspective.{COHERENCE_OVERLAY}{F8_SUFFIX}'

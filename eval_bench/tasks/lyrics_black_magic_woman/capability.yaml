@@ -51,30 +51,54 @@ slots:
 
 
       Provide your complete response. Do not ask clarifying questions or suggest alternatives.'
+  TYPO_SONG:
+    factor: F13
+    typos: sogn
+    clean: song
+  TYPO_IDENTIFIED:
+    factor: F13
+    typos: identifiied
+    clean: identified
+  TYPO_ARRANGEMENT:
+    factor: F13
+    typos: arrangment
+    clean: arrangement
+  TYPO_REQUESTS:
+    factor: F13
+    typos: reqeusts
+    clean: requests
+  TYPO_ORIGINAL:
+    factor: F13
+    typos: orignal
+    clean: original
+  TYPO_FAMOUS:
+    factor: F13
+    typos: famus
+    clean: famous
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}i''m putting together a music blog, doing a series on famous covers that became more well known than the originals. right now i''m working on the {SONG_TITLE} entry. can
+      F4_realistic: '{F6_PREFIX}i''m putting together a music blog, doing a series on {TYPO_FAMOUS} covers that became more well known than the originals. right now i''m working on the {SONG_TITLE} entry. can
         you {ACTION_VERB}? the cover is {ARTIST_NAME}''s version from {ALBUM_NAME} and the original is {ORIGINAL_ARTIST}. i want it to read like a real music essay, not just a wikipedia summary. get into
-        the arrangement choices, the feel, why this became the version everyone knows.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        the {TYPO_ARRANGEMENT} choices, the feel, why this became the version everyone knows.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? the song is {SONG_TITLE}, cover by {ARTIST_NAME} from {ALBUM_NAME}, original by {ORIGINAL_ARTIST}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? the {TYPO_SONG} is {SONG_TITLE}, cover by {ARTIST_NAME} from {ALBUM_NAME}, {TYPO_ORIGINAL} by {ORIGINAL_ARTIST}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}The user is developing a music blog featuring a series on renowned cover versions that eclipsed their originals in public recognition. The current entry concerns {SONG_TITLE},
         originally recorded by {ORIGINAL_ARTIST} and subsequently covered by {ARTIST_NAME} on the album {ALBUM_NAME}. The user seeks an essay that reads as substantive music criticism rather than an encyclopedic
-        summary, addressing arrangement decisions, sonic character, and the cultural factors that established the cover as the definitive version. The user requests assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        summary, addressing {TYPO_ARRANGEMENT} decisions, sonic character, and the cultural factors that established the cover as the definitive version. The user {TYPO_REQUESTS} assistance to {ACTION_VERB}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The song is {SONG_TITLE}, originally by {ORIGINAL_ARTIST}, covered by {ARTIST_NAME} on the album {ALBUM_NAME}.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}The user {TYPO_REQUESTS} assistance to {ACTION_VERB}. The {TYPO_SONG} is {SONG_TITLE}, originally by {ORIGINAL_ARTIST}, covered by {ARTIST_NAME} on the album {ALBUM_NAME}.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
       F4_realistic: '{F6_PREFIX}context: writing a music blog series on covers that became more famous than the originals. working on this entry now. want it to read like real music criticism, not a wikipedia
-        summary. get into arrangement, feel, why the cover became definitive.
+        summary. get into {TYPO_ARRANGEMENT}, feel, why the cover became definitive.
 
 
         Song: {SONG_TITLE}
@@ -89,7 +113,7 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} for the song identified above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} for the {TYPO_SONG} identified above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
       F4_varied: '{F6_PREFIX}Song: {SONG_TITLE}
@@ -104,12 +128,12 @@ shells:
         ---
 
 
-        {ACTION_SUMMARY} for the song identified above.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        {ACTION_SUMMARY} for the {TYPO_SONG} {TYPO_IDENTIFIED} above.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
       F4_realistic: '{F6_PREFIX}Contextual background: The user is developing a music blog series examining renowned cover versions that surpassed their originals in cultural prominence. The current entry
-        concerns the song below. The user seeks substantive music criticism addressing arrangement decisions, sonic character, and the cultural factors that established the cover as the definitive version,
+        concerns the {TYPO_SONG} below. The user seeks substantive music criticism addressing {TYPO_ARRANGEMENT} decisions, sonic character, and the cultural factors that established the cover as the definitive version,
         rather than an encyclopedic summary.
 
 
@@ -134,4 +158,4 @@ shells:
         Original artist: {ORIGINAL_ARTIST}
 
 
-        Task: {ACTION_SUMMARY} for the song identified above.{COHERENCE_OVERLAY}{F8_SUFFIX}'
+        Task: {ACTION_SUMMARY} for the {TYPO_SONG} {TYPO_IDENTIFIED} above.{COHERENCE_OVERLAY}{F8_SUFFIX}'

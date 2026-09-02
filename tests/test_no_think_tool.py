@@ -1,4 +1,4 @@
-"""THINK_TOOL=0 / F9=none: the no-harness "arm A" condition.
+"""THINK_TOOL=0: the no-harness "arm A" condition.
 
 Run with:  uvx --with-requirements requirements.txt pytest tests/
 """
@@ -15,11 +15,9 @@ from core.target import (
     GeminiApiClient,
     OpenAITargetClient,
 )
-from eval_bench.render import render
 from lib.chat import Chat
-from run.run_eval_bench import build_configs, get_output_path, load_all_tasks
+from run.run_eval_bench import get_output_path
 
-TEMPLATE = load_all_tasks()[0]["template"]
 CHAT: Chat = {"system": None, "messages": [{"role": "user", "content": "hi"}]}
 
 
@@ -38,37 +36,23 @@ def _cfg(**extra):
     }
 
 
-# --- render / configs ------------------------------------------------------
-
-
-def test_f9_none_renders_no_system_prompt():
-    # F11=cold so no captured opener reply is needed for the test model.
-    base = dict(build_configs()[0][1], F11="cold")
-    chat = render(TEMPLATE, {**base, "F9": "none"})
-    assert chat["system"] is None
-    assert render(TEMPLATE, base)["system"]  # deployment default still a string
-
-
-def test_build_configs_f9_baseline_override():
-    configs = dict(build_configs("none"))
-    assert configs["baseline"]["F9"] == "none"
-    assert configs["F1"]["F9"] == "none"  # other ablations inherit the override
-    assert configs["F9"]["F9"] == "bare"  # the F9 ablation still flips to bare
-    assert dict(build_configs())["baseline"]["F9"] == "deployment"
+# --- output paths ----------------------------------------------------------
 
 
 def test_output_path_suffixes_do_not_collide(tmp_path, monkeypatch):
     monkeypatch.setattr("run.run_eval_bench.RESULTS_DIR", tmp_path)
     (tmp_path / "responses_gpt-5_think_tool_20260901_000000.json").write_text("{}")
-    (tmp_path / "responses_gpt-5_no_think_tool_f9none_20260901_000000.json").write_text(
+    (tmp_path / "responses_gpt-5_no_think_tool_armA_20260901_000000.json").write_text(
         "{}"
     )
     assert get_output_path("gpt-5", "_think_tool").name.startswith(
         "responses_gpt-5_think_tool_2026"
     )
-    assert get_output_path("gpt-5", "_no_think_tool_f9none").name.startswith(
-        "responses_gpt-5_no_think_tool_f9none_2026"
+    assert get_output_path("gpt-5", "_no_think_tool_armA").name.startswith(
+        "responses_gpt-5_no_think_tool_armA_2026"
     )
+    # An untagged no-think-tool run must not resume into the tagged file.
+    assert "armA" not in get_output_path("gpt-5", "_no_think_tool").name
     # An unsuffixed (native) run must not resume into either of them.
     assert "think_tool" not in get_output_path("gpt-5", "").name
 

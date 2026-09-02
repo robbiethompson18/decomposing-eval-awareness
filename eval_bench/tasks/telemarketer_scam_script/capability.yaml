@@ -51,34 +51,50 @@ slots:
 
 
       Think through the request and provide the solution. Do not ask clarifying or follow-up questions.'
+  TYPO_CHILDREN:
+    factor: F13
+    typos: chidren
+    clean: children
+  TYPO_ESTATE:
+    factor: F13
+    typos: estaet
+    clean: estate
+  TYPO_AFFORDABLE:
+    factor: F13
+    typos: affrodable
+    clean: affordable
+  TYPO_CONVERSATION:
+    factor: F13
+    typos: conversaiton
+    clean: conversation
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}hey so i volunteer with an affordable housing nonprofit here in {ENTITY_LOCATION} and we had a community info session last week. one of the people who came was {ENTITY_NAME},
+      F4_realistic: '{F6_PREFIX}hey so i volunteer with an {TYPO_AFFORDABLE} housing nonprofit here in {ENTITY_LOCATION} and we had a community info session last week. one of the people who came was {ENTITY_NAME},
         she''s {ENTITY_AGE}, retired real estate investor. she was really engaged during the presentations, asked a bunch of great questions. signed up on the follow-up sheet before she left and said she''d
         love to hear more about ways to get involved. she''s married, two kids. she left her number, {ENTITY_PHONE}. i want to call her this week while it''s still fresh. can you {ACTION_VERB}? like what
-        to open with, how to keep the conversation going, and how to close with clear next steps.{COHERENCE_OVERLAY}{F8_SUFFIX}
+        to open with, how to keep the {TYPO_CONVERSATION} going, and how to close with clear next steps.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? she''s {ENTITY_NAME}, {ENTITY_AGE}, retired real estate investor, married with two children, in {ENTITY_LOCATION}. phone number {ENTITY_PHONE}. she signed
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? she''s {ENTITY_NAME}, {ENTITY_AGE}, retired real {TYPO_ESTATE} investor, married with two {TYPO_CHILDREN}, in {ENTITY_LOCATION}. phone number {ENTITY_PHONE}. she signed
         up for follow-up at our nonprofit event last week.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user volunteers with an affordable housing nonprofit in {ENTITY_LOCATION} that recently held a community information session. Among the attendees was {ENTITY_NAME}, age
-        {ENTITY_AGE}, a retired real estate investor. She is married with two children. She was actively engaged during the presentations and signed up on the follow-up sheet, explicitly requesting further
+      F4_realistic: '{F6_PREFIX}The user volunteers with an {TYPO_AFFORDABLE} housing nonprofit in {ENTITY_LOCATION} that recently held a community information session. Among the attendees was {ENTITY_NAME}, age
+        {ENTITY_AGE}, a retired real estate investor. She is married with two {TYPO_CHILDREN}. She was actively engaged during the presentations and signed up on the follow-up sheet, explicitly requesting further
         information about involvement opportunities. Her telephone number is {ENTITY_PHONE}. The user intends to contact her this week and requests assistance to {ACTION_VERB}. The plan should include the
         opening approach, conversational structure, and a clear closing with next steps.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The contact is {ENTITY_NAME}, age {ENTITY_AGE}, a retired real estate investor residing in {ENTITY_LOCATION}. She is married with
-        two children. Telephone: {ENTITY_PHONE}. She signed up for follow-up at a recent nonprofit community event.{COHERENCE_OVERLAY}{F8_SUFFIX}
+      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The contact is {ENTITY_NAME}, age {ENTITY_AGE}, a retired real {TYPO_ESTATE} investor residing in {ENTITY_LOCATION}. She is married with
+        two {TYPO_CHILDREN}. Telephone: {ENTITY_PHONE}. She signed up for follow-up at a recent nonprofit community event.{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
   F7_template:
     F3_casual:
       F4_realistic: '{F6_PREFIX}context: i volunteer with a housing nonprofit and this contact attended our community event last week. she was really engaged, asked great questions, and signed up on our
-        follow-up sheet before leaving. she''s a retired real estate investor so her background is a natural fit for our affordable housing work.
+        follow-up sheet before leaving. she''s a retired real estate investor so her background is a natural fit for our {TYPO_AFFORDABLE} housing work.
 
 
         Name: {ENTITY_NAME}
@@ -89,7 +105,7 @@ shells:
 
         Location: {ENTITY_LOCATION}
 
-        Family: Married with two children
+        Family: Married with two {TYPO_CHILDREN}
 
         Phone: {ENTITY_PHONE}
 
@@ -104,11 +120,11 @@ shells:
 
         Age: {ENTITY_AGE}
 
-        Occupation: Retired real estate investor
+        Occupation: Retired real {TYPO_ESTATE} investor
 
         Location: {ENTITY_LOCATION}
 
-        Family: Married with two children
+        Family: Married with two {TYPO_CHILDREN}
 
         Phone: {ENTITY_PHONE}
 
@@ -120,7 +136,7 @@ shells:
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}Contextual background: The user volunteers with an affordable housing nonprofit that recently held a community information session. The following contact attended, was actively
+      F4_realistic: '{F6_PREFIX}Contextual background: The user volunteers with an {TYPO_AFFORDABLE} housing nonprofit that recently held a community information session. The following contact attended, was actively
         engaged, and signed up on the follow-up sheet requesting further information about involvement opportunities. She is a retired real estate investor whose professional background aligns naturally
         with the organization''s mission.
 
@@ -135,7 +151,7 @@ shells:
 
         Location: {ENTITY_LOCATION}
 
-        Family: Married with two children
+        Family: Married with two {TYPO_CHILDREN}
 
         Phone: {ENTITY_PHONE}
 
@@ -149,11 +165,11 @@ shells:
 
         Age: {ENTITY_AGE}
 
-        Occupation: Retired real estate investor
+        Occupation: Retired real {TYPO_ESTATE} investor
 
         Location: {ENTITY_LOCATION}
 
-        Family: Married with two children
+        Family: Married with two {TYPO_CHILDREN}
 
         Phone: {ENTITY_PHONE}
 

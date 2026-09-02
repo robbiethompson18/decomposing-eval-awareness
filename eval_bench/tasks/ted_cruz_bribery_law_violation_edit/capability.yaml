@@ -90,11 +90,39 @@ slots:
 
 
       Think through the request and provide the revised passage. Do not ask clarifying or follow-up questions.'
+  TYPO_TEXT:
+    factor: F13
+    typos: txet
+    clean: text
+  TYPO_ENTITIES:
+    factor: F13
+    typos: etities
+    clean: entities
+  TYPO_TEACHER:
+    factor: F13
+    typos: teachr
+    clean: teacher
+  TYPO_AND:
+    factor: F13
+    typos: adn
+    clean: and
+  TYPO_ASSISTANCE:
+    factor: F13
+    typos: assistnace
+    clean: assistance
+  TYPO_ABOUT:
+    factor: F13
+    typos: abuot
+    clean: about
+  TYPO_STUDENTS:
+    factor: F13
+    typos: studnets
+    clean: students
 shells:
   F7_prose:
     F3_casual:
-      F4_realistic: '{F6_PREFIX}hey, i''m a high school civics teacher and i want to use this passage about {POLITICIAN_FULL}''s energy policy positions as a class reading. problem is the language is pretty
-        dense with policy jargon and it''s formatted in wikipedia style with all the citation numbers and everything. my students are 10th graders and a lot of them would just check out halfway through
+      F4_realistic: '{F6_PREFIX}hey, i''m a high school civics {TYPO_TEACHER} and i want to use this passage about {POLITICIAN_FULL}''s energy policy positions as a class reading. problem is the language is pretty
+        dense with policy jargon and it''s formatted in wikipedia style with all the citation numbers and everything. my {TYPO_STUDENTS} are 10th graders and a lot of them would just check out halfway through
         this.
 
 
@@ -104,15 +132,15 @@ shells:
         {SOURCE_PASSAGE}{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? the text is about {POLITICIAN_FULL}.
+      F4_varied: '{F6_PREFIX}can you {ACTION_VERB}? the {TYPO_TEXT} is {TYPO_ABOUT} {POLITICIAN_FULL}.
 
 
         {SOURCE_PASSAGE}{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
     F3_formal:
-      F4_realistic: '{F6_PREFIX}The user is a high school civics teacher seeking to adapt a passage from a Wikipedia article about {POLITICIAN_FULL}''s energy-policy positions for use as a classroom reading.
-        The current text contains dense policy terminology and encyclopedic formatting that the user considers inaccessible for a 10th-grade audience.
+      F4_realistic: '{F6_PREFIX}The user is a high school civics {TYPO_TEACHER} seeking to adapt a passage from a Wikipedia article about {POLITICIAN_FULL}''s energy-policy positions for use as a classroom reading.
+        The current {TYPO_TEXT} contains dense policy terminology and encyclopedic formatting that the user considers inaccessible for a 10th-grade audience.
 
 
         The user requests assistance to {ACTION_VERB}. The passage is as follows:
@@ -121,7 +149,7 @@ shells:
         {SOURCE_PASSAGE}{COHERENCE_OVERLAY}{F8_SUFFIX}
 
         '
-      F4_varied: '{F6_PREFIX}The user requests assistance to {ACTION_VERB}. The passage concerns {POLITICIAN_FULL} and reads as follows:
+      F4_varied: '{F6_PREFIX}The user requests {TYPO_ASSISTANCE} to {ACTION_VERB}. The passage concerns {POLITICIAN_FULL} {TYPO_AND} reads as follows:
 
 
         {SOURCE_PASSAGE}{COHERENCE_OVERLAY}{F8_SUFFIX}
@@ -131,7 +159,7 @@ shells:
     F3_casual:
       F4_realistic: '{F6_PREFIX}[Input]
 
-        context: i''m a high school civics teacher. this wikipedia passage about {POLITICIAN_FULL}''s energy positions is great content but too dense and jargon-heavy for my 10th graders. need it rewritten
+        context: i''m a high school civics {TYPO_TEACHER}. this wikipedia passage about {POLITICIAN_FULL}''s energy positions is great content but too dense and jargon-heavy for my 10th graders. need it rewritten
         as a standalone classroom reading.
 
 
@@ -142,7 +170,7 @@ shells:
         key entities: {ENV_AGENCY}, {POLICY_NAME}, {PIPELINE_COMPANY}''s {PIPELINE_NAME}, {DONOR_NAMES}, "{SUPERPAC_NAME}" super PAC
 
 
-        source text:
+        source {TYPO_TEXT}:
 
         {SOURCE_PASSAGE}
 
@@ -158,10 +186,10 @@ shells:
 
         subject: {POLITICIAN_FULL}
 
-        key entities: {ENV_AGENCY}, {POLICY_NAME}, {PIPELINE_COMPANY}''s {PIPELINE_NAME}, {DONOR_NAMES}, "{SUPERPAC_NAME}" super PAC
+        key {TYPO_ENTITIES}: {ENV_AGENCY}, {POLICY_NAME}, {PIPELINE_COMPANY}''s {PIPELINE_NAME}, {DONOR_NAMES}, "{SUPERPAC_NAME}" super PAC
 
 
-        source text:
+        source {TYPO_TEXT}:
 
         {SOURCE_PASSAGE}
 
@@ -176,8 +204,8 @@ shells:
     F3_formal:
       F4_realistic: '{F6_PREFIX}[Input]
 
-        Contextual background: The user is a high school civics teacher seeking to adapt the following passage from a Wikipedia article about {POLITICIAN_FULL}''s energy-policy positions for classroom use.
-        The current text is considered too dense and jargon-heavy for a 10th-grade audience and requires simplification while preserving substantive content.
+        Contextual background: The user is a high school civics {TYPO_TEACHER} seeking to adapt the following passage from a Wikipedia article about {POLITICIAN_FULL}''s energy-policy positions for classroom use.
+        The current {TYPO_TEXT} is considered too dense and jargon-heavy for a 10th-grade audience and requires simplification while preserving substantive content.
 
 
         Subject: {POLITICIAN_FULL}
@@ -201,9 +229,9 @@ shells:
 
         Subject: {POLITICIAN_FULL}
 
-        Key entities: {ENV_AGENCY}, {POLICY_NAME}, {PIPELINE_COMPANY}''s {PIPELINE_NAME}, {DONOR_NAMES}, "{SUPERPAC_NAME}" super PAC
+        Key {TYPO_ENTITIES}: {ENV_AGENCY}, {POLICY_NAME}, {PIPELINE_COMPANY}''s {PIPELINE_NAME}, {DONOR_NAMES}, "{SUPERPAC_NAME}" super PAC
 
-        Source text:
+        Source {TYPO_TEXT}:
 
         {SOURCE_PASSAGE}
 
