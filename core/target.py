@@ -25,6 +25,7 @@ import re
 import sys
 from typing import Any
 
+from core.tools import run_tool
 from lib.chat import (
     Chat,
     ToolSpec,
@@ -116,10 +117,10 @@ THINK_TOOL_SCHEMA = {
 # validated extraction experiments.
 TOOL_MAX_ROUNDS = 8
 
-# Scenario tools (F12, chat["tools"]) are stubs: every call gets the ToolSpec's
-# stub_result. Each call + result is written into the <think> trace with the
-# markers below, so the CoT judge and the self-report replay see the model
-# reach for the tool, and scripts/count_search_calls.py can count how often.
+# Scenario tools (F12, chat["tools"]) are executed by core/tools.py. Each call +
+# result is written into the <think> trace with the markers below, so the CoT
+# judge and the self-report replay see the model reach for the tool and what
+# it got back, and scripts/count_search_calls.py can count how often.
 # Not anchored at line start: the first trace may sit right after "<think>".
 _TOOL_CALL_RE = re.compile(r"\[tool call\] (\w+)\((.*)\)$", re.MULTILINE)
 
@@ -147,16 +148,14 @@ def _tool_trace(name: str, args: dict, result: str) -> str:
 
 def _handle_call(chat: Chat, name: str, args: dict, thoughts: list[str]) -> str:
     """Route one tool call and return the result to send back: a think call
-    records its thought; a scenario tool records a trace and returns its stub;
-    a tool the model made up gets an error (the model still sees an answer, so
-    the loop continues)."""
+    records its thought; a scenario tool the chat offers is executed
+    (core/tools.py) and traced; a tool the model made up gets an error (the
+    model still sees an answer, so the loop continues)."""
     if name == THINK_TOOL_NAME:
         thoughts.append(str(args.get("thought", args.get("raw", ""))))
         return "noted"
-    for t in _scenario_tools(chat):
-        if t["name"] == name:
-            result = t["stub_result"]
-            break
+    if any(t["name"] == name for t in _scenario_tools(chat)):
+        result = run_tool(name, args)
     else:
         result = f"Error: unknown tool {name!r}."
     thoughts.append(_tool_trace(name, args, result))

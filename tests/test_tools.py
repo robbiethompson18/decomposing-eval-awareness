@@ -1,11 +1,14 @@
-"""F12 (tool affordances): the stub web_search tool, its wire adapters, and the
-target clients' tool-call dispatch + trace markers.
+"""F12 (tool affordances): the web_search tool spec, its wire adapters, and the
+target clients' tool-call dispatch + trace markers (executor faked; see
+test_websearch.py for the live Serper path).
 
 Run with:  PYTHONPATH=.venv/lib/python3.14/site-packages uvx --python .venv/bin/python --with pytest pytest tests/
 """
 
 import os
 import sys
+
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import core.target as target_mod
@@ -16,7 +19,20 @@ from run.run_eval_bench import ALL_VARIED, build_configs, load_all_tasks
 
 TASK = load_all_tasks()[0]["template"]
 CONFIGS = dict(build_configs())
-STUB = WEB_SEARCH_TOOL["stub_result"]
+FAKE_RESULTS = "1. Example\n   https://example.com\n   A snippet."
+
+
+@pytest.fixture
+def fake_search(monkeypatch):
+    """Route web_search through a canned result instead of Serper."""
+    calls: list[tuple[str, dict]] = []
+
+    def run(name: str, args: dict) -> str:
+        calls.append((name, args))
+        return FAKE_RESULTS
+
+    monkeypatch.setattr(target_mod, "run_tool", run)
+    return calls
 
 
 def _cold(cfg: dict) -> dict:
@@ -52,14 +68,21 @@ def test_gemini_adapter_uppercases_nested_schema_types():
     assert WEB_SEARCH_TOOL["parameters"]["type"] == "object"
 
 
-def test_handle_call_routes_think_stub_and_unknown_tools():
+def test_handle_call_routes_think_search_and_unknown_tools(fake_search):
     chat = render(TASK, _cold(CONFIGS["baseline"]))
     thoughts: list[str] = []
     assert _handle_call(chat, THINK_TOOL_NAME, {"thought": "hmm"}, thoughts) == "noted"
-    assert _handle_call(chat, "web_search", {"query": "x"}, thoughts) == STUB
+    assert _handle_call(chat, "web_search", {"query": "x"}, thoughts) == FAKE_RESULTS
     assert _handle_call(chat, "run_code", {}, thoughts).startswith(
         "Error: unknown tool"
     )
+    # Only tools the chat offers are executed; made-up ones never reach run_tool.
+    assert fake_search == [("web_search", {"query": "x"})]
+    # A chat without tools never executes anything, whatever the model calls.
+    assert _handle_call(
+        render(TASK, _cold(CONFIGS["F12"])), "web_search", {"query": "y"}, []
+    ).startswith("Error: unknown tool")
+    assert len(fake_search) == 1
     assert thoughts[0] == "hmm"
     joined = "\n\n".join(thoughts)
     assert tool_calls_in(f"<think>{joined}</think>ok") == [
@@ -68,7 +91,9 @@ def test_handle_call_routes_think_stub_and_unknown_tools():
     ]
 
 
-def test_anthropic_loop_answers_a_search_call_with_the_stub(monkeypatch):
+def test_anthropic_loop_feeds_search_results_back_and_traces_them(
+    monkeypatch, fake_search
+):
     chat = render(TASK, _cold(CONFIGS["baseline"]))
     sent: list[dict] = []
     replies = [
@@ -112,10 +137,12 @@ def test_anthropic_loop_answers_a_search_call_with_the_stub(monkeypatch):
     assert [t["name"] for t in sent[0]["tools"]] == ["think", "web_search"]
     assert sent[1]["messages"][-1] == {
         "role": "user",
-        "content": [{"type": "tool_result", "tool_use_id": "t1", "content": STUB}],
+        "content": [
+            {"type": "tool_result", "tool_use_id": "t1", "content": FAKE_RESULTS}
+        ],
     }
     assert out == (
         '<think>[tool call] web_search({"query": "latest cve"})\n'
-        f"[tool result] {STUB}</think>Couldn't search, but..."
+        f"[tool result] {FAKE_RESULTS}</think>Couldn't search, but..."
     )
     assert tool_calls_in(out) == [("web_search", {"query": "latest cve"})]

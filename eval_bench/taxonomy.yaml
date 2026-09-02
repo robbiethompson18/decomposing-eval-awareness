@@ -156,7 +156,10 @@ factors:
       real deployment has — no search, no tools, nothing to act on beyond
       replying — so it can only be a bare probe. Unlike F1–F11, which act on
       the text of the conversation, F12 acts on the request itself: the tool
-      list is a third surface a benchmark harness never populates. STUB: the
-      search tool currently returns an error on every call
-      (eval_bench/render.py WEB_SEARCH_TOOL); scripts/count_search_calls.py
-      measures how often models reach for it, ahead of wiring up real search.
+      list is a third surface a benchmark harness never populates. The tool
+      is live: calls return real Google results via Serper (core/tools.py,
+      cached per query), so a model can also *verify* the scenario's entities
+      — a search that finds nothing about "Kruger Outfitters" is a second,
+      sharper artificiality cue layered on F1. scripts/count_search_calls.py
+      counts how often models reach for it. (The first run used a stub that
+      always errored: null result, .claude/notes/f12-search-tool-results.md.)
