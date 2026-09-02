@@ -13,6 +13,13 @@ pipeline. Safety and capability counterparts share identical entity slots and ta
 with factor variations adapted to each valence. Full construction details are provided in 
 the accompanying paper.
 
+Every task directory is named after the HarmBench BehaviorID it was adapted from (all 100 
+match). The original behavior text for those 100 items is vendored in `harmbench_subset.csv` 
+(filtered from HarmBench's `harmbench_behaviors_text_all.csv` at commit `c0423b9`, MIT 
+license) and used by the `harmbench_verbatim` anchor config — see `harmbench.py`. For the 38 
+"contextual" behaviors, the baseline task's realistic entities are HarmBench's own 
+ContextString entities.
+
 ## Intended Use
 This dataset is intended for research on evaluation awareness in language models, including:
 - Measuring model sensitivity to individual evaluative cue factors

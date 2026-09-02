@@ -17,8 +17,26 @@ DEFAULT_ANTHROPIC_MODELS: dict[str, str] = {
 
 DEFAULT_OPENAI_MODELS: dict[str, str] = {
     "gpt-5": "gpt-5",
+    "gpt-5.1": "gpt-5.1",
+    "gpt-5.2": "gpt-5.2",
+    "gpt-5.4": "gpt-5.4",
+    "gpt-5.6-sol": "gpt-5.6-sol",
     "gpt-4o": "gpt-4o",
     "gpt-4-turbo": "gpt-4-turbo",
+}
+
+# Gemini model configs: model_key -> (model_id, thinking_budget floor, force_first_think).
+# Only the two models validated as reliable think-tool CoT extractors
+# (see .claude/notes/cot-extraction-model-roster.md). thinkingBudget 128 is the
+# mandatory minimum for 3.1-pro (rejects 0); 0 turns thinking fully off for
+# 3.5-flash. Starving native thinking pushes the CoT into visible think-tool calls.
+# force_first_think forces a round-1 think call (toolConfig mode ANY): needed for
+# 3.5-flash, which otherwise skips the tool on easy tasks; must stay False for
+# 3.1-pro, where ANY at the starved budget makes it spam think calls until
+# MAX_TOKENS (hundreds of calls, no answer) while plain AUTO complies fine.
+DEFAULT_GEMINI_CONFIGS: dict[str, tuple[str, int, bool]] = {
+    "gemini-3.1-pro": ("gemini-3.1-pro-preview", 128, False),
+    "gemini-3.5-flash": ("gemini-3.5-flash", 0, True),
 }
 
 # OpenRouter model configs: model_key -> (model_id, temperature)
@@ -69,4 +87,6 @@ def get_api_keys_config() -> dict[str, Any]:
         "OPENAI_TARGET_MODEL": os.getenv("OPENAI_TARGET_MODEL", "gpt-5"),
         # OpenRouter
         "OPENROUTER_API_KEY": os.getenv("OPENROUTER_API_KEY", ""),
+        # Gemini
+        "GEMINI_API_KEY": os.getenv("GEMINI_API_KEY", ""),
     }

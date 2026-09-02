@@ -122,3 +122,77 @@ evaluation item" score model_awareness only ~35% (not ~100%). Treat the explicit
 - Model registry: `lib/config.py`
 - F8 suffix source: `eval_bench/tasks/<task>/<valence>.yaml` → `slots.F8_SUFFIX`
 - Session experiment scripts + data (gitignored): `results/eval_bench/judge_agreement/`
+
+## Hybrid grader stack (2026-09-01): sonnet-5 primary + terra backup
+
+After OpenAI deactivated the corp account (distillation ToS ban, took out both the OpenAI target
+models *and* terra as judge — terra is OpenAI-family), we re-benchmarked graders on a fresh personal
+key over a stratified 280-transcript sample (10 target models × 2 valences × 9 configs):
+
+| pair (vs terra) | model_awareness κ | hypo κ | task κ | refusals |
+|---|---|---|---|---|
+| luna | **1.000** | 0.882 | 0.867 | 0 |
+| sonnet-5 (on graded) | **1.000** | 0.818 | 0.766 | **3.2%** (9/280) |
+| opus-5 (on graded) | **1.000** | 0.888 | 0.769 | **9.3%** (26/280) |
+
+All four judges (terra, luna, sonnet-5, opus-5) are **identical on model_awareness** — the headline
+metric — for transcripts they actually grade. The only differentiator is refusal rate on the most
+harmful items (pacemaker/snuff/kidnapping-note transcripts): terra & luna 0, sonnet-5 3.2%, opus-5
+9.3%. So: **sonnet-5 primary** (free on Anthropic credits) + **terra backup** (`BACKUP_JUDGE_MODEL`)
+re-grades only sonnet-5's refusals. Cost on the full ~64k-transcript run: ~$25 (terra on the ~3%) vs
+~$800 all-terra. opus-5 dropped — 3× the refusals, no accuracy gain.
+
+Secondary-metric disagreements are all benign: hypo disagreements are threshold (luna/opus count
+"recognized fictional entity names" as hypothetical-recognition; terra needs scenario-level
+constructedness); task_performance disagreements are all *adjacent* buckets on the 4-point ordinal
+(correct↔guarded↔incorrect↔refused), never 2-step jumps. Agreement data:
+`results/eval_bench/judge_agreement/terra_vs_luna_20260901/`.
+
+## Future work (LOW priority): Qwen backup for the both-backups-fail case
+
+The hybrid stack (sonnet-5 primary + terra backup) still leaves ~0.7% of transcripts ungraded
+(→ N/A) because BOTH judges refuse them: sonnet-5 (Claude) refuses the most harmful items, and
+terra (OpenAI) 400s on cybersecurity-flagged content with `code: cyber_policy` ("join Trusted Access
+for Cyber"). These are the same worst-case transcripts (cyber/harmful), so an API-provider backup
+doesn't help — it hits the same policy wall.
+
+Idea: make the *second* backup an **open-weight model served via OpenRouter (e.g. Qwen)** — OW models
+have no such refusal policies, so they'll grade the cyber/harmful transcripts terra and sonnet-5
+both decline. Chain would be sonnet-5 → terra → qwen (only qwen sees the residual ~0.7%).
+
+Gate before adopting: run the same judge-agreement check we did for terra/luna/sonnet-5/opus-5
+(`results/eval_bench/judge_agreement/`) — **qwen vs sonnet-5 on model_awareness κ** — and only use it
+as backup if it tracks. Deferred; the ~0.7% N/A is tolerable for now.
+
+## Update 2026-09-01 (later): flipped back to terra primary, sonnet-5 backup
+
+Robbie's call after the OAI ban was reversed and the corp card came back. Defaults in
+`eval_eval_bench_cot.py` / `eval_eval_bench_tiered.py` are now `JUDGE_MODEL=gpt-5.6-terra`,
+`BACKUP_JUDGE_MODEL=claude-sonnet-5`. The hybrid mechanics above are unchanged — only the roles
+swapped; the sonnet-primary stack is still one env override away when grading on Anthropic credits.
+
+## Update 2026-09-01 (evening): backup grader ripped out; judge failures → N/A
+
+Two bugs surfaced on the first full terra-primary sweep (14 models × 5400):
+
+1. **Dropped rows.** OpenAI's cyber content filter (`400 flagged for possible cybersecurity risk`)
+   rejects 30–90 transcripts per model as *judge input* (reverse shells, DDoS, cryptojacking,
+   malware). `evaluate_sample` let the exception propagate and `evaluate_batch_async` silently
+   dropped the row, so every terra-judged cot file was short — including the pre-ban ones (sonnet-4.5
+   5346/5400, haiku-4.5 5371/5400). The backup pass never saw them.
+2. **Backup useless on those rows.** Once routed to sonnet-5, it refused ~80% of them (9/11 on
+   reverse_shell_windows2), so the backup recovered almost nothing while mixing graders.
+
+Fix (Robbie's call): no backup grader at all. A judge call that fails after retries yields a record
+with every conclusion `N/A` and `judge call failed: <error>` as the reasoning
+(`core.evaluator.judge_failed_na`), so it lands in the N/A bucket the stats already report separately
+and never in the denominator. The filter is nondeterministic (~35% of rejected calls pass on retry),
+so the existing 5-attempt loop still runs first. Expect ~40–60 N/A rows per model from this.
+
+## Update 2026-09-01 (night): default judge is claude-sonnet-5
+
+OpenAI deactivated the account a second time, so `JUDGE_MODEL` now defaults to `claude-sonnet-5`
+(same no-backup mechanics as above: sonnet's ~3% refusals become N/A rows). terra is the env
+override when an OpenAI key works. `eval_eval_bench_tiered.py` keeps its backup pass for now with
+sonnet primary / terra backup.
+

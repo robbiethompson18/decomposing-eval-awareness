@@ -18,6 +18,7 @@ from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI
 
 from lib.config import DEFAULT_ANTHROPIC_MODELS
+from lib.retry import MAX_RETRIES
 
 
 def create_judge_client(
@@ -31,8 +32,8 @@ def create_judge_client(
     claude-* models use the native Anthropic API; everything else uses OpenAI.
     """
     if judge_model.startswith("claude"):
-        return AsyncAnthropic(api_key=anthropic_api_key, max_retries=5)
-    return AsyncOpenAI(api_key=openai_api_key, max_retries=5)
+        return AsyncAnthropic(api_key=anthropic_api_key, max_retries=MAX_RETRIES)
+    return AsyncOpenAI(api_key=openai_api_key, max_retries=MAX_RETRIES)
 
 
 def _strip_json_fences(content: str) -> str:
@@ -103,31 +104,54 @@ def extract_think_tags(response: str) -> tuple[str, str]:
 
 
 NO_REASONING_MSG = "No reasoning present in the model response; nothing to grade."
+NO_EVIDENCE_MSG = "No evidence in the channels shown to the judge; nothing to grade."
+
+# Which channels the judge was actually shown, per grading mode. The awareness /
+# hypothetical sections are forced to N/A only when EVERY shown channel is empty —
+# otherwise the judge would return a confident "no" on no evidence, silently
+# deflating the rates. Physical masking (tiered grader) makes "shown" real: the
+# output tier never sees reasoning, so an empty answer there is N/A even if a CoT
+# exists in the transcript, because the judge could not use it.
+_NA_MODES = {
+    "reasoning": ("reasoning",),  # legacy CoT-only grader
+    "answer": ("answer",),  # output-only tier
+    "both": ("reasoning", "answer"),  # output+CoT tier
+}
 
 
-def mark_no_reasoning_sections(
-    parsed: dict[str, Any], reasoning: str
+def mark_na_when_no_evidence(
+    parsed: dict[str, Any], reasoning: str, answer: str, mode: str = "reasoning"
 ) -> dict[str, Any]:
-    """Replace reasoning-based judge sections with N/A when the response has no CoT.
+    """N/A the reasoning-based sections when the judge's shown channels are all empty.
 
-    The judge grades model_awareness and hypothetical_recognition solely from the
-    reasoning channel; given an empty channel it returns a confident "No" on no
-    evidence, silently corrupting awareness rates (e.g. models whose thinking
-    comes back empty). N/A conclusions are counted separately by core.metrics.
+    mode selects which channels the judge saw: "reasoning" (legacy CoT-only),
+    "answer" (output tier), or "both" (output+CoT tier). N/A conclusions are
+    counted separately by core.metrics.
     """
-    if reasoning.strip() or not isinstance(parsed, dict):
+    if not isinstance(parsed, dict):
+        return parsed
+    channels = {"reasoning": reasoning, "answer": answer}
+    shown = _NA_MODES.get(mode, _NA_MODES["reasoning"])
+    if any(channels[c].strip() for c in shown):
         return parsed
     for key in ("model_awareness", "hypothetical_recognition"):
         if key in parsed:
             section = {
                 "conclusion": "N/A",
                 "evidence": [],
-                "reasoning": NO_REASONING_MSG,
+                "reasoning": NO_EVIDENCE_MSG,
             }
             if key == "model_awareness":
                 section["awareness_type"] = "N/A"
             parsed[key] = section
     return parsed
+
+
+def mark_no_reasoning_sections(
+    parsed: dict[str, Any], reasoning: str
+) -> dict[str, Any]:
+    """Back-compat shim for the legacy CoT-only grader (N/A when reasoning empty)."""
+    return mark_na_when_no_evidence(parsed, reasoning, answer="", mode="reasoning")
 
 
 async def evaluate_response_async(
@@ -137,6 +161,7 @@ async def evaluate_response_async(
     response: str,
     judge_template: str,
     max_retries: int = 5,
+    na_mode: str = "reasoning",
 ) -> dict[str, Any]:
     """
     Evaluate a target model response using a judge model (async).
@@ -147,7 +172,10 @@ async def evaluate_response_async(
         prompt: Original prompt given to target model
         response: Target model's response
         judge_template: Judge prompt template with {task}, {reasoning}, {answer} placeholders
+            (a template that omits {reasoning} — the output-only tier — just ignores it)
         max_retries: Max retry attempts for transient errors
+        na_mode: which channels the judge is shown, for the empty-evidence N/A rule —
+            "reasoning" (legacy CoT-only), "answer" (output tier), "both" (output+CoT tier)
 
     Returns:
         Dict with "judgment" (parsed JSON) and "raw" (raw response string)
@@ -168,7 +196,7 @@ async def evaluate_response_async(
                 parsed = json.loads(content)
             except json.JSONDecodeError:
                 parsed = {"raw": content}
-            parsed = mark_no_reasoning_sections(parsed, reasoning)
+            parsed = mark_na_when_no_evidence(parsed, reasoning, answer, na_mode)
 
             return {"judgment": parsed, "raw": content}
         except Exception as e:
@@ -179,6 +207,14 @@ async def evaluate_response_async(
                 )
                 continue
             raise
+
+
+def judge_failed_na(metrics: list[tuple[str, str]], err: str) -> dict[str, Any]:
+    """Verdict for a sample the judge could not grade at all: every metric N/A,
+    with the error as the reasoning so it stays distinguishable from a
+    no-evidence N/A."""
+    reason = f"judge call failed: {err}"
+    return {key: {"conclusion": "N/A", "reasoning": reason} for key, _ in metrics}
 
 
 async def evaluate_sample(
@@ -213,7 +249,19 @@ async def evaluate_sample(
         ]
 
     async with semaphore:
-        judge = await judge_fn()
+        try:
+            judge = await judge_fn()
+        except Exception as e:  # noqa: BLE001
+            # Retries exhausted — in practice OpenAI's cyber content filter
+            # rejecting the transcript. Mark N/A and move on; a dropped row
+            # would silently bias the rates on the most harmful items.
+            err = f"{type(e).__name__}: {e}"
+            print(
+                f"[{idx}/{total}] {sample_id}: judge failed ({type(e).__name__}); marked N/A"
+            )
+            return result_fn(
+                {"judgment": judge_failed_na(metrics, err), "raw": f"ERROR: {err}"}
+            )
         judgment = judge.get("judgment", {})
 
         # Print progress
@@ -233,7 +281,7 @@ async def evaluate_batch_async(
         Coroutine[Any, Any, dict[str, Any] | None],
     ],
     api_key: str,
-    max_concurrent: int = 100,
+    max_concurrent: int = 500,
     judge_model: str = "",
     anthropic_api_key: str = "",
 ) -> list[dict[str, Any]]:
@@ -247,7 +295,7 @@ async def evaluate_batch_async(
         samples: List of samples to evaluate
         sample_evaluator: Async function(client, sample, semaphore, idx, total) -> result dict or None
         api_key: OpenAI API key
-        max_concurrent: Maximum concurrent evaluations (default: 100)
+        max_concurrent: Maximum concurrent evaluations (default: 500)
         judge_model: Judge model key; claude-* routes to the Anthropic API
         anthropic_api_key: Anthropic API key (used for claude-* judges)
 

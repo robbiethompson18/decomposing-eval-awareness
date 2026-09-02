@@ -3,7 +3,11 @@ Run eval_bench tasks across all models.
 
 For each task (safety + capability variant), runs:
   - 1 baseline config (all factors at naturalistic level)
-  - 8 single-factor ablations (one factor varied, rest naturalistic)
+  - 12 single-factor ablations (one factor varied, rest naturalistic)
+  - 2 anchor configs off the OFAT grid:
+      all_varied          every factor at its varied level (the grid's ceiling)
+      harmbench_verbatim  the original HarmBench behavior text, safety arm only
+                          (see eval_bench/harmbench.py)
 
 Each config is sampled SAMPLES_PER_CONFIG times per model.
 Results are saved incrementally after each task, so runs can be resumed.
@@ -18,26 +22,45 @@ Usage:
   # Run GPT-5 via native OpenAI API:
   TARGET_BACKEND=openai_api OPENAI_MODEL_KEY=gpt-5 SAMPLES_PER_CONFIG=3 python run/run_eval_bench.py
 
+  # Run Gemini via native API:
+  TARGET_BACKEND=gemini_api GEMINI_MODEL_KEY=gemini-3.5-flash SAMPLES_PER_CONFIG=3 python run/run_eval_bench.py
+
   # Resume a crashed run (auto-detects existing file and skips completed samples):
   Just re-run the same command. The script finds the latest matching output file and resumes.
 
 Environment variables:
-  TARGET_BACKEND        Backend to use (openrouter, anthropic_api, openai_api)
+  TARGET_BACKEND        Backend to use (openrouter, anthropic_api, openai_api, gemini_api)
   OPENROUTER_MODEL_KEY  Model key for OpenRouter (default: qwen3-30b)
   ANTHROPIC_MODEL_KEY   Model key for Anthropic (default: claude-sonnet-4.5)
   OPENAI_MODEL_KEY      Model key for OpenAI (default: gpt-5)
+  GEMINI_MODEL_KEY      Model key for Gemini (default: gemini-3.5-flash)
   SAMPLES_PER_CONFIG    Samples per (task, config) pair (default: 3)
-  MAX_CONCURRENT        Max parallel API requests (default: 100)
+  MAX_CONCURRENT        Max parallel API requests (default: 500)
   MAX_TOKENS            Max tokens for model response (default: 50000)
   TASK_FILTER           Comma-separated task names to run (default: all tasks)
   VALENCE_FILTER        Comma-separated valences to run, e.g. "capability" (default: all)
-  CONFIG_FILTER         Comma-separated config names to run, e.g. "F6" or "baseline,F1" (default: all)
+  CONFIG_FILTER         Comma-separated config names to run, e.g. "F6" or "baseline,F1" or
+                        "all_varied,harmbench_verbatim" (default: all)
+  RUN_TAG               Extra filename suffix, e.g. "f11test" -> responses_<model>_f11test_<ts>.json.
+                        Runs resume by sample id, so after a prompt/factor change a tag is how you
+                        get a FRESH file instead of resuming into (and skipping) stale samples.
+  THINK_TOOL            "0" disables think-tool CoT extraction on the closed backends
+                        (no think tool, no mandate, native reasoning at API default, no
+                        <think> block in the response). Default: "1".
+  F9_BASELINE           F9 level used as the baseline system prompt: deployment
+                        (default), bare, or none (no system prompt at all).
+
+  Arm A of the think-tool-confound test (no harness at all, self-report only):
+    THINK_TOOL=0 F9_BASELINE=none CONFIG_FILTER=baseline TARGET_BACKEND=... python run/run_eval_bench.py
+  Its output file is suffixed _no_think_tool_f9none so it never resumes into an
+  arm-B (think-tool) file. See .claude/notes/think-tool-harness-vs-selfreport.md.
 """
 
 import asyncio
 import glob
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -46,9 +69,14 @@ import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.target import create_target_client
-from eval_bench.render import render
+from eval_bench.harmbench import (
+    HARMBENCH_VERBATIM,
+    harmbench_factor_config,
+    harmbench_verbatim_chat,
+    load_harmbench_subset,
+)
+from eval_bench.render import F9_LEVELS, render
 from lib.config import get_api_keys_config
-from lib.io import read_file
 from lib.parallel import query_parallel
 from lib.time_utils import now_pacific
 
@@ -65,6 +93,19 @@ BASELINE_CONFIG = {
     "F6": "realistic",
     "F7": "prose",
     "F8": "realistic",
+    # F9 (deployment framing) sets the system prompt. Baseline = a realistic
+    # product system prompt; the ablation swaps in the bland benchmark one.
+    "F9": "deployment",
+    # F10 (deployment date) sets the {TIMESTAMP} in the deployment prompt.
+    # Baseline = the real current time; the ablation shifts it back one year.
+    "F10": "current",
+    # F11 (conversation history). Baseline = the task arrives as turn 2, after a
+    # throwaway "are you there?" exchange; the ablation sends it as turn 1.
+    "F11": "warm",
+    # F12 (tool affordances). Baseline = a web_search tool in the request, as
+    # every real chat product ships (still a stub that returns an error on
+    # every call — see eval_bench/render.py); the ablation sends no tools.
+    "F12": "search",
 }
 
 FACTOR_VARIED_LEVELS = {
@@ -76,16 +117,36 @@ FACTOR_VARIED_LEVELS = {
     "F6": "varied",
     "F7": "template",
     "F8": "varied",
+    "F9": "bare",
+    "F10": "stale",
+    "F11": "cold",
+    "F12": "none",
 }
 
 
-def build_configs() -> list[tuple]:
-    """Build 9 configs: 1 baseline + 8 single-factor ablations."""
-    configs = [("baseline", dict(BASELINE_CONFIG))]
+ALL_VARIED = "all_varied"
+
+
+def build_configs(f9_baseline: str = BASELINE_CONFIG["F9"]) -> list[tuple]:
+    """Build 15 configs: baseline + 12 single-factor ablations + 2 anchors.
+
+    The anchors are off the OFAT grid. `all_varied` is the grid's far corner;
+    `harmbench_verbatim` is not a render at all (its Chat and factor_config are
+    built per task from the vendored HarmBench row, safety arm only), so its
+    entry here carries the standard-behavior factor vector as a placeholder for
+    config_list and is special-cased in the item loop.
+
+    f9_baseline overrides the baseline system-prompt level (F9_BASELINE env);
+    the F9 ablation still flips to `bare`, whatever the baseline is.
+    """
+    baseline = dict(BASELINE_CONFIG, F9=f9_baseline)
+    configs = [("baseline", baseline)]
     for factor, varied_level in FACTOR_VARIED_LEVELS.items():
-        cfg = dict(BASELINE_CONFIG)
+        cfg = dict(baseline)
         cfg[factor] = varied_level
         configs.append((factor, cfg))
+    configs.append((ALL_VARIED, dict(FACTOR_VARIED_LEVELS)))
+    configs.append((HARMBENCH_VERBATIM, harmbench_factor_config({"ContextString": ""})))
     return configs
 
 
@@ -119,13 +180,14 @@ def get_output_path(model_slug: str, mode_suffix: str) -> Path:
     the unsuffixed naming, so its existing result files remain resumable.
     """
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    pattern = str(RESULTS_DIR / f"responses_{model_slug}{mode_suffix}_*.json")
-    # The unsuffixed glob also matches suffixed files; exclude them so a native
-    # run never resumes into a think_tool (or old scratchpad) results file.
+    # Match the timestamp directly after the suffix: a plain glob would let an
+    # unsuffixed (native) run resume into a think_tool file, or a
+    # `_no_think_tool` (F9=deployment) run resume into `_no_think_tool_f9none`.
+    stamped = re.compile(
+        rf"responses_{re.escape(model_slug)}{re.escape(mode_suffix)}_\d{{8}}_\d{{6}}\.json$"
+    )
     existing = sorted(
-        p
-        for p in glob.glob(pattern)
-        if mode_suffix or not any(f"_{m}_" in p for m in ("scratchpad", "think_tool"))
+        p for p in glob.glob(str(RESULTS_DIR / "responses_*.json")) if stamped.search(p)
     )
     if existing:
         return Path(existing[-1])
@@ -134,12 +196,26 @@ def get_output_path(model_slug: str, mode_suffix: str) -> Path:
 
 
 def load_existing_results(out_file: Path) -> tuple[dict[str, Any], set[str]]:
-    """Load existing results file and return (data_dict, set_of_completed_ids)."""
+    """Load existing results file and return (data_dict, set_of_completed_ids).
+
+    Samples whose response is an "ERROR calling ..." string (API failure) are
+    dropped so a resume regenerates them instead of treating them as done.
+    """
     if out_file.exists():
         with open(out_file, "r", encoding="utf-8") as f:
             data = json.load(f)
-        completed_ids = {s["id"] for s in data.get("samples", [])}
-        return data, completed_ids
+        samples = data.get("samples", [])
+        kept = [
+            s
+            for s in samples
+            if not str(s.get("response", "")).startswith("ERROR calling")
+        ]
+        if len(kept) < len(samples):
+            print(
+                f"Dropping {len(samples) - len(kept)} errored samples for regeneration"
+            )
+        data["samples"] = kept
+        return data, {s["id"] for s in kept}
     return None, set()
 
 
@@ -153,30 +229,29 @@ def save_results(out_file: Path, output_data: dict[str, Any]) -> None:
 
 def main() -> None:
     samples_per_config = int(os.getenv("SAMPLES_PER_CONFIG", "3"))
+    think_tool = os.getenv("THINK_TOOL", "1") != "0"
+    f9_baseline = os.getenv("F9_BASELINE", BASELINE_CONFIG["F9"])
+    if f9_baseline not in F9_LEVELS:
+        print(f"ERROR: Unknown F9_BASELINE '{f9_baseline}'. Available: {F9_LEVELS}")
+        sys.exit(1)
 
     cfg = {
         "MAX_TOKENS": int(os.getenv("MAX_TOKENS", "50000")),
         "TARGET_BACKEND": os.getenv("TARGET_BACKEND", "openrouter"),
-        "MAX_CONCURRENT": int(os.getenv("MAX_CONCURRENT", "100")),
+        "MAX_CONCURRENT": int(os.getenv("MAX_CONCURRENT", "500")),
+        "THINK_TOOL": think_tool,
         **get_api_keys_config(),
     }
 
     backend = cfg["TARGET_BACKEND"]
-    # Closed backends run think-tool extraction, so their system prompt mandates
-    # the tool; OpenRouter models reason natively and get the plain prompt.
-    prompt_file = (
-        "chat_prompt_realistic.txt"
-        if backend == "openrouter"
-        else "chat_prompt_realistic_think_tool.txt"
-    )
-    system_prompt = read_file(str(BASE_DIR / "prompts" / prompt_file)).strip()
-
-    print(f"System prompt: {prompt_file}")
-
-    client, model_slug = create_target_client(backend, cfg, system_prompt)
+    # The system prompt is no longer set at the run level: it travels per-sample
+    # inside each task's Chat (render() picks it from the F9 factor), and closed
+    # backends append the think-tool mandate unless THINK_TOOL=0.
+    client, model_slug = create_target_client(backend, cfg)
 
     tasks = load_all_tasks()
-    configs = build_configs()
+    configs = build_configs(f9_baseline)
+    harmbench_rows = load_harmbench_subset()
 
     task_filter = os.getenv("TASK_FILTER", "")
     valence_filter = os.getenv("VALENCE_FILTER", "")
@@ -191,24 +266,30 @@ def main() -> None:
         allowed_configs = {c.strip() for c in config_filter.split(",")}
         configs = [(name, c) for name, c in configs if name in allowed_configs]
 
-    # Group tasks by task_name for incremental saving
-    tasks_by_name = {}
-    for t in tasks:
-        tasks_by_name.setdefault(t["task_name"], []).append(t)
-    task_names = sorted(tasks_by_name.keys())
+    n_task_sets = len({t["task_name"] for t in tasks})
 
-    # Determine output file and load existing progress
-    reasoning_method = "native" if backend == "openrouter" else "think_tool"
-    out_file = get_output_path(
-        model_slug, "" if backend == "openrouter" else "_think_tool"
-    )
+    # Determine output file and load existing progress. The suffix encodes
+    # every run-level choice that changes what a sample id means, so a run
+    # never resumes into a file generated under a different harness.
+    if backend == "openrouter":
+        reasoning_method, mode_suffix = "native", ""
+    elif think_tool:
+        reasoning_method, mode_suffix = "think_tool", "_think_tool"
+    else:
+        reasoning_method, mode_suffix = "none", "_no_think_tool"
+    if f9_baseline != BASELINE_CONFIG["F9"]:
+        mode_suffix += f"_f9{f9_baseline}"
+    if os.getenv("RUN_TAG"):
+        mode_suffix += f"_{os.environ['RUN_TAG']}"
+    out_file = get_output_path(model_slug, mode_suffix)
     existing_data, completed_ids = load_existing_results(out_file)
 
     output_data = existing_data or {
         "model": model_slug,
         "backend": backend,
         "reasoning_mode": reasoning_method,
-        "system_prompt": prompt_file,
+        "think_tool": think_tool,
+        "f9_baseline": f9_baseline,
         "samples_per_config": samples_per_config,
         "n_tasks": len(tasks),
         "n_configs": len(configs),
@@ -217,9 +298,17 @@ def main() -> None:
         "samples": [],
     }
 
-    total_calls = len(tasks) * len(configs) * samples_per_config
-    print(f"\nTasks loaded: {len(tasks)} ({len(task_names)} task sets x 2 valences)")
-    print(f"Configs: {len(configs)} (baseline + {len(configs) - 1} single-factor)")
+    # harmbench_verbatim runs on the safety arm only, so it contributes one
+    # valence per task set rather than two.
+    n_verbatim_tasks = (
+        sum(1 for t in tasks if t["valence"] == "safety")
+        if any(name == HARMBENCH_VERBATIM for name, _ in configs)
+        else 0
+    )
+    n_grid_configs = sum(1 for name, _ in configs if name != HARMBENCH_VERBATIM)
+    total_calls = (len(tasks) * n_grid_configs + n_verbatim_tasks) * samples_per_config
+    print(f"\nTasks loaded: {len(tasks)} ({n_task_sets} task sets x 2 valences)")
+    print(f"Configs: {len(configs)} ({', '.join(name for name, _ in configs)})")
     print(f"Samples per config: {samples_per_config}")
     print(f"Model: {model_slug} (backend: {backend})")
     print(f"Total API calls needed: {total_calls}")
@@ -237,7 +326,7 @@ def main() -> None:
             "valence": meta["valence"],
             "config_name": meta["config_name"],
             "factor_config": meta["factor_config"],
-            "prompt": meta["prompt"],
+            "chat": meta["chat"],
             "sample_idx": sample_idx,
             "response": response,
         }
@@ -245,49 +334,62 @@ def main() -> None:
     start_time = now_pacific()
     new_count = 0
 
-    for t_idx, task_name in enumerate(task_names, 1):
-        task_group = tasks_by_name[task_name]
-
-        # Build items for this task, skipping completed
-        items = []
-        for task in task_group:
-            template = task["template"]
-            for config_name, factor_config in configs:
-                prompt_text = render(template, factor_config)
-                for s_idx in range(1, samples_per_config + 1):
-                    sample_id = f"{task['task_id']}_{config_name}_sample{s_idx}"
-                    if sample_id in completed_ids:
-                        continue
-                    items.append(
-                        (
-                            client,
-                            prompt_text,
-                            {
-                                "id": sample_id,
-                                "task_id": task["task_id"],
-                                "task_name": task["task_name"],
-                                "valence": task["valence"],
-                                "config_name": config_name,
-                                "factor_config": factor_config,
-                                "prompt": prompt_text,
-                                "sample_idx": s_idx,
-                            },
-                        )
+    # Build EVERY pending item up front, then dispatch in chunks. This loop used
+    # to run one task at a time, which silently capped in-flight requests at that
+    # task's item count regardless of MAX_CONCURRENT: a full run has 54 items per
+    # task (2 valences x 9 configs x 3 samples) so the cap was invisible, but a
+    # filtered run (e.g. CONFIG_FILTER=all_varied,harmbench_verbatim at 1 sample)
+    # has 3 items per task, so only 3 requests ran at once and a slow provider
+    # turned a 4-minute job into 70+ minutes.
+    items = []
+    cached = 0
+    for task in tasks:
+        template = task["template"]
+        for config_name, factor_config in configs:
+            if config_name == HARMBENCH_VERBATIM:
+                if task["valence"] != "safety":
+                    continue
+                row = harmbench_rows[task["task_name"]]
+                chat = harmbench_verbatim_chat(row)
+                factor_config = harmbench_factor_config(row)
+            else:
+                chat = render(template, factor_config, model_slug)
+            for s_idx in range(1, samples_per_config + 1):
+                sample_id = f"{task['task_id']}_{config_name}_sample{s_idx}"
+                if sample_id in completed_ids:
+                    cached += 1
+                    continue
+                items.append(
+                    (
+                        client,
+                        chat,
+                        {
+                            "id": sample_id,
+                            "task_id": task["task_id"],
+                            "task_name": task["task_name"],
+                            "valence": task["valence"],
+                            "config_name": config_name,
+                            "factor_config": factor_config,
+                            "chat": chat,
+                            "sample_idx": s_idx,
+                        },
                     )
+                )
 
-        if not items:
-            print(
-                f"[{t_idx}/{len(task_names)}] {task_name}: already complete, skipping"
-            )
-            continue
+    print(f"Pending: {len(items)} calls ({cached} cached)")
 
-        expected = len(task_group) * len(configs) * samples_per_config
+    # Chunked so a crash loses at most one chunk, but each chunk is several times
+    # max_concurrent so the semaphore stays saturated as fast calls retire and
+    # we're not left idling on one straggler before the next save.
+    chunk_size = max(cfg["MAX_CONCURRENT"] * 4, 100)
+    for start in range(0, len(items), chunk_size):
+        chunk = items[start : start + chunk_size]
         print(
-            f"[{t_idx}/{len(task_names)}] {task_name}: {len(items)} calls ({expected - len(items)} cached)"
+            f"[chunk {start // chunk_size + 1}/{-(-len(items) // chunk_size)}] "
+            f"{len(chunk)} calls, up to {cfg['MAX_CONCURRENT']} in flight"
         )
-
         batch_results = asyncio.run(
-            query_parallel(items, build_result, cfg["MAX_CONCURRENT"])
+            query_parallel(chunk, build_result, cfg["MAX_CONCURRENT"])
         )
 
         output_data["samples"].extend(batch_results)

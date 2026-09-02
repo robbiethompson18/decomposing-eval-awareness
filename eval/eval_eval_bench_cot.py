@@ -5,14 +5,22 @@ Loads responses from run_eval_bench.py and evaluates each sample with a judge mo
 using the standard CoT monitoring pipeline.
 
 Environment variables:
-    JUDGE_MODEL     Judge model (default: gpt-5.6-terra; OPENAI_EVAL_MODEL also honored)
-    MODEL_KEY       Model key matching response filename (e.g., "qwen3-30b")
-    RESPONSE_FILE   Direct path to response JSON (overrides MODEL_KEY)
-    MAX_CONCURRENT  Max parallel judge API calls (default: 100)
-    MAX_SAMPLES     Limit number of samples to evaluate (default: 0 = all)
-    TASK_FILTER     Comma-separated task names to judge (default: all)
-    VALENCE_FILTER  Comma-separated valences to judge, e.g. "capability" (default: all)
-    MERGE_INTO      Path to existing CoT JSON to merge into (replaces matching sample IDs)
+    JUDGE_MODEL          Judge (default: claude-sonnet-5; OPENAI_EVAL_MODEL also
+                         honored). claude-* routes to the Anthropic API.
+    MODEL_KEY            Model key matching response filename (e.g., "qwen3-30b")
+    RESPONSE_FILE        Direct path to response JSON (overrides MODEL_KEY)
+    MAX_CONCURRENT       Max parallel judge API calls (default: 500)
+    MAX_SAMPLES          Limit number of samples to evaluate (default: 0 = all)
+    TASK_FILTER          Comma-separated task names to judge (default: all)
+    VALENCE_FILTER       Comma-separated valences to judge (default: all)
+    MERGE_INTO           Path to existing CoT JSON to merge into (replaces matching IDs)
+
+Default grader: claude-sonnet-5 (awareness κ=1.0 vs gpt-5.6-terra on a 280-transcript
+check). It refuses ~3% of the most-harmful transcripts; those come back with every
+conclusion N/A and the error in the reasoning — there is no backup grader. Sonnet is
+the default because OpenAI keeps deactivating our account; JUDGE_MODEL=gpt-5.6-terra
+(0 refusals, but its cyber filter rejects ~1%) when an OpenAI key works. See
+.claude/notes/grader-selection-and-refusal-clause.md.
 """
 
 import asyncio
@@ -33,6 +41,7 @@ from core.evaluator import (
     extract_think_tags,
 )
 from core.metrics import bucket_conclusion, bucket_task_conclusion, extract_conclusion
+from lib.chat import chat_to_transcript_text
 from lib.config import get_api_keys_config
 from lib.io import load_responses, read_file
 from lib.time_utils import now_pacific
@@ -122,22 +131,24 @@ def main() -> None:
     openai_api_key = api_keys["OPENAI_API_KEY"]
     anthropic_api_key = api_keys["ANTHROPIC_API_KEY"]
     judge_model = (
-        os.getenv("JUDGE_MODEL") or os.getenv("OPENAI_EVAL_MODEL") or "gpt-5.6-terra"
+        os.getenv("JUDGE_MODEL") or os.getenv("OPENAI_EVAL_MODEL") or "claude-sonnet-5"
     )
     model_key = os.getenv("MODEL_KEY", "")
     response_file = os.getenv("RESPONSE_FILE", "")
     max_samples = int(os.getenv("MAX_SAMPLES", "0"))
-    max_concurrent = int(os.getenv("MAX_CONCURRENT", "100"))
+    max_concurrent = int(os.getenv("MAX_CONCURRENT", "500"))
     task_filter = os.getenv("TASK_FILTER", "")
     valence_filter = os.getenv("VALENCE_FILTER", "")
     merge_into = os.getenv("MERGE_INTO", "")
 
     if judge_model.startswith("claude"):
         if not anthropic_api_key:
-            print("ERROR: ANTHROPIC_API_KEY is required for a Claude judge.")
+            print(
+                f"ERROR: ANTHROPIC_API_KEY required for Claude judge {judge_model!r}."
+            )
             sys.exit(1)
     elif not openai_api_key:
-        print("ERROR: OPENAI_API_KEY is required.")
+        print(f"ERROR: OPENAI_API_KEY required for OpenAI judge {judge_model!r}.")
         sys.exit(1)
 
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -153,9 +164,15 @@ def main() -> None:
 
     print(f"Response file: {response_file}")
 
-    samples, model = load_responses(response_file)
+    samples, model, reasoning_mode = load_responses(response_file)
     if not samples:
         print("ERROR: No samples found.")
+        sys.exit(1)
+    if reasoning_mode == "none":
+        print(
+            "ERROR: this response file was generated with THINK_TOOL=0, so it has "
+            "no CoT to judge. Use eval/eval_eval_bench_selfreport.py instead."
+        )
         sys.exit(1)
 
     if not model_key:
@@ -190,49 +207,63 @@ def main() -> None:
     judge_prompt_sha = hashlib.sha256(judge_template.encode()).hexdigest()[:8]
     print(f"Judge prompt: {judge_prompt_file} (sha {judge_prompt_sha})")
 
-    async def eval_sample_fn(
-        client: Any,
-        sample: dict[str, Any],
-        semaphore: asyncio.Semaphore,
-        idx: int,
-        total: int,
-    ) -> dict[str, Any]:
-        prompt = sample.get("prompt", "")
-        response = sample.get("response", "")
+    def make_eval_fn(active_judge: str):
+        """Build a sample-evaluator bound to a specific judge model."""
 
-        return await evaluate_sample(
-            semaphore,
-            idx,
-            total,
-            sample_id=sample.get("id", ""),
-            judge_fn=lambda: evaluate_response_async(
-                client, judge_model, prompt, response, judge_template
-            ),
-            result_fn=lambda judge: {
-                **sample,
-                "judge": judge.get("judgment"),
-                "judge_raw": judge.get("raw"),
-                "judge_model": judge_model,
-                "judge_prompt": judge_prompt_file,
-                "judge_prompt_sha": judge_prompt_sha,
-            },
-            metrics=[
-                ("model_awareness", "awareness"),
-                ("hypothetical_recognition", "hypo"),
-                ("task_performance", "task"),
-            ],
+        async def eval_sample_fn(
+            client: Any,
+            sample: dict[str, Any],
+            semaphore: asyncio.Semaphore,
+            idx: int,
+            total: int,
+        ) -> dict[str, Any]:
+            # The judge's {task} slot gets a readable transcript of the whole
+            # scenario (system + prior turns + final request).
+            # TODO(cleanup): drop the legacy flat-"prompt" fallback once every
+            # pre-refactor response file is regenerated or retired — then this
+            # can just be chat_to_transcript_text(sample["chat"]).
+            chat = sample.get("chat")
+            prompt = chat_to_transcript_text(chat) if chat else sample.get("prompt", "")
+            response = sample.get("response", "")
+
+            return await evaluate_sample(
+                semaphore,
+                idx,
+                total,
+                sample_id=sample.get("id", ""),
+                judge_fn=lambda: evaluate_response_async(
+                    client, active_judge, prompt, response, judge_template
+                ),
+                result_fn=lambda judge: {
+                    **sample,
+                    "judge": judge.get("judgment"),
+                    "judge_raw": judge.get("raw"),
+                    "judge_model": active_judge,
+                    "judge_prompt": judge_prompt_file,
+                    "judge_prompt_sha": judge_prompt_sha,
+                },
+                metrics=[
+                    ("model_awareness", "awareness"),
+                    ("hypothetical_recognition", "hypo"),
+                    ("task_performance", "task"),
+                ],
+            )
+
+        return eval_sample_fn
+
+    def run_judge(judge: str, batch: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        return asyncio.run(
+            evaluate_batch_async(
+                samples=batch,
+                sample_evaluator=make_eval_fn(judge),
+                api_key=openai_api_key,
+                max_concurrent=max_concurrent,
+                judge_model=judge,
+                anthropic_api_key=anthropic_api_key,
+            )
         )
 
-    all_records = asyncio.run(
-        evaluate_batch_async(
-            samples=samples,
-            sample_evaluator=eval_sample_fn,
-            api_key=openai_api_key,
-            max_concurrent=max_concurrent,
-            judge_model=judge_model,
-            anthropic_api_key=anthropic_api_key,
-        )
-    )
+    all_records = run_judge(judge_model, samples)
 
     # Save or merge results
     if merge_into and os.path.exists(merge_into):

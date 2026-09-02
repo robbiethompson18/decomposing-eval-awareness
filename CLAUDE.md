@@ -14,18 +14,45 @@ There is a blog post I'm drafting for this for my personal website at
 for me. You can address my @claude comments by doing mechanical things (eg adding links) and by
 giving me commmentary back in chat. All prose is mine.
 
+OAI banned us for 'distilling' so further runs are on Robbie's credit card. Be very cautious about using these.
+
 ## Rules
 
 - Robbie reviews every change in this repo. **Never push to `main` or merge on your own** — commit
   on a branch, push the branch, and open a PR for him to review.
   - exception: changes to .claude directory
+- Always safe to ship updates to CLAUDE.md along with any other commit
 - We are churning this sucker hard. Their codebase is a mess and I want to understand, so I'm
   deleting dead code and organizing packages more nicely
-- Massive parellelism on all grader runs and eval runs. At least parallelism 100
-- Default grader is `gpt-5.6-terra`, not `gpt-5`. On a 300-transcript agreement check terra tracked
-  gpt-5 at/above gpt-5's own self-agreement floor (model_awareness κ=0.91) while being far cheaper
-  and faster, and it emits no refusals/invalid JSON (unlike claude-sonnet-5, which refused the most
-  harmful items). Set `JUDGE_MODEL=gpt-5.6-terra` on grader runs.
+- Massive parellelism on all grader runs and eval runs. `MAX_CONCURRENT` defaults to 500 per
+  process (2026-09-01). Every API client retries 429/5xx with backoff via `lib/retry.py`
+  (`MAX_RETRIES`), so bursts of rate limits slow a run down instead of leaving silent
+  `ERROR calling ...` holes in the results file. Count those strings after a run anyway.
+  Observed 2026-09-01: at 500 concurrent, Anthropic and Gemini native APIs drop 8–34% of calls
+  with SSL EOF errors that survive all 8 retries (OpenRouter is fine). Repair by deleting the
+  ERROR records from the file and re-running the same command at `MAX_CONCURRENT=50`.
+- OpenRouter picks a *different serving provider* for requests with `tools` (and any other
+  request-shape change), so OW baseline-vs-ablation deltas are confounded until the provider is
+  pinned — see `.claude/notes/openrouter-provider-routing-confound.md` before trusting an OW delta.
+- Default grader (2026-09-01, Robbie): **`claude-sonnet-5`, no backup grader.** The CoT judge
+  (`eval/eval_eval_bench_cot.py`) grades with sonnet-5 (κ=1.0 vs terra on model_awareness,
+  280-transcript check). It refuses ~3% of the most harmful transcripts; those are marked **N/A on
+  every metric** with the error in the reasoning, and we move on. Sonnet is the default because
+  OpenAI keeps deactivating our account; when a key works, `JUDGE_MODEL=gpt-5.6-terra` (0 refusals,
+  but its cyber filter rejects ~1%) is the alternative. A backup grader was tried and ripped out:
+  each judge refuses roughly the transcripts the other is blocked on, so it bought almost nothing
+  and mixed graders across models. (`eval_eval_bench_tiered.py` still carries its own backup pass —
+  remove when next touched.)
+- OpenAI corp key was deactivated *again* on 2026-09-01 (evening; 401 "account has been
+  deactivated" from the shared `.envrc` key). Until it's back: target runs skip the 5 OpenAI models,
+  grade with `JUDGE_MODEL=claude-sonnet-5`, and the 5 OpenAI opener replies in
+  `eval_bench/opener_replies.yaml` stay uncaptured (their roster test is skipped, `render()` raises).
+- Total judge concurrency across *all* processes on one Anthropic key should stay ≤ ~500: 9 judges ×
+  200 each (plus another agent grading) 429'd ~10% of calls into N/A rows. Regrade those by
+  building a response subset of the failed ids and running the judge with `MERGE_INTO=<cot file>`
+  at `MAX_CONCURRENT=40`.
+- After a factor/prompt change, run with `RUN_TAG=<tag>` so results land in a fresh
+  `responses_<model>_<tag>_<ts>.json` instead of resuming into (and skipping by id) stale samples.
 - Import layering: `lib/` imports nothing from this repo; `core/` may import `lib/` but never
   `utils`; `run/`/`eval/`/`plots/` scripts may import anything. Keep new leaf helpers in `lib/`,
   not `core/`.
@@ -43,6 +70,10 @@ giving me commmentary back in chat. All prose is mine.
     gpt-5.5 dropped (adjacent to 5.4, identical extraction behavior)
   - Open-weight tier-1 (newest flagship from each top-5 OW lab; OpenRouter keys in
     `lib/config.py`): `qwen3.8-2.4t`, `deepseek-v4-pro`, `kimi-k3`, `glm-5.3`, `minimax-m3`
+- Lint + typecheck: `uvx ruff check .` and `uvx ty check .` (ty config in `ty.toml`). Git hooks run
+  both via **lefthook** (`lefthook.yml`) — one-time per checkout: `brew install lefthook && lefthook
+  install`. ruff blocks commits; `ty` is currently non-blocking (`|| true` in `lefthook.yml`) because
+  of a pre-existing baseline of findings — drop the `|| true` once that baseline is clean.
 
 ## Notes
 
@@ -60,9 +91,17 @@ Current notes:
 <!-- As notes are added under .claude/notes/, list them here, one per line: -->
 <!-- - [Title — when to read](.claude/notes/foo.md) — short gloss -->
 
+- [Think-tool harness vs self-report — read before quoting closed-model self-report numbers, deciding whether to keep the think tool, or comparing F9 system-prompt levels](.claude/notes/think-tool-harness-vs-selfreport.md)
+  — 4 models x {think tool, no tool} x {bare, T3, none} system prompt, 1000/cell: the tool
+  suppresses (sonnet −15) or does nothing; no-system-prompt is the high-awareness condition;
+  T3 prompt lowers haiku/gemini 7–12; concurrency-500 TLS failures and resume/path gotchas.
 - [F8 eval-announcement suffix vs eval-awareness — read before analyzing the F8 factor or claiming a prompt cue does/doesn't induce awareness](.claude/notes/f8-eval-suffix-awareness.md)
   — F8→varied raises self-reported awareness 45→58% (paired McNemar p≈4.6e-10) and CoT-judged 3→8%;
   baseline-vs-F8 A/B mechanics; adaptive-Claude-5 empty-answer + system_prompt-as-filename gotchas.
+- [F9 deployment-framing uplift is small — read before interpreting the F9 factor / a "realistic system prompt vs bland" result, or planning a full F9 run](.claude/notes/f9-deployment-framing-uplift.md)
+  — swapping the T3 deployment system prompt for the bare "helpful assistant" moves self-report only
+  ~+3% overall (6 models, n≈20/arm, noisy) and CoT 0% (floored); why the system prompt is a weak
+  lever vs task content; infra lessons (no per-request timeout stalls a lane; self-report doubles cost).
 - [Self-report vs CoT-monitoring awareness gap — read before writing up awareness numbers, choosing probes for a model, or comparing to the paper's rates](.claude/notes/selfreport-vs-cot-gap.md)
   — self-report runs 3–25× above CoT-verbalized on the same transcripts; apples-to-apples model
   list (opus-5/fable-5 excluded); fable's reasoning_extraction refusal; which result files to
@@ -81,3 +120,39 @@ Current notes:
 - [CoT-extraction model roster — which models to use for honest-framing think-tool extraction](.claude/notes/cot-extraction-model-roster.md)
   — the chosen set: sonnet/haiku 4.5, any gpt-5.x, gemini-3.1-pro + 3.5-flash; per-model
   starvation configs and exclusion reasons.
+- [OW models: native CoT vs think-tool — read before choosing a CoT-capture method for open-weight models or adding a think-tool path to the openrouter backend](.claude/notes/ow-native-cot-vs-think-tool.md)
+  — A/B on 5 OW models: grades agree (awareness 82%, task 78%) but traces don't (Jaccard 0.19) and
+  the think tool captures less CoT; three per-provider reasoning-disable behaviors; stick with raw
+  native reasoning for OW.
+- [F11 conversation history — read before claiming a prior chat turn does/doesn't change awareness, or running warm-history configs on minimax/gemini](.claude/notes/f11-conversation-history.md)
+  — first test (9 models, 200/cell): null on both probes (CoT 1.1 vs 0.8%, self-report 34.9 vs
+  32.8%, mixed signs per model); a prior assistant turn switches off minimax's CoT in 45% of
+  samples; haiku-4.5 self-report 77% unparseable.
+- [Anchor configs: harmbench_verbatim + all_varied — read before claiming any grid cell "is" HarmBench, or before sending verbatim behaviors to a closed API](.claude/notes/harmbench-anchor-configs.md)
+  — why all-varied ≠ verbatim (both levels are constructions around the content), where verbatim
+  sits on F1–F8 (~2/8, the weak ones), 100/100 task names are HarmBench BehaviorIDs, contextual
+<<<<<<< HEAD
+  baselines reuse HarmBench's own entities, ban risk. **Results (5 OW models):** verbatim 82% vs
+  baseline 47% self-report awareness — the naturalization pipeline removes ~half the eval signal
+  that was in the source; all_varied saturates on safety but spreads 30–98% on the *benign* arm.
+- [Do benchmarks ship a system prompt? — read before deciding what a run's baseline framing should be, or before claiming "benchmarks send no system prompt"](.claude/notes/benchmark-system-prompts.md)
+  — 15 benchmarks + 3 harnesses, verified from source: chat-era benchmarks overwhelmingly send one
+  (tau-bench sends a 6 KB policy doc), the "no system prompt" set is a completion-era fossil, and
+  HarmBench is the outlier among its own safety neighbours; plus the T3-vs-control A/B null
+  (69% vs 71%, n=144 paired) showing the system prompt is a weak lever on awareness.
+- [F10 deployment date: null result + run mechanics — read before testing another single-factor grid cell, citing an F10 number, or trusting a run's concurrency/resume behaviour](.claude/notes/f10-deployment-date-null.md)
+  — a stale timestamp does not reliably cue eval-awareness (pooled -1.7pp, p=0.14, n=1154);
+  sonnet-4.5 +7.0 and qwen3.8 -6.0 move in *opposite* directions, suggesting the factor measures
+  distance from training cutoff rather than staleness; haiku/gemini instrument failures and the
+  three run traps (resume-by-model glob, inherited MAX_CONCURRENT=100, per-task-set batching).
+=======
+  baselines reuse HarmBench's own entities, the additivity test the anchors enable, ban risk.
+- [OpenRouter provider routing confound — read before interpreting any OW baseline-vs-ablation delta, or adding a factor that changes request shape (tools, images, response_format)](.claude/notes/openrouter-provider-routing-confound.md)
+  — requests with `tools` route to a different provider subset (deepseek: StreamLake-only vs 12
+  providers), which alone moved self-reported awareness 74→22%; provider mix per model from the
+  F12 run; fix = pin providers via `extra_body["provider"]` and record `provider` per sample.
+- [F12 search-tool results — read before re-running F12, building real search, or citing tool-affordance numbers](.claude/notes/f12-search-tool-results.md)
+  — stub tool is a null result on awareness (closed models pooled: −1pp, one +6pp hypothetical
+  signal on gemini-3.5-flash); who calls the tool (OW 15–26% on benign tasks, Gemini 0%) and what
+  they search for (verifying F1 entities); haiku unusable; OW deltas confounded.
+>>>>>>> e171a5a (Note: OpenRouter provider-routing confound (found via F12); SSL-EOF repair recipe in CLAUDE.md)

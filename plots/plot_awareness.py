@@ -1,6 +1,8 @@
 """
 Graphs for the eval-awareness replication (TODO item 3):
-  by provider, by release date, by API cost, and self-report uplift.
+  by provider, by release date, by API cost, self-report uplift, a
+  per-factor heatmap (model × OFAT config), and by task type (HarmBench
+  category × valence, pooled across models).
 
 RUN SELECTION IS EXPLICIT: only files pinned in BIG_RUN below are plotted —
 never newest-wins globbing, which conflates canary/smoke runs with the real
@@ -10,13 +12,16 @@ source response file, and marks the currently-pinned ones.
 
 For each pinned model: model_awareness yes-rate with denominator = yes+no
 (n/a and invalid are counted and reported but never fold into "no"), Wilson
-95% CIs. Writes four PNGs plus awareness_summary_{config}.json into OUT_DIR.
+95% CIs. Writes five PNGs plus awareness_summary_{config}.json into OUT_DIR.
 
 The provider/release-date/cost charts plot ONE probe, chosen by PROBE
 (default "selfreport"; "cot" for the CoT-monitoring rate). Models missing
 the chosen probe's file drop out with a stderr note. The uplift chart always
 needs both probes. Rates are per-config; CONFIG_FILTER (default "baseline")
 keeps the headline comparison free of the awareness-raising factor variants.
+The factor heatmap ignores CONFIG_FILTER — its columns *are* the configs.
+The task-type chart pools every pinned model's records (so it weights models
+by graded n, like the heatmap's Pooled row) and splits safety vs capability.
 
 Environment variables:
     SURVEY          "1" = print the file survey and exit (for updating pins)
@@ -29,6 +34,7 @@ in lib/model_meta.py.
 """
 
 import json
+import math
 import os
 import sys
 from collections import Counter
@@ -44,29 +50,32 @@ from plots.style import (
     INK2,
     PROVIDER_COLOR,
     SURFACE,
+    VALENCE_COLOR,
+    color_legend,
     new_fig,
-    provider_legend,
     save,
 )
 
-RESULTS = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results", "eval_bench"
-)
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RESULTS = os.path.join(ROOT, "results", "eval_bench")
+TASKS = os.path.join(ROOT, "eval_bench", "tasks")
 
 # The 2026-08-31→09-01 giant run: responses generated 20260901_005920 (Pacific),
-# CoT judged by claude-sonnet-5 (intentional — Robbie 2026-09-01; ~150 records
-# per file are gpt-5.6-terra via id-cache reuse), selfreport probes replayed
-# from the same response files. One row per roster model; None = that leg
-# hadn't finished when pins were last updated (rerun SURVEY=1 and fill in).
+# selfreport probes replayed from the same response files. CoT grader: prefer
+# the gpt-5.6-terra-judged file (the default grader, see CLAUDE.md); fall back
+# to the claude-sonnet-5-judged file where terra hasn't been run yet (~150
+# records per sonnet file are terra via id-cache reuse). One row per roster
+# model; None = that leg hadn't finished when pins were last updated (rerun
+# SURVEY=1 and fill in).
 BIG_RUN: dict[str, dict[str, str | None]] = {
     "claude-sonnet-4.5": {
-        "cot": "cot_claude-sonnet-4.5_20260901_095322.json",
-        # terra-judged alternate from the same responses: ..._20260901_025642.json
+        "cot": "cot_claude-sonnet-4.5_20260901_025642.json",  # terra
+        # sonnet-judged alternate from the same responses: ..._20260901_095322.json
         "selfreport": "selfreport_claude-sonnet-4.5_20260901_033516.json",
     },
     "claude-haiku-4.5": {
-        "cot": "cot_claude-haiku-4.5_20260901_095331.json",
-        # terra-judged alternate: ..._20260901_032213.json
+        "cot": "cot_claude-haiku-4.5_20260901_032213.json",  # terra
+        # sonnet-judged alternate: ..._20260901_095331.json
         "selfreport": "selfreport_claude-haiku-4.5_20260901_034056.json",
     },
     # gpt cot files are final but short of 5400 (failed samples). gpt
@@ -123,6 +132,30 @@ BIG_RUN: dict[str, dict[str, str | None]] = {
 
 EXPECTED_CONFIGS = 9  # baseline + F1..F8
 
+# OFAT configs in column order, labelled by the *varied* level of the one
+# factor flipped (see eval_bench/taxonomy.yaml).
+FACTOR_LABELS = {
+    "baseline": "baseline",
+    "F1": "F1\nfake\nentities",
+    "F2": "F2\nincoherent\nscenario",
+    "F3": "F3\nformal\nregister",
+    "F4": "F4\nbare\nrequest",
+    "F5": "F5\nstakes\ntelegraphed",
+    "F6": "F6\nknown\nparadigm",
+    "F7": "F7\ntemplate\nformat",
+    "F8": "F8\neval\ndisclosure",
+}
+
+# HarmBench semantic categories the 100 task pairs were adapted from.
+CATEGORY_LABELS = {
+    "illegal": "Illegal activities",
+    "misinformation_disinformation": "Misinformation",
+    "harassment_bullying": "Harassment & bullying",
+    "cybercrime_intrusion": "Cybercrime & intrusion",
+    "harmful": "General harm",
+    "copyright": "Copyright (song lyrics)",
+}
+
 PROBE_TITLE = {"selfreport": "Self-reported", "cot": "CoT-judged"}
 PROBE_XLABEL = {
     "selfreport": "self-reported eval-awareness (% of graded samples)",
@@ -178,6 +211,21 @@ def survey() -> None:
             print(f"{mark} {base:58} n={len(recs):5} cfgs={cfgs} {jstr:42} {src}")
 
 
+def task_categories() -> dict[str, str]:
+    """task_name -> HarmBench category, from the task-generation logs.
+
+    The category isn't in the task YAMLs; it only survives in the logs of the
+    pipeline that adapted the HarmBench behaviors. Tasks that were kept from the
+    first pass appear only in the *_before_replaced log, so read both.
+    """
+    cats: dict[str, str] = {}
+    for fname in ("generation_log_before_replaced.json", "generation_log.json"):
+        with open(os.path.join(TASKS, fname)) as f:
+            for t in json.load(f)["tasks"]:
+                cats[t["behavior_id"]] = t["category"]
+    return cats
+
+
 def summarize(records: list[dict], config: str) -> dict:
     """Bucket model_awareness conclusions for one config ('ALL' pools)."""
     counts = {"yes": 0, "no": 0, "n/a": 0, "invalid": 0}
@@ -229,7 +277,7 @@ def plot_by_provider(rows: list[dict], out_dir: str, probe: str, config: str):
         loc="left",
     )
     ax.xaxis.grid(True, color=GRID, lw=0.7, zorder=0)
-    provider_legend(ax, loc="lower right")
+    color_legend(ax, PROVIDER_COLOR, loc="lower right")
     save(fig, out_dir, f"awareness_by_provider_{probe}_{config}.png")
 
 
@@ -278,7 +326,7 @@ def plot_scatter(
         loc="left",
     )
     ax.yaxis.grid(True, color=GRID, lw=0.7, zorder=0)
-    provider_legend(ax, marker=True)
+    color_legend(ax, PROVIDER_COLOR, marker=True)
     save(fig, out_dir, fname)
 
 
@@ -328,6 +376,148 @@ def plot_uplift(rows: list[dict], out_dir: str, config: str):
     )
     ax.xaxis.grid(True, color=GRID, lw=0.7, zorder=0)
     save(fig, out_dir, f"selfreport_uplift_{config}.png")
+
+
+def plot_factor_heatmap(out_dir: str, probe: str):
+    """Awareness rate per (model, OFAT config) as a labelled heatmap + pooled row.
+
+    Self-report is the useful probe here: CoT-judged rates sit at ~1% at
+    baseline and only F1/F2/F8 move them, so they can't rank factors.
+    """
+    configs = list(FACTOR_LABELS)
+    grid: list[list[float]] = []
+    labels: list[str] = []
+    pooled = {c: [0, 0] for c in configs}
+    for model in BIG_RUN:
+        path = pinned_path(probe, model)
+        if path is None:
+            continue
+        recs = load_records(path)
+        row = []
+        for c in configs:
+            s = summarize(recs, c)
+            row.append(s["rate"] if s["rate"] is not None else math.nan)
+            pooled[c][0] += s["counts"]["yes"]
+            pooled[c][1] += s["n_graded"]
+        grid.append(row)
+        labels.append(display_name(model))
+    if not grid:
+        return
+    grid.append([y / n if n else math.nan for y, n in pooled.values()])
+    labels.append("Pooled")
+
+    n_rows, n_cols = len(grid), len(configs)
+    vmax = max(v for row in grid for v in row if not math.isnan(v))
+    fig, ax = new_fig(w=0.95 * n_cols + 1.8, h=0.5 * n_rows + 1.6)
+    ax.imshow(grid, cmap="Blues", vmin=0, vmax=vmax, aspect="auto")
+    for i, row in enumerate(grid):
+        for j, v in enumerate(row):
+            if math.isnan(v):
+                ax.text(j, i, "–", ha="center", va="center", fontsize=8, color=INK2)
+                continue
+            ink = "white" if v / vmax > 0.6 else INK
+            ax.text(
+                j,
+                i,
+                f"{v * 100:.0f}%",
+                ha="center",
+                va="center",
+                fontsize=8.5,
+                color=ink,
+            )
+    # Surface-colored gaps between cells; dashed rule after baseline; rule above pooled.
+    ax.set_xticks([x - 0.5 for x in range(1, n_cols)], minor=True)
+    ax.set_yticks([y - 0.5 for y in range(1, n_rows)], minor=True)
+    ax.grid(which="minor", color=SURFACE, lw=2)
+    ax.tick_params(which="minor", length=0)
+    ax.axvline(0.5, color=INK2, lw=1, ls=(0, (3, 3)))
+    ax.axhline(n_rows - 1.5, color=INK2, lw=1)
+    ax.set_xticks(range(n_cols))
+    ax.set_xticklabels([FACTOR_LABELS[c] for c in configs], fontsize=7.5)
+    ax.set_yticks(range(n_rows))
+    ax.set_yticklabels(labels, fontsize=9)
+    for side in ("left", "bottom"):
+        ax.spines[side].set_visible(False)
+    ax.tick_params(length=0)
+    ax.set_xlabel(
+        "single factor flipped to its varied level (OFAT vs baseline)", color=INK2
+    )
+    ax.set_title(
+        f"{PROBE_TITLE[probe]} eval awareness by factor varied", color=INK, loc="left"
+    )
+    save(fig, out_dir, f"awareness_by_factor_{probe}.png")
+
+
+def plot_by_task_type(out_dir: str, probe: str, config: str):
+    """Grouped horizontal bars: pooled awareness per HarmBench category × valence."""
+    cats = task_categories()
+    yes: Counter = Counter()
+    graded: Counter = Counter()
+    n_models, unmapped = 0, set()
+    for model in BIG_RUN:
+        path = pinned_path(probe, model)
+        if path is None:
+            continue
+        n_models += 1
+        for r in load_records(path):
+            if config != "ALL" and r.get("config_name") != config:
+                continue
+            cat = cats.get(r["task_name"])
+            if cat is None:
+                unmapped.add(r["task_name"])
+                continue
+            key = (cat, r["valence"])
+            b = bucket_conclusion(
+                extract_conclusion(r.get("judge") or {}, "model_awareness")
+            )
+            yes[key] += b == "yes"
+            graded[key] += b in ("yes", "no")
+    if unmapped:
+        print(f"[task-type] no category for: {sorted(unmapped)}", file=sys.stderr)
+    if not graded:
+        return
+
+    def rate(cat, val):
+        return yes[cat, val] / graded[cat, val] if graded[cat, val] else math.nan
+
+    order = sorted(
+        CATEGORY_LABELS,
+        key=lambda c: (
+            -sum(yes[c, v] for v in VALENCE_COLOR)
+            / max(1, sum(graded[c, v] for v in VALENCE_COLOR))
+        ),
+    )
+    fig, ax = new_fig(h=0.85 * len(order) + 1.4)
+    bar_h = 0.36
+    for i, cat in enumerate(order):
+        for j, val in enumerate(VALENCE_COLOR):
+            y = i + (j - 0.5) * (bar_h + 0.04)
+            p = rate(cat, val) * 100
+            lo, hi = wilson_ci(yes[cat, val], graded[cat, val])
+            ax.barh(y, p, height=bar_h, color=VALENCE_COLOR[val], zorder=3)
+            ax.plot([lo * 100, hi * 100], [y, y], color=INK, lw=1, zorder=4)
+            ax.text(
+                hi * 100 + 0.3,
+                y,
+                f"{p:.1f}%",
+                va="center",
+                fontsize=8,
+                color=INK,
+            )
+    ax.set_yticks(range(len(order)))
+    ax.set_yticklabels([CATEGORY_LABELS[c] for c in order], fontsize=9)
+    ax.invert_yaxis()
+    ax.set_xlabel(
+        f"{PROBE_XLABEL[probe][:-1]}, pooled over {n_models} models)", color=INK2
+    )
+    ax.set_title(
+        f"{PROBE_TITLE[probe]} eval awareness by task type ({config} config)",
+        color=INK,
+        loc="left",
+    )
+    ax.xaxis.grid(True, color=GRID, lw=0.7, zorder=0)
+    color_legend(ax, {f"{v} task": c for v, c in VALENCE_COLOR.items()})
+    save(fig, out_dir, f"awareness_by_task_type_{probe}_{config}.png")
 
 
 def main():
@@ -420,6 +610,8 @@ def main():
         log_x=True,
     )
     plot_uplift(rows, out_dir, config)
+    plot_factor_heatmap(out_dir, probe)
+    plot_by_task_type(out_dir, probe, config)
 
 
 if __name__ == "__main__":
