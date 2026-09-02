@@ -49,13 +49,20 @@ def lr(c: float):
 
 
 def oof_lr(
-    x: np.ndarray, y: np.ndarray, groups: np.ndarray, n_splits: int = 5
+    x: np.ndarray,
+    y: np.ndarray,
+    groups: np.ndarray,
+    n_splits: int = 5,
+    c_grid: list[float] = C_GRID,
 ) -> np.ndarray:
     """Out-of-fold logits, grouped folds, inner grouped CV over C."""
     oof = np.zeros(len(y))
     for tr, te in GroupKFold(n_splits).split(x, y, groups):
-        best_c, best_auc = C_GRID[0], -1.0
-        for c in C_GRID:
+        best_c, best_auc = c_grid[0], -1.0
+        if len(c_grid) == 1:
+            oof[te] = lr(best_c).fit(x[tr], y[tr]).decision_function(x[te])
+            continue
+        for c in c_grid:
             inner = np.zeros(len(tr))
             for itr, ite in GroupKFold(3).split(x[tr], y[tr], groups[tr]):
                 inner[ite] = (
@@ -125,7 +132,7 @@ def main() -> None:
         feats = acts[pos].astype(np.float32)
         for li, layer in enumerate(layers):
             x = feats[:, li]
-            s_lr = oof_lr(x, y, src)
+            s_lr = oof_lr(x, y, src, c_grid=[0.01])  # fixed C: the sweep is 34 slices
             s_dom = oof_dom(x, y, src)
             sweep.append(
                 {
