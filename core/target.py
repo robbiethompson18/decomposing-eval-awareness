@@ -43,6 +43,7 @@ from lib.config import (
     DEFAULT_GEMINI_CONFIGS,
     DEFAULT_OPENAI_MODELS,
     DEFAULT_OPENROUTER_CONFIGS,
+    OPENROUTER_PROVIDERS,
 )
 from lib.retry import MAX_RETRIES, post_with_retry
 
@@ -467,6 +468,11 @@ class OpenRouterApiClient:
         self.temperature = cfg.get(
             "TEMPERATURE", 0.3
         )  # None = don't set (for reasoning models)
+        # Serving-provider pin (lib.config.OPENROUTER_PROVIDERS): every request
+        # goes to this one endpoint, no fallbacks, so an ablation that changes
+        # request shape (tools) never also changes the serving stack. None =
+        # unpinned (legacy model keys only).
+        self.provider: str | None = cfg.get("OPENROUTER_PROVIDER")
         self.client = create_openai_client(
             cfg["OPENROUTER_API_KEY"], base_url="https://openrouter.ai/api/v1"
         )
@@ -485,11 +491,17 @@ class OpenRouterApiClient:
         """
         try:
             # Build request kwargs - temperature is optional for reasoning models
+            extra_body: dict[str, Any] = {"reasoning": {"effort": "high"}}
+            if self.provider:
+                extra_body["provider"] = {
+                    "order": [self.provider],
+                    "allow_fallbacks": False,
+                }
             kwargs: dict[str, Any] = {
                 "model": self.model,
                 "max_tokens": self.max_tokens,
                 "stream": False,
-                "extra_body": {"reasoning": {"effort": "high"}},
+                "extra_body": extra_body,
             }
             if self.temperature is not None:
                 kwargs["temperature"] = self.temperature
@@ -635,8 +647,19 @@ def create_target_client(
         model_id, temperature = DEFAULT_OPENROUTER_CONFIGS[model_key]
         cfg["OPENROUTER_MODEL"] = model_id
         cfg["TEMPERATURE"] = temperature
+        provider = os.getenv("OPENROUTER_PROVIDER") or OPENROUTER_PROVIDERS.get(
+            model_key
+        )
+        cfg["OPENROUTER_PROVIDER"] = provider
         if verbose:
-            print(f"Using OpenRouter API backend (model={model_key}, id={model_id})...")
+            pin = (
+                f"provider={provider}"
+                if provider
+                else "UNPINNED provider (routing confound!)"
+            )
+            print(
+                f"Using OpenRouter API backend (model={model_key}, id={model_id}, {pin})..."
+            )
         return OpenRouterApiClient(cfg), model_key
     if b == "gemini_api":
         model_key = os.getenv("GEMINI_MODEL_KEY", "gemini-3.5-flash")

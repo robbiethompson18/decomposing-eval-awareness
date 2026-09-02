@@ -68,6 +68,26 @@ DEFAULT_OPENROUTER_CONFIGS: dict[str, tuple[str, float | None]] = {
     "minimax-m3": ("minimax/minimax-m3", 0.3),  # MiniMax flagship, May 2026
 }
 
+# OpenRouter serving-provider pins: model_key -> provider tag, sent as
+# provider={"order": [tag], "allow_fallbacks": False} on every request.
+# Unpinned, OpenRouter picks a provider per request from whichever endpoints
+# support the request's parameters — so a request with `tools` (F12) is served
+# by a different provider set (quantization, sampling, model snapshot) than
+# one without, and a factor that changes request shape is confounded with the
+# serving stack (.claude/notes/openrouter-provider-routing-confound.md).
+# Pinning everywhere, always, means an ablation ablates only itself. The tag
+# is the endpoint's `tag` from /api/v1/models/<id>/endpoints (2026-09-01):
+# the lab's own endpoint where one exists, else the fp8 endpoint that served
+# most of the tool-bearing F12 calls. Every pin supports `tools`.
+# OPENROUTER_PROVIDER=<tag> overrides at run time (provider outage).
+OPENROUTER_PROVIDERS: dict[str, str] = {
+    "qwen3.8-2.4t": "alibaba",  # Alibaba's own endpoint (unquantized), uptime 100
+    "deepseek-v4-pro": "streamlake/fp8",  # no DeepSeek endpoint; served 221/400 F12 calls
+    "kimi-k3": "moonshotai/mxfp4",  # Moonshot's own endpoint; served 213/400 F12 calls
+    "glm-5.3": "z-ai/fp8",  # Z.ai's own endpoint
+    "minimax-m3": "minimax/fp8",  # MiniMax's own endpoint
+}
+
 
 def get_api_keys_config() -> dict[str, Any]:
     """Get common API keys and model defaults from environment variables.

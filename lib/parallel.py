@@ -16,7 +16,10 @@ async def query_parallel(
 
     Args:
         items: List of (client, chat, metadata) tuples, where chat is a Chat
-            (lib.chat.Chat) passed to client.query_chat().
+            (lib.chat.Chat) passed to client.query_chat_meta() when the client
+            has one (OpenRouter: returns (text, meta) with the serving
+            provider), else client.query_chat(). The per-call meta is passed
+            to result_fn as metadata["call_meta"] ({} for clients without it).
         result_fn: Function (response, metadata, sample_idx) -> result dict
         max_concurrent: Max concurrent requests
 
@@ -31,11 +34,19 @@ async def query_parallel(
     # threads — a dedicated executor lets max_concurrent actually be reached.
     executor = ThreadPoolExecutor(max_workers=max_concurrent)
 
+    def call(client: Any, chat: Any) -> tuple[str, dict[str, Any]]:
+        if hasattr(client, "query_chat_meta"):
+            return client.query_chat_meta(chat)
+        return client.query_chat(chat), {}
+
     async def query_one(
         idx: int, client: Any, chat: Any, metadata: dict[str, Any]
     ) -> tuple[int, dict[str, Any]]:
         async with semaphore:
-            response = await loop.run_in_executor(executor, client.query_chat, chat)
+            response, call_meta = await loop.run_in_executor(
+                executor, call, client, chat
+            )
+            metadata = {**metadata, "call_meta": call_meta}
             current[0] += 1
             sample_idx = metadata.get("sample_idx", 1)
             item_id = metadata.get("id", f"item_{idx}")

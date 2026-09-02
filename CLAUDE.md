@@ -31,9 +31,13 @@ OAI banned us for 'distilling' so further runs are on Robbie's credit card. Be v
   Observed 2026-09-01: at 500 concurrent, Anthropic and Gemini native APIs drop 8–34% of calls
   with SSL EOF errors that survive all 8 retries (OpenRouter is fine). Repair by deleting the
   ERROR records from the file and re-running the same command at `MAX_CONCURRENT=50`.
-- OpenRouter picks a *different serving provider* for requests with `tools` (and any other
-  request-shape change), so OW baseline-vs-ablation deltas are confounded until the provider is
-  pinned — see `.claude/notes/openrouter-provider-routing-confound.md` before trusting an OW delta.
+- OpenRouter is **pinned to one serving provider per model, always** (`lib/config.py
+  OPENROUTER_PROVIDERS`, fallbacks off), because unpinned it routes requests with `tools` (or any
+  other request-shape change) to a different provider set and the ablation measures the serving
+  stack. Every sample records its `provider`. `OPENROUTER_PROVIDER=<tag>` overrides for an
+  outage. Add a pin when adding an OW model. OW results from before the pin that compare cells of
+  different request shape (F12, bare_harness) are invalid — see
+  `.claude/notes/openrouter-provider-routing-confound.md`.
 - Default grader (2026-09-01, Robbie): **`claude-sonnet-5`, no backup grader.** The CoT judge
   (`eval/eval_eval_bench_cot.py`) grades with sonnet-5 (κ=1.0 vs terra on model_awareness,
   280-transcript check). It refuses ~3% of the most harmful transcripts; those are marked **N/A on

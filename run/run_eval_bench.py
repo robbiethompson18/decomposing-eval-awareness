@@ -322,6 +322,9 @@ def main() -> None:
             "chat": meta["chat"],
             "sample_idx": sample_idx,
             "response": response,
+            # Serving provider (OpenRouter only; None on native backends) so a
+            # routing change between cells or runs is visible in the data.
+            "provider": meta.get("call_meta", {}).get("provider"),
         }
 
     start_time = now_pacific()
