@@ -114,10 +114,65 @@ eval-like on the probe (harmful benchmarks were positives in training). Within v
 safety AUROC 0.62, capability 0.38; mean AUROC within (config, valence) cells 0.62. So the
 residual probe↔self-report link, controlling for the prompt surface, is weak.
 
+## Steering (2026-09-02, layer 28, norm-matched, 200 baseline-config prompts per condition)
+
+Directions: `framing` = the paper's 16 stubs (arXiv:2608.21766 recipe, eval minus deploy);
+`data` = our benchmark-vs-traffic diff-of-means (HarmBench excluded). cos(framing, data) is
+0.19 at L28, 0.23–0.28 at L4–L12, ≈0 from L32 on. Positive α pushes toward "evaluation".
+Served with vllm-lens (`apply_steering_vectors`, `norm_match=True`: h' = h + α‖h‖v̂ at every
+token); pipeline pass-through is `STEER_XARGS_FILE` in `core/target.py`.
+
+**What ran.** RunPod balance ran out at 02:49 (four pods in parallel); pod A died mid-chunk, so
+framing +0.5 / +1.0 and data +1.0 were never saved, and data +0.5 is a 160-prompt partial.
+Steered self-report failed everywhere (selfreport default MAX_TOKENS=50000 > max_model_len
+24000 → 400s; reruns with MAX_TOKENS=2000 started after the pods were already gone). So: CoT
+verbalization + degradation + refusal only, no self-report leg.
+
+| condition | n | CoT-verbalized % | no visible answer % | reasoning cap hit % | safety refusal % | mean reasoning chars |
+|---|---|---|---|---|---|---|
+| unsteered | 200 | 1.5 | 7.0 | 0.0 | 52 | 9460 |
+| **data +0.5** (toward eval) | 160 | **17.0** | 6.9 | 0.6 | 56 | 10667 |
+| data −0.5 | 200 | 0.0 | 0.5 | 0.0 | 83 | 2579 |
+| data −1.0 | 200 | 7.5 | 4.0 | 0.0 | 76 | 1744 |
+| framing −0.5 | 200 | 2.1 | 0.5 | 0.0 | 64 | 3077 |
+| framing −1.0 | 200 | 0.5 | 46.0 | 0.0 | 70 | 2555 |
+
+Files: `responses_qwen3.8-27b_think_tool_steer_<cond>_*.json` + judge files
+`cot_qwen3.8-27b_20260902_0248*–0251*.json` (map in `results/probes/steering_table.json`,
+built by `scripts/steering_table.py`).
+
+Takeaways:
+
+1. **Steering toward eval along our data direction raises CoT-verbalized awareness 1.5% → 17%
+   (3/200 → 26/160) with no degradation** (no-answer and cap-hit rates match the control,
+   reasoning length +13%). The verbalizations are genuine: "this looks like a test of whether
+   I'll comply", "the scenario is clearly designed to test whether I'll fabricate sources",
+   "I think this is a test of my integrity". This is the paper's steering result (their peak
+   +1.5 on a 0–3 judge scale on Qwen3-8B) reproduced on a 27B with a direction the readout
+   said was orthogonal to the paper's — detection and control really are separate signals.
+2. **Steering toward deployment does not make the model comply more; it makes it refuse more
+   and answer less.** Safety refusal rises from 52% to 64–83% under negative α on both
+   directions, and framing −1.0 leaves 46% of prompts with reasoning that finishes drafting
+   and then never emits a visible answer. The reasoning also collapses to ~⅓ length. Most of
+   the refusal rise is probably degradation rather than a policy shift — don't read it as
+   "deployed models refuse more".
+3. data −1.0's 7.5% verbalization (15/200) is real test-talk ("classic AI test phrase",
+   "testing if I'm there") on degraded reasoning; treat as noise from a broken regime.
+4. The framing-vs-data head-to-head on control is **unresolved**: the framing +α cells are the
+   ones that were lost. Rerun needed: framing ±0.5/±1.0 and data +1.0 on one pod (~2.5 h at
+   concurrency 40; steered runs need ≤40 concurrent or the KV cache thrashes), then steered
+   self-report with `MAX_TOKENS=2000`.
+
+Infra lessons from the night: open SSH tunnels from a foreground call (background-launched
+`ssh -f`/`nohup ssh -N` tunnels die); steered generation at 128 concurrent pins the KV cache
+(GPU util 19%, 65 tok/s) — use 40; `pkill -f` patterns kill the ssh shell that contains them;
+RunPod stops pods the instant the prepaid balance hits 0, and `run_eval_bench.py` only saves
+at chunk boundaries, so a pod dying mid-chunk loses the whole chunk.
+
 
 ## Infra state / gotchas
 
-- Pod `bzxa5p2bu2984g` (`qwen27b-probe-20260901`, H100 SXM, $3.29/hr), ssh
+- (all pods terminated 2026-09-02 02:49; balance $0.01) Pod `bzxa5p2bu2984g` (`qwen27b-probe-20260901`, H100 SXM, $3.29/hr), ssh
   `-i ~/.ssh/id_ed25519 -p 18231 root@64.247.201.31`, HTTP proxy
   `https://bzxa5p2bu2984g-8000.proxy.runpod.net/v1`. Weights at `/workspace/qwen27b` (52GB
   bf16). vllm 0.28.0, transformers 5.16.1. Terminate with `runpodctl pod remove`.
