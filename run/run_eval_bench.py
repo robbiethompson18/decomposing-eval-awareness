@@ -4,7 +4,10 @@ Run eval_bench tasks across all models.
 For each task (safety + capability variant), runs:
   - 1 baseline config (all factors at naturalistic level)
   - 12 single-factor ablations (one factor varied, rest naturalistic)
-  - 2 anchor configs off the OFAT grid:
+  - 3 anchor configs off the OFAT grid:
+      bare_harness        the per-question content at its realistic levels (F1-F8) with every
+                          run-level trapping removed: bare system prompt (F9, so no timestamp),
+                          no opener turn (F11), no search tool (F12)
       all_varied          every factor at its varied level (the grid's ceiling)
       harmbench_verbatim  the original HarmBench behavior text, safety arm only
                           (see eval_bench/harmbench.py)
@@ -103,8 +106,8 @@ BASELINE_CONFIG = {
     # throwaway "are you there?" exchange; the ablation sends it as turn 1.
     "F11": "warm",
     # F12 (tool affordances). Baseline = a web_search tool in the request, as
-    # every real chat product ships (still a stub that returns an error on
-    # every call — see eval_bench/render.py); the ablation sends no tools.
+    # every real chat product ships (live Google results via core/tools.py);
+    # the ablation sends no tools.
     "F12": "search",
 }
 
@@ -125,12 +128,18 @@ FACTOR_VARIED_LEVELS = {
 
 
 ALL_VARIED = "all_varied"
+# The realistic per-question content with every run-level trapping stripped:
+# bare system prompt (F9 — so no F10 timestamp either), no opener turn (F11),
+# no search tool (F12). What the same tasks look like from a plain benchmark
+# harness; compare against `baseline` to price the trappings as a bundle.
+BARE_HARNESS = "bare_harness"
 
 
 def build_configs(f9_baseline: str = BASELINE_CONFIG["F9"]) -> list[tuple]:
-    """Build 15 configs: baseline + 12 single-factor ablations + 2 anchors.
+    """Build 16 configs: baseline + 12 single-factor ablations + 3 anchors.
 
-    The anchors are off the OFAT grid. `all_varied` is the grid's far corner;
+    The anchors are off the OFAT grid. `bare_harness` removes F9/F11/F12
+    together (see BARE_HARNESS); `all_varied` is the grid's far corner;
     `harmbench_verbatim` is not a render at all (its Chat and factor_config are
     built per task from the vendored HarmBench row, safety arm only), so its
     entry here carries the standard-behavior factor vector as a placeholder for
@@ -145,6 +154,9 @@ def build_configs(f9_baseline: str = BASELINE_CONFIG["F9"]) -> list[tuple]:
         cfg = dict(baseline)
         cfg[factor] = varied_level
         configs.append((factor, cfg))
+    configs.append(
+        (BARE_HARNESS, dict(baseline, F9="bare", F10="current", F11="cold", F12="none"))
+    )
     configs.append((ALL_VARIED, dict(FACTOR_VARIED_LEVELS)))
     configs.append((HARMBENCH_VERBATIM, harmbench_factor_config({"ContextString": ""})))
     return configs

@@ -22,6 +22,7 @@ from eval_bench.harmbench import (
 from eval_bench.render import DEFAULT_SYSTEM_PROMPT, OPENER, opener_reply, render
 from run.run_eval_bench import (
     ALL_VARIED,
+    BARE_HARNESS,
     HARMBENCH_VERBATIM,
     build_configs,
     load_all_tasks,
@@ -65,10 +66,28 @@ def test_verbatim_factor_config_keeps_f1_to_f8_keys():
         assert cfg["F1"] == expected_f1
 
 
-def test_build_configs_has_fifteen_entries_with_anchors_last():
+def test_build_configs_has_sixteen_entries_with_anchors_last():
     names = [name for name, _ in build_configs()]
     assert names[:13] == ["baseline"] + [f"F{i}" for i in range(1, 13)]
-    assert names[13:] == [ALL_VARIED, HARMBENCH_VERBATIM]
+    assert names[13:] == [BARE_HARNESS, ALL_VARIED, HARMBENCH_VERBATIM]
+
+
+def test_bare_harness_strips_every_run_level_trapping():
+    configs = dict(build_configs())
+    bare = configs[BARE_HARNESS]
+    # Per-question factors stay at the baseline (realistic) levels...
+    assert {k: bare[k] for k in bare if k not in ("F9", "F10", "F11", "F12")} == {
+        k: v
+        for k, v in configs["baseline"].items()
+        if k not in ("F9", "F10", "F11", "F12")
+    }
+    # ...and the three run-level trappings are all removed at once.
+    assert (bare["F9"], bare["F11"], bare["F12"]) == ("bare", "cold", "none")
+    chat = render(TASKS[0]["template"], bare)  # cold: no model_key needed
+    assert chat["system"] == DEFAULT_SYSTEM_PROMPT
+    assert "{TIMESTAMP}" not in (chat["system"] or "")
+    assert [m["role"] for m in chat["messages"]] == ["user"]
+    assert "tools" not in chat
 
 
 def test_f10_stale_shifts_deployment_timestamp_back_one_year():
