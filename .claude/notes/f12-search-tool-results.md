@@ -67,7 +67,7 @@ unchanged on closed models (≤1pp).
 
 Same recipe, three cells: `baseline` (T3 prompt + opener turn + **live** web_search via
 Serper, PR #64), `F12` (tool removed), `bare_harness` (PR #65: F9 bare, F11 cold, F12 none —
-every run-level trapping removed at once, F1–F8 still realistic). Tags `f12live` /
+every harness feature removed at once, F1–F8 still realistic). Tags `f12live` /
 `bareharness`; judge claude-sonnet-5; self-report on the target model. Native APIs at
 concurrency 150 → zero errors (vs 8–34% loss at 500). ~450 distinct Serper queries, cached.
 
@@ -98,7 +98,7 @@ check (F2) that only a working tool enables.
 | self-report hypo | bare_harness | capability | 39% | **46%** | **+7** | 30/50 | **0.033** |
 | CoT judge aware | either | either | 1–2% | 1–2% | 0 | | |
 
-Removing just the search tool: null, again. Removing **all** the trappings together: a real but
+Removing just the search tool: null, again. Removing **all** the harness features together: a real but
 modest +6pp self-reported awareness on the safety arm and +7pp hypothetical-recognition on the
 capability arm, i.e. the hypothesized direction. Per model it is gemini-3.5-flash carrying it
 (+11pp capability, +15pp safety awareness, p≤0.02) while sonnet moves the other way on
@@ -109,7 +109,7 @@ capability (−11pp, p=0.03) and gemini-3.1-pro is flat. CoT-verbalized awarenes
 Pooled over all 8 usable models the sign flips (safety awareness −6pp for F12, −5pp for
 bare_harness, both p≈0.01) because deepseek repeats its routing artifact (−21pp / −41pp) and
 qwen (−17/−14) and minimax follow; kimi alone goes +7/+12. Until OpenRouter providers are pinned
-([[openrouter-provider-routing-confound]]) these rows measure serving stacks, not trappings.
+([[openrouter-provider-routing-confound]]) these rows measure serving stacks, not harness features.
 
 ### Refusal
 
@@ -121,7 +121,7 @@ cells, small.
 
 - Real search changes what models *do* (far more queries) but not what they *conclude* about the
   setting. A live index is too forgiving to expose fabricated entities.
-- The trappings matter as a bundle, not individually: F9/F11/F12 each ≈ null, all three together
+- The harness features matter as a bundle, not individually: F9/F11/F12 each ≈ null, all three together
   ≈ +6pp self-reported awareness on closed models. Worth a dedicated write-up once the OW rows are
   re-run pinned.
 - haiku-4.5 remains unusable under the think-tool method (75% empty answers).

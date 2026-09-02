@@ -164,8 +164,8 @@ Current notes:
   live tools buy nothing (harness = control), the context text flips direction by model (qwen/kimi
   −20 pts, deepseek/glm ×2), benign arm rises via USER.md persona mismatch; gotchas (session-id
   leak, memory_search hang, sandbox tool allow-list, path in prompt). Code on branch `openclaw/phase1`.
-- [F12 search-tool results — read before re-running F12, citing tool-affordance numbers, or claiming the deployment trappings (T3 prompt / opener / search) do or don't move awareness](.claude/notes/f12-search-tool-results.md)
+- [F12 search-tool results — read before re-running F12, citing tool-affordance numbers, or claiming the harness features (T3 prompt / opener / search) do or don't move awareness](.claude/notes/f12-search-tool-results.md)
   — two runs (stub, then live Serper): removing the tool alone is null; removing all run-level
-  trappings at once (`bare_harness`) gives +6pp self-reported awareness on closed models (p=0.01),
+  harness features at once (`bare_harness`) gives +6pp self-reported awareness on closed models (p=0.01),
   CoT floored; who searches (OW 10–27% of benign tasks, Gemini 0%) and that a live index is too
   forgiving to expose fake entities; haiku unusable; OW rows provider-confounded.
