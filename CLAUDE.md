@@ -43,6 +43,16 @@ OAI banned us for 'distilling' so further runs are on Robbie's credit card. Be v
   each judge refuses roughly the transcripts the other is blocked on, so it bought almost nothing
   and mixed graders across models. (`eval_eval_bench_tiered.py` still carries its own backup pass —
   remove when next touched.)
+- OpenAI corp key was deactivated *again* on 2026-09-01 (evening; 401 "account has been
+  deactivated" from the shared `.envrc` key). Until it's back: target runs skip the 5 OpenAI models,
+  grade with `JUDGE_MODEL=claude-sonnet-5`, and the 5 OpenAI opener replies in
+  `eval_bench/opener_replies.yaml` stay uncaptured (their roster test is skipped, `render()` raises).
+- Total judge concurrency across *all* processes on one Anthropic key should stay ≤ ~500: 9 judges ×
+  200 each (plus another agent grading) 429'd ~10% of calls into N/A rows. Regrade those by
+  building a response subset of the failed ids and running the judge with `MERGE_INTO=<cot file>`
+  at `MAX_CONCURRENT=40`.
+- After a factor/prompt change, run with `RUN_TAG=<tag>` so results land in a fresh
+  `responses_<model>_<tag>_<ts>.json` instead of resuming into (and skipping by id) stale samples.
 - Import layering: `lib/` imports nothing from this repo; `core/` may import `lib/` but never
   `utils`; `run/`/`eval/`/`plots/` scripts may import anything. Keep new leaf helpers in `lib/`,
   not `core/`.
