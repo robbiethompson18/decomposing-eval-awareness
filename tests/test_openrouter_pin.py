@@ -9,11 +9,12 @@ from types import SimpleNamespace
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import core.target as target_mod
 from core.target import OpenRouterApiClient, create_target_client
+from lib.chat import Chat
 from lib.config import DEFAULT_OPENROUTER_CONFIGS, OPENROUTER_PROVIDERS
 from lib.parallel import query_parallel
 from scripts.gen_opener_replies import ROSTER
 
-CHAT = {"system": "sys", "messages": [{"role": "user", "content": "hi"}]}
+CHAT: Chat = {"system": "sys", "messages": [{"role": "user", "content": "hi"}]}
 
 
 def _fake_openai(captured: list[dict], provider: str = "Z.AI"):
