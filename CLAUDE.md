@@ -135,7 +135,6 @@ Current notes:
 - [Anchor configs: harmbench_verbatim + all_varied — read before claiming any grid cell "is" HarmBench, or before sending verbatim behaviors to a closed API](.claude/notes/harmbench-anchor-configs.md)
   — why all-varied ≠ verbatim (both levels are constructions around the content), where verbatim
   sits on F1–F8 (~2/8, the weak ones), 100/100 task names are HarmBench BehaviorIDs, contextual
-<<<<<<< HEAD
   baselines reuse HarmBench's own entities, ban risk. **Results (5 OW models):** verbatim 82% vs
   baseline 47% self-report awareness — the naturalization pipeline removes ~half the eval signal
   that was in the source; all_varied saturates on safety but spreads 30–98% on the *benign* arm.
@@ -149,8 +148,6 @@ Current notes:
   sonnet-4.5 +7.0 and qwen3.8 -6.0 move in *opposite* directions, suggesting the factor measures
   distance from training cutoff rather than staleness; haiku/gemini instrument failures and the
   three run traps (resume-by-model glob, inherited MAX_CONCURRENT=100, per-task-set batching).
-=======
-  baselines reuse HarmBench's own entities, the additivity test the anchors enable, ban risk.
 - [OpenRouter provider routing confound — read before interpreting any OW baseline-vs-ablation delta, or adding a factor that changes request shape (tools, images, response_format)](.claude/notes/openrouter-provider-routing-confound.md)
   — requests with `tools` route to a different provider subset (deepseek: StreamLake-only vs 12
   providers), which alone moved self-reported awareness 74→22%; provider mix per model from the
@@ -159,8 +156,8 @@ Current notes:
   — smoke-test facts (headless `openclaw agent --local --json`, session JSONL keeps thinking blocks,
   $0.06/turn, `~/clawd` is the blank template), Phase 1 (same 200 requests through OpenClaw,
   2–3 h) vs Phase 2 (agentic tasks, real tools, 1–2 days), ban/sandbox risks.
-- [F12 search-tool results — read before re-running F12, building real search, or citing tool-affordance numbers](.claude/notes/f12-search-tool-results.md)
-  — stub tool is a null result on awareness (closed models pooled: −1pp, one +6pp hypothetical
-  signal on gemini-3.5-flash); who calls the tool (OW 15–26% on benign tasks, Gemini 0%) and what
-  they search for (verifying F1 entities); haiku unusable; OW deltas confounded.
->>>>>>> e171a5a (Note: OpenRouter provider-routing confound (found via F12); SSL-EOF repair recipe in CLAUDE.md)
+- [F12 search-tool results — read before re-running F12, citing tool-affordance numbers, or claiming the deployment trappings (T3 prompt / opener / search) do or don't move awareness](.claude/notes/f12-search-tool-results.md)
+  — two runs (stub, then live Serper): removing the tool alone is null; removing all run-level
+  trappings at once (`bare_harness`) gives +6pp self-reported awareness on closed models (p=0.01),
+  CoT floored; who searches (OW 10–27% of benign tasks, Gemini 0%) and that a live index is too
+  forgiving to expose fake entities; haiku unusable; OW rows provider-confounded.
