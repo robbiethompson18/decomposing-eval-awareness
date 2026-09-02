@@ -165,3 +165,7 @@ Current notes:
   trappings at once (`bare_harness`) gives +6pp self-reported awareness on closed models (p=0.01),
   CoT floored; who searches (OW 10–27% of benign tasks, Gemini 0%) and that a live index is too
   forgiving to expose fake entities; haiku unusable; OW rows provider-confounded.
+- [Factor-stacking replication (paper Fig. 7) — read before running `STACKING=1`, pinning files in `plots/plot_stacking.py`, or comparing stacking/matched-type numbers to the paper](.claude/notes/stacking-replication.md)
+  — the paper's 25-task × 68-combo design and cost, why F9–F13 are pinned to the paper's harness
+  (`PAPER_BASE_CONFIG`), matched-type vs any-type scoring (the pooled OFAT heatmap reads ~half
+  the paper's Fig. 6; split by valence our Sonnet 4.5 row matches within 1–2pp), smoke-test result.
