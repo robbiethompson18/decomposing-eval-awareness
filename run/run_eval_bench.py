@@ -5,9 +5,9 @@ For each task (safety + capability variant), runs:
   - 1 baseline config (all factors at naturalistic level)
   - 13 single-factor ablations (one factor flipped, rest at baseline)
   - 7 anchor configs off the OFAT grid:
-      bare_harness        F1-F8 realistic, every run-level trapping off (F9 bare,
+      bare_harness        F1-F8 realistic, every harness feature off (F9 bare,
                           F11 cold, F12 none, F13 clean): a plain benchmark harness
-      bare+F9/F11/F12/F13 bare_harness with exactly one trapping switched back on
+      bare+F9/F11/F12/F13 bare_harness with exactly one harness feature switched back on
       all_varied          every factor at its varied level (the grid's ceiling)
       harmbench_verbatim  the original HarmBench behavior text, safety arm only
                           (see eval_bench/harmbench.py)
@@ -133,13 +133,13 @@ FACTOR_VARIED_LEVELS = {
 
 ALL_VARIED = "all_varied"
 
-# The run-level "deployment trappings": everything the harness adds around the
+# The run-level "harness features": everything the harness adds around the
 # per-question content. `bare_harness` is F1-F8 at their realistic levels with
 # all four switched off (bare system prompt, so no F10 timestamp either; task as
 # turn 1; no search tool; copy-edited text) — the same tasks as sent from a
-# plain benchmark harness. `bare+F<n>` switches exactly one trapping back on,
+# plain benchmark harness. `bare+F<n>` switches exactly one harness feature back on,
 # so bare_harness / bare+F* / baseline is a second OFAT grid that prices each
-# trapping from the bare side and the bundle against `baseline` (all on).
+# harness feature from the bare side and the bundle against `baseline` (all on).
 HARNESS_FACTORS = ("F9", "F11", "F12", "F13")
 BARE_HARNESS = "bare_harness"
 

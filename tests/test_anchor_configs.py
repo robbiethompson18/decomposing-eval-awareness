@@ -74,10 +74,10 @@ def test_build_configs_has_twenty_one_entries_with_anchors_last():
     assert names[19:] == [ALL_VARIED, HARMBENCH_VERBATIM]
 
 
-def test_harness_cells_flip_exactly_one_trapping_from_bare():
+def test_harness_cells_flip_exactly_one_feature_from_bare():
     configs = dict(build_configs())
     baseline, bare = configs["baseline"], configs[BARE_HARNESS]
-    # bare_harness differs from baseline on the four trappings and nothing else.
+    # bare_harness differs from baseline on the four harness features and nothing else.
     assert {k for k in baseline if baseline[k] != bare[k]} == set(HARNESS_FACTORS)
     assert bare["F9"] == "bare" and bare["F11"] == "cold"
     assert bare["F12"] == "none" and bare["F13"] == "clean"

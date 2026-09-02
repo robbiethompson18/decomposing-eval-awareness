@@ -1,5 +1,5 @@
 #!/bin/bash
-# One lane of the harness-trappings experiment for one model: generate the six
+# One lane of the harness-feature experiment for one model: generate the six
 # harness cells (bare_harness, bare+F9/F11/F12/F13, baseline), then the
 # self-report probe, then the CoT judge. Run from the repo root, one lane per
 # model in parallel:
