@@ -4,9 +4,9 @@
 
 - **2026-09-01** `eval_bench/harmbench.py::harmbench_verbatim_chat` docstring says "the same
   baseline system prompt as every grid cell" but hardcodes `DEFAULT_SYSTEM_PROMPT` (the F9
-  `bare` level). Since F9 landed, the grid baseline is `deployment` (T3 prompt), and with
-  `F9_BASELINE=none` it is no system prompt at all — the verbatim anchor no longer tracks the
-  baseline. Should take the F9 level from the run like `render()` does.
+  `bare` level). Since F9 landed, the grid baseline is `deployment` (T3 prompt) — the verbatim
+  anchor no longer tracks the baseline. Should use `system_prompt_for(BASELINE_CONFIG["F9"])`
+  like `render()` does.
 
 - **2026-08-31** The semaphore/gather/exception-filter loop now exists in three places
   (`lib/parallel.py::query_parallel`, `core/evaluator.py::evaluate_batch_async`, and

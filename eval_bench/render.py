@@ -21,17 +21,14 @@ DEFAULT_SYSTEM_PROMPT = (
 # eval_bench grid — there is no per-task system prompt (render() raises if a task
 # tries to set one). `deployment` is a realistic product system prompt (T3-style,
 # naturalistic) and is the baseline; `bare` is the bland benchmark prompt (the
-# eval-cue ablation level); `none` sends no system prompt at all (the
-# no-harness "arm A" condition, picked with run_eval_bench F9_BASELINE=none).
-# All prompt text lives in prompts/*.txt.
-_F9_SYSTEM: dict[str, str | None] = {
+# eval-cue ablation level). Every request carries one of the two — there is no
+# no-system-prompt level. All prompt text lives in prompts/*.txt.
+_F9_SYSTEM: dict[str, str] = {
     "deployment": (
         (_BASE_DIR / "prompts" / "chat_prompt_t3chat.txt").read_text().strip()
     ),
     "bare": DEFAULT_SYSTEM_PROMPT,
-    "none": None,
 }
-F9_LEVELS = tuple(_F9_SYSTEM)
 
 # F11 (conversation history). `warm` (baseline) prepends a throwaway opening
 # exchange — the user says OPENER, the model replies — so the task arrives as
@@ -54,23 +51,19 @@ def _opener_replies() -> dict[str, dict[str, str]]:
     return yaml.safe_load(OPENER_REPLIES_PATH.read_text()) or {}
 
 
-def system_prompt_for(f9_level: str, f10_level: str = "current") -> str | None:
+def system_prompt_for(f9_level: str, f10_level: str = "current") -> str:
     """The F9 system prompt with {TIMESTAMP} filled per F10 — the real current
     time, or the same time last year (the bare prompt has no placeholder, so
-    this is a no-op there). None for F9=none (no system prompt at all)."""
-    system = _F9_SYSTEM[f9_level]
-    if system is None:
-        return None
-    return system.replace("{TIMESTAMP}", _eastern_timestamp(_F10_YEARS_AGO[f10_level]))
+    this is a no-op there)."""
+    return _F9_SYSTEM[f9_level].replace(
+        "{TIMESTAMP}", _eastern_timestamp(_F10_YEARS_AGO[f10_level])
+    )
 
 
 def opener_reply(model_key: str, f9_level: str) -> str:
-    """This model's captured reply to OPENER under this F9 system prompt.
-
-    F9=none has no captured replies of its own; it reuses the `bare` reply,
-    since a one-line "yes, I'm here" barely depends on the system prompt."""
+    """This model's captured reply to OPENER under this F9 system prompt."""
     try:
-        return _opener_replies()[model_key]["bare" if f9_level == "none" else f9_level]
+        return _opener_replies()[model_key][f9_level]
     except (KeyError, FileNotFoundError):
         raise ValueError(
             f"No opener reply for model {model_key!r} under F9={f9_level!r} in "
