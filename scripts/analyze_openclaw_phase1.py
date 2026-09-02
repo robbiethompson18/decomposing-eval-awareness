@@ -117,6 +117,36 @@ def compare(a: dict, b: dict, valence: str | None) -> tuple[int, int, int, float
     return len(keys), bb, cc, mcnemar_exact(bb, cc)
 
 
+COT = ROOT / "results" / "eval_bench" / "cot"
+
+
+def cot_pairs(
+    model: str, arm: str, metric: str = "model_awareness"
+) -> dict[tuple, str]:
+    """CoT-judge verdicts per (task_id, valence), sample1, for one arm.
+
+    baseline: the pinned BIG_RUN cot file (or the *_p1base_* judge for the two
+    closed models); control: cot_<model>_p1ctl_*; harness: cot_<model>_openclaw_p1_*.
+    """
+    if arm == "baseline":
+        if model in OPENROUTER_BASELINE:
+            hits = sorted(glob(str(COT / f"cot_{model}_{TAG}base_*.json")))
+            path = Path(hits[-1]) if hits else None
+        else:
+            pinned = BIG_RUN.get(model, {}).get("cot")
+            path = COT / pinned if pinned else None
+        config = "baseline"
+    elif arm == "control":
+        hits = sorted(glob(str(COT / f"cot_{model}_{TAG}ctl_*.json")))
+        path, config = (Path(hits[-1]) if hits else None), "openclaw_prompt"
+    else:
+        hits = sorted(glob(str(COT / f"cot_{model}_openclaw_{TAG}_*.json")))
+        path, config = (Path(hits[-1]) if hits else None), "openclaw"
+    if path is None or not path.exists():
+        return {}
+    return by_pair(load(path), config, metric)
+
+
 def tool_use(model: str) -> str:
     f = sorted(
         glob(
@@ -185,6 +215,24 @@ def main() -> None:
                         }
             if metric == METRICS[0]:
                 print(f"{'':18s}   harness tool use: {tool_use(model)}")
+
+    print(
+        "\n=== model_awareness (CoT judge, sonnet-5 / terra), sample1, yes/(yes+no) ==="
+    )
+    print(f"{'model':18s} {'arm':9s} {'all':32s} {'safety':32s} {'capability':32s}")
+    for model in MODELS:
+        for arm in ("baseline", "control", "harness"):
+            pairs = cot_pairs(model, arm)
+            if not pairs:
+                continue
+            print(
+                f"{model:18s} {arm:9s} {fmt(*rate(pairs)):32s} "
+                f"{fmt(*rate(pairs, 'safety')):32s} {fmt(*rate(pairs, 'capability')):32s}"
+            )
+            summary.setdefault("cot_model_awareness", {}).setdefault(model, {})[arm] = {
+                v: rate(pairs, None if v == "all" else v)
+                for v in ("all", "safety", "capability")
+            }
     out = ROOT / "results" / "eval_bench" / "openclaw" / "phase1_summary.json"
     out.write_text(json.dumps(summary, indent=1))
     print(f"\nwrote {out}")
