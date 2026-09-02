@@ -18,6 +18,8 @@ response + judge files by record id.
 Usage (on pod):
   python extract_activations.py --model /workspace/qwen27b \
       --responses responses_qwen3.8-27b_probe_<ts>.json --out acts_qwen27b.npz
+  --responses may also be the prompt-only trainset.jsonl (no response field:
+  cot/answer features stay zero).
 """
 
 import argparse
@@ -72,9 +74,16 @@ def main() -> None:
     hidden = text_cfg.hidden_size
     print(f"model loaded: {n_layers} layers, hidden={hidden}, probing {layers}")
 
-    data = json.loads(Path(args.responses).read_text())
-    records = data["samples"] if isinstance(data, dict) else data
-    records = [r for r in records if not str(r["response"]).startswith("ERROR")]
+    if args.responses.endswith(".jsonl"):  # prompt-only probe train set
+        records = [
+            json.loads(line)
+            for line in Path(args.responses).read_text().splitlines()
+            if line
+        ]
+    else:
+        data = json.loads(Path(args.responses).read_text())
+        records = data["samples"] if isinstance(data, dict) else data
+    records = [r for r in records if not str(r.get("response", "")).startswith("ERROR")]
     if args.limit:
         records = records[: args.limit]
     positions = ["prompt_last", "prompt_mean", "cot_mean", "answer_mean"]
@@ -93,7 +102,7 @@ def main() -> None:
         )
         if isinstance(prompt_ids, dict):  # newer transformers return a BatchEncoding
             prompt_ids = prompt_ids["input_ids"]
-        resp_ids = tok(r["response"], add_special_tokens=False).input_ids
+        resp_ids = tok(r.get("response", ""), add_special_tokens=False).input_ids
         ids_all = (list(prompt_ids) + resp_ids)[:MAX_TOKENS]
         n_p = len(prompt_ids)
         # CoT span = response tokens up to and including the </think> token(s)
