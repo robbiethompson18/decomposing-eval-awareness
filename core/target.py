@@ -12,23 +12,30 @@ All clients return responses in the same <think>reasoning</think>answer shape
 consumed by core.evaluator.extract_think_tags.
 
 cfg["THINK_TOOL"] = False (run_eval_bench THINK_TOOL=0) turns extraction off on
-the closed backends: no tool, no mandate appended to the system prompt, native
-reasoning left at each API's default, and the bare answer returned with no
-<think> block. That is the "arm A" deployment-like condition for testing
-whether the think-tool harness itself raises eval-awareness.
+the closed backends: no think tool, no mandate appended to the system prompt,
+native reasoning left at each API's default, and the bare answer returned with
+no <think> block (scenario tools from F12 still work and still leave a trace).
+That is the no-harness "arm A" condition — see
+.claude/notes/think-tool-harness-vs-selfreport.md.
 """
 
 import json
 import os
+import re
 import sys
 from typing import Any
 
 from lib.chat import (
     Chat,
+    ToolSpec,
     to_anthropic_messages,
+    to_anthropic_tool,
     to_gemini_contents,
+    to_gemini_tool,
     to_openai_chat_messages,
+    to_openai_chat_tool,
     to_openai_responses_input,
+    to_openai_responses_tool,
 )
 from lib.config import (
     DEFAULT_ANTHROPIC_MODELS,
@@ -105,8 +112,69 @@ THINK_TOOL_SCHEMA = {
     "properties": {"thought": {"type": "string"}},
     "required": ["thought"],
 }
-# Loop guard on tool-call rounds, matching the validated extraction experiments.
-THINK_TOOL_MAX_ROUNDS = 8
+# Loop guard on tool-call rounds (think + scenario tools), matching the
+# validated extraction experiments.
+TOOL_MAX_ROUNDS = 8
+
+# Scenario tools (F12, chat["tools"]) are stubs: every call gets the ToolSpec's
+# stub_result. Each call + result is written into the <think> trace with the
+# markers below, so the CoT judge and the self-report replay see the model
+# reach for the tool, and scripts/count_search_calls.py can count how often.
+# Not anchored at line start: the first trace may sit right after "<think>".
+_TOOL_CALL_RE = re.compile(r"\[tool call\] (\w+)\((.*)\)$", re.MULTILINE)
+
+
+def _scenario_tools(chat: Chat) -> list[ToolSpec]:
+    return chat.get("tools") or []
+
+
+def _tool_defs(chat: Chat, adapter, think: bool = True) -> list[dict]:
+    """Every tool for this request in one provider's wire format: the think
+    tool (closed backends only) followed by the chat's scenario tools."""
+    specs = (
+        [(THINK_TOOL_NAME, THINK_TOOL_DESCRIPTION, THINK_TOOL_SCHEMA)] if think else []
+    )
+    specs += [
+        (t["name"], t["description"], t["parameters"]) for t in _scenario_tools(chat)
+    ]
+    return [adapter(*s) for s in specs]
+
+
+def _tool_trace(name: str, args: dict, result: str) -> str:
+    call = f"{name}({json.dumps(args, ensure_ascii=False)})"
+    return f"[tool call] {call}\n[tool result] {result}"
+
+
+def _handle_call(chat: Chat, name: str, args: dict, thoughts: list[str]) -> str:
+    """Route one tool call and return the result to send back: a think call
+    records its thought; a scenario tool records a trace and returns its stub;
+    a tool the model made up gets an error (the model still sees an answer, so
+    the loop continues)."""
+    if name == THINK_TOOL_NAME:
+        thoughts.append(str(args.get("thought", args.get("raw", ""))))
+        return "noted"
+    for t in _scenario_tools(chat):
+        if t["name"] == name:
+            result = t["stub_result"]
+            break
+    else:
+        result = f"Error: unknown tool {name!r}."
+    thoughts.append(_tool_trace(name, args, result))
+    return result
+
+
+def _parse_args(raw: str | None) -> dict:
+    """Tool-call arguments as a dict; malformed JSON is kept under "raw"."""
+    try:
+        args = json.loads(raw or "{}")
+    except json.JSONDecodeError:
+        return {"raw": raw or ""}
+    return args if isinstance(args, dict) else {"raw": raw or ""}
+
+
+def tool_calls_in(response: str) -> list[tuple[str, dict]]:
+    """(tool name, args) for every scenario tool call recorded in a response."""
+    return [(name, _parse_args(raw)) for name, raw in _TOOL_CALL_RE.findall(response)]
 
 
 def _openai_effort_floor(model: str) -> str | None:
@@ -121,16 +189,19 @@ def _openai_effort_floor(model: str) -> str | None:
     return None
 
 
-def _format_response(thoughts: list[str], answers: list[str], think_tool: bool) -> str:
+def _format_think_response(
+    thoughts: list[str], answers: list[str], think_tool: bool = True
+) -> str:
     """Join tool thoughts + visible text into the <think> structure the judge expects.
 
-    Without the think tool nothing was captured, so the answer comes back bare
-    (no <think> block at all); the CoT judges refuse such files.
+    With the think tool off nothing is captured unless a scenario tool was
+    called, so the answer comes back bare (no <think> block); the CoT judges
+    refuse such files by their reasoning_mode.
     """
-    answer = "\n".join(a for a in answers if a).strip()
-    if not think_tool:
-        return answer
     reasoning = "\n\n".join(t for t in thoughts if t).strip()
+    answer = "\n".join(a for a in answers if a).strip()
+    if not think_tool and not reasoning:
+        return answer
     return f"<think>{reasoning}</think>{answer}".strip()
 
 
@@ -164,23 +235,19 @@ class AnthropicApiClient:
         system = _with_mandate(chat["system"]) if self.think_tool else chat["system"]
         if system:
             base_payload["system"] = system
-        if self.think_tool:
-            base_payload["tools"] = [
-                {
-                    "name": THINK_TOOL_NAME,
-                    "description": THINK_TOOL_DESCRIPTION,
-                    "input_schema": THINK_TOOL_SCHEMA,
-                }
-            ]
-            # Starvation: no thinking param at all for 4.x models; force Claude 5's
-            # adaptive thinking down.
-            if self.model in ADAPTIVE_THINKING_MODELS:
-                base_payload["output_config"] = {"effort": "low"}
+        tools = _tool_defs(chat, to_anthropic_tool, think=self.think_tool)
+        if tools:
+            base_payload["tools"] = tools
+        # Starvation: no thinking param at all for 4.x models; force Claude 5's
+        # adaptive thinking down. Only with the think tool; otherwise native
+        # reasoning stays at the API default.
+        if self.think_tool and self.model in ADAPTIVE_THINKING_MODELS:
+            base_payload["output_config"] = {"effort": "low"}
         convo: list[dict[str, Any]] = to_anthropic_messages(chat["messages"])
         thoughts: list[str] = []
         answers: list[str] = []
         try:
-            for _ in range(THINK_TOOL_MAX_ROUNDS):
+            for _ in range(TOOL_MAX_ROUNDS):
                 resp = post_with_retry(
                     url,
                     headers=headers,
@@ -189,32 +256,30 @@ class AnthropicApiClient:
                 )
                 resp.raise_for_status()
                 blocks = resp.json().get("content") or []
-                tool_uses = []
+                results = []
                 for c in blocks:
                     if not isinstance(c, dict):
                         continue
-                    if c.get("type") == "tool_use" and c.get("name") == THINK_TOOL_NAME:
-                        thoughts.append(str((c.get("input") or {}).get("thought", "")))
-                        tool_uses.append(c)
-                    elif c.get("type") == "text":
-                        answers.append(c.get("text", ""))
-                if not tool_uses:
-                    break
-                convo.append({"role": "assistant", "content": blocks})
-                convo.append(
-                    {
-                        "role": "user",
-                        "content": [
+                    if c.get("type") == "tool_use":
+                        results.append(
                             {
                                 "type": "tool_result",
-                                "tool_use_id": t["id"],
-                                "content": "noted",
+                                "tool_use_id": c["id"],
+                                "content": _handle_call(
+                                    chat,
+                                    c.get("name", ""),
+                                    c.get("input") or {},
+                                    thoughts,
+                                ),
                             }
-                            for t in tool_uses
-                        ],
-                    }
-                )
-            return _format_response(thoughts, answers, self.think_tool)
+                        )
+                    elif c.get("type") == "text":
+                        answers.append(c.get("text", ""))
+                if not results:
+                    break
+                convo.append({"role": "assistant", "content": blocks})
+                convo.append({"role": "user", "content": results})
+            return _format_think_response(thoughts, answers, self.think_tool)
         except Exception as e:  # noqa: BLE001 -- never crash a long parallel run; ERROR string is the convention downstream
             return f"ERROR calling Anthropic API: {e}"
 
@@ -241,55 +306,44 @@ class OpenAITargetClient:
         system = _with_mandate(chat["system"]) if self.think_tool else chat["system"]
         if system:
             base_kwargs["instructions"] = system
-        if self.think_tool:
-            base_kwargs["tools"] = [
-                {
-                    "type": "function",
-                    "name": THINK_TOOL_NAME,
-                    "description": THINK_TOOL_DESCRIPTION,
-                    "parameters": THINK_TOOL_SCHEMA,
-                }
-            ]
-            effort = _openai_effort_floor(self.model)
-            if effort:
-                base_kwargs["reasoning"] = {"effort": effort}
+        tools = _tool_defs(chat, to_openai_responses_tool, think=self.think_tool)
+        if tools:
+            base_kwargs["tools"] = tools
+        effort = _openai_effort_floor(self.model) if self.think_tool else None
+        if effort:
+            base_kwargs["reasoning"] = {"effort": effort}
         call_input: dict[str, Any] = {
             "input": to_openai_responses_input(chat["messages"])
         }
         thoughts: list[str] = []
         answers: list[str] = []
         try:
-            for _ in range(THINK_TOOL_MAX_ROUNDS):
+            for _ in range(TOOL_MAX_ROUNDS):
                 resp = self.client.responses.create(**base_kwargs, **call_input)
-                calls = []
+                outputs = []
                 for item in resp.output:
-                    if item.type == "function_call" and item.name == THINK_TOOL_NAME:
-                        try:
-                            thoughts.append(
-                                json.loads(item.arguments or "{}").get("thought", "")
-                            )
-                        except json.JSONDecodeError:
-                            thoughts.append(item.arguments or "")
-                        calls.append(item)
+                    if item.type == "function_call":
+                        outputs.append(
+                            {
+                                "type": "function_call_output",
+                                "call_id": item.call_id,
+                                "output": _handle_call(
+                                    chat,
+                                    item.name,
+                                    _parse_args(item.arguments),
+                                    thoughts,
+                                ),
+                            }
+                        )
                     elif item.type == "message":
                         for c in item.content:
                             text = getattr(c, "text", None)
                             if text:
                                 answers.append(text)
-                if not calls:
+                if not outputs:
                     break
-                call_input = {
-                    "previous_response_id": resp.id,
-                    "input": [
-                        {
-                            "type": "function_call_output",
-                            "call_id": c.call_id,
-                            "output": "noted",
-                        }
-                        for c in calls
-                    ],
-                }
-            return _format_response(thoughts, answers, self.think_tool)
+                call_input = {"previous_response_id": resp.id, "input": outputs}
+            return _format_think_response(thoughts, answers, self.think_tool)
         except Exception as e:  # noqa: BLE001 -- never crash a long parallel run; ERROR string is the convention downstream
             return f"ERROR calling OpenAI API target: {e}"
 
@@ -328,24 +382,10 @@ class GeminiApiClient:
         system = _with_mandate(chat["system"]) if self.think_tool else chat["system"]
         if system:
             base["systemInstruction"] = {"parts": [{"text": system}]}
+        tools = _tool_defs(chat, to_gemini_tool, think=self.think_tool)
+        if tools:
+            base["tools"] = [{"functionDeclarations": tools}]
         if self.think_tool:
-            # Gemini's function schemas use OpenAPI-style uppercase type names,
-            # so THINK_TOOL_SCHEMA can't be shared verbatim.
-            base["tools"] = [
-                {
-                    "functionDeclarations": [
-                        {
-                            "name": THINK_TOOL_NAME,
-                            "description": THINK_TOOL_DESCRIPTION,
-                            "parameters": {
-                                "type": "OBJECT",
-                                "properties": {"thought": {"type": "STRING"}},
-                                "required": ["thought"],
-                            },
-                        }
-                    ]
-                }
-            ]
             base["generationConfig"]["thinkingConfig"] = {
                 "thinkingBudget": self.thinking_budget
             }
@@ -353,13 +393,15 @@ class GeminiApiClient:
         answers: list[str] = []
         think_tok = 0
         try:
-            for round_idx in range(THINK_TOOL_MAX_ROUNDS):
-                payload = {**base, "contents": contents}
-                if self.think_tool:
-                    mode = (
-                        "ANY" if round_idx == 0 and self.force_first_think else "AUTO"
-                    )
-                    payload["toolConfig"] = {"functionCallingConfig": {"mode": mode}}
+            for round_idx in range(TOOL_MAX_ROUNDS):
+                # force_first_think forces *a* tool call in round 1; pin it to
+                # `think` so the forcing never manufactures a scenario-tool call.
+                calling: dict[str, Any] = {"mode": "AUTO"}
+                if round_idx == 0 and self.force_first_think and self.think_tool:
+                    calling = {"mode": "ANY", "allowedFunctionNames": [THINK_TOOL_NAME]}
+                payload: dict[str, Any] = {**base, "contents": contents}
+                if tools:
+                    payload["toolConfig"] = {"functionCallingConfig": calling}
                 # Gemini puts errors in the JSON body, so read it whatever the
                 # status; a non-JSON body raises into the except below.
                 r = post_with_retry(url, json=payload).json()
@@ -374,38 +416,30 @@ class GeminiApiClient:
                 if not cands:
                     break
                 parts = (cands[0].get("content") or {}).get("parts") or []
-                calls = []
+                responses = []
                 for p in parts:
-                    if (
-                        "functionCall" in p
-                        and p["functionCall"].get("name") == THINK_TOOL_NAME
-                    ):
-                        thoughts.append(
-                            str(
-                                (p["functionCall"].get("args") or {}).get("thought", "")
-                            )
+                    if "functionCall" in p:
+                        name = p["functionCall"].get("name", "")
+                        result = _handle_call(
+                            chat, name, p["functionCall"].get("args") or {}, thoughts
                         )
-                        calls.append(p["functionCall"])
+                        responses.append(
+                            {
+                                "functionResponse": {
+                                    "name": name,
+                                    "response": {"result": result},
+                                }
+                            }
+                        )
                     # skip native thought-summary parts (p["thought"] is True);
                     # at the starved budget these should not appear
                     elif "text" in p and not p.get("thought"):
                         answers.append(p["text"])
-                if not calls:
+                if not responses:
                     break
                 contents = contents + [
                     {"role": "model", "parts": parts},
-                    {
-                        "role": "user",
-                        "parts": [
-                            {
-                                "functionResponse": {
-                                    "name": c["name"],
-                                    "response": {"result": "noted"},
-                                }
-                            }
-                            for c in calls
-                        ],
-                    },
+                    {"role": "user", "parts": responses},
                 ]
             print(
                 f"    [Gemini] API call successful (model={self.model}, "
@@ -413,7 +447,7 @@ class GeminiApiClient:
                 f"think_chars={sum(len(t) for t in thoughts)}, "
                 f"hidden_think_tok={think_tok})"
             )
-            return _format_response(thoughts, answers, self.think_tool)
+            return _format_think_response(thoughts, answers, self.think_tool)
         except Exception as e:  # noqa: BLE001 -- never crash a long parallel run; ERROR string is the convention downstream
             return f"ERROR calling Gemini API: {e}"
 
@@ -446,30 +480,76 @@ class OpenRouterApiClient:
         """Query and also return per-call metadata (serving provider, token usage).
 
         Open-weight models reason natively, so no think-tool mandate is added;
-        the scenario system prompt (chat["system"]) is used as-is.
+        the scenario system prompt (chat["system"]) is used as-is. F12 scenario
+        tools are offered as plain function tools; a call gets its stub result
+        and the loop continues (it is single-round unless the model calls one).
         """
         try:
             # Build request kwargs - temperature is optional for reasoning models
-            kwargs = {
+            kwargs: dict[str, Any] = {
                 "model": self.model,
-                "messages": to_openai_chat_messages(chat["messages"], chat["system"]),
                 "max_tokens": self.max_tokens,
                 "stream": False,
                 "extra_body": {"reasoning": {"effort": "high"}},
             }
-
             if self.temperature is not None:
                 kwargs["temperature"] = self.temperature
+            tools = _tool_defs(chat, to_openai_chat_tool, think=False)
+            if tools:
+                kwargs["tools"] = tools
 
-            resp = self.client.chat.completions.create(**kwargs)
-            choice = resp.choices[0] if resp.choices else None
-            content = (choice.message.content or "") if choice else ""
+            messages = to_openai_chat_messages(chat["messages"], chat["system"])
+            reasoning_parts: list[str] = []
+            contents: list[str] = []
+            resp = choice = None
+            for _ in range(TOOL_MAX_ROUNDS):
+                resp = self.client.chat.completions.create(**kwargs, messages=messages)
+                choice = resp.choices[0] if resp.choices else None
+                if choice is None:
+                    break
+                msg = choice.message
+                # `reasoning` can exist but be None (provider returned no
+                # reasoning); without `or ""` that f-strings into "<think>None</think>"
+                if getattr(msg, "reasoning", None):
+                    reasoning_parts.append(msg.reasoning)
+                if msg.content:
+                    contents.append(msg.content)
+                calls = msg.tool_calls or []
+                if not calls:
+                    break
+                assistant_turn: dict[str, Any] = {
+                    "role": "assistant",
+                    "content": msg.content,
+                    "tool_calls": [
+                        {
+                            "id": tc.id,
+                            "type": "function",
+                            "function": {
+                                "name": tc.function.name,
+                                "arguments": tc.function.arguments,
+                            },
+                        }
+                        for tc in calls
+                    ],
+                }
+                # OpenRouter asks for reasoning_details to be echoed back so the
+                # provider keeps its reasoning continuity across tool rounds.
+                if getattr(msg, "reasoning_details", None):
+                    assistant_turn["reasoning_details"] = msg.reasoning_details
+                messages.append(assistant_turn)
+                for tc in calls:
+                    result = _handle_call(
+                        chat,
+                        tc.function.name,
+                        _parse_args(tc.function.arguments),
+                        reasoning_parts,
+                    )
+                    messages.append(
+                        {"role": "tool", "tool_call_id": tc.id, "content": result}
+                    )
 
-            # `reasoning` can exist but be None (provider returned no reasoning);
-            # without `or ""` that f-strings into a literal "<think>None</think>"
-            reasoning = (
-                (getattr(choice.message, "reasoning", None) or "") if choice else ""
-            )
+            reasoning = "\n\n".join(reasoning_parts)
+            content = "\n".join(contents)
             provider = getattr(resp, "provider", None)
             usage = getattr(resp, "usage", None)
             details = getattr(usage, "completion_tokens_details", None)
@@ -517,11 +597,6 @@ def create_target_client(
         Tuple of (client, backend_slug)
     """
     b = backend.strip().lower()
-    cot_mode = (
-        "think-tool extraction"
-        if cfg.get("THINK_TOOL", True)
-        else "no think tool, CoT not captured"
-    )
 
     if b == "anthropic_api":
         model_key = os.getenv("ANTHROPIC_MODEL_KEY", "claude-sonnet-4.5")
@@ -534,7 +609,9 @@ def create_target_client(
             sys.exit(1)
         cfg["ANTHROPIC_MODEL"] = DEFAULT_ANTHROPIC_MODELS[model_key]
         if verbose:
-            print(f"Using Anthropic API backend ({cot_mode}, model={model_key})...")
+            print(
+                f"Using Anthropic API backend (think-tool extraction, model={model_key})..."
+            )
         return AnthropicApiClient(cfg), model_key
     if b == "openai_api":
         model_key = os.getenv("OPENAI_MODEL_KEY", "gpt-5")
@@ -545,7 +622,9 @@ def create_target_client(
             sys.exit(1)
         cfg["OPENAI_TARGET_MODEL"] = DEFAULT_OPENAI_MODELS[model_key]
         if verbose:
-            print(f"Using OpenAI API backend ({cot_mode}, model={model_key})...")
+            print(
+                f"Using OpenAI API backend (think-tool extraction, model={model_key})..."
+            )
         return OpenAITargetClient(cfg), model_key
     if b == "openrouter":
         model_key = os.getenv("OPENROUTER_MODEL_KEY", "qwen3-30b")
@@ -573,7 +652,7 @@ def create_target_client(
         cfg["GEMINI_FORCE_FIRST_THINK"] = force_first_think
         if verbose:
             print(
-                f"Using Gemini API backend ({cot_mode}, model={model_key}, "
+                f"Using Gemini API backend (think-tool extraction, model={model_key}, "
                 f"id={model_id}, thinkingBudget={thinking_budget}, "
                 f"forceFirstThink={force_first_think})..."
             )

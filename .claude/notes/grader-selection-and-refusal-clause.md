@@ -189,3 +189,10 @@ with every conclusion `N/A` and `judge call failed: <error>` as the reasoning
 and never in the denominator. The filter is nondeterministic (~35% of rejected calls pass on retry),
 so the existing 5-attempt loop still runs first. Expect ~40–60 N/A rows per model from this.
 
+## Update 2026-09-01 (night): default judge is claude-sonnet-5
+
+OpenAI deactivated the account a second time, so `JUDGE_MODEL` now defaults to `claude-sonnet-5`
+(same no-backup mechanics as above: sonnet's ~3% refusals become N/A rows). terra is the env
+override when an OpenAI key works. `eval_eval_bench_tiered.py` keeps its backup pass for now with
+sonnet primary / terra backup.
+

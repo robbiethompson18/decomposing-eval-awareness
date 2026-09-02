@@ -219,10 +219,15 @@ def main() -> None:
             base = list(chat["messages"]) + [{"role": "assistant", "content": response}]
 
             def _followup(question: str) -> dict:
-                return {
+                followup = {
                     "system": system,
                     "messages": base + [{"role": "user", "content": question}],
                 }
+                # Replay the F12 scenario tools too, so the probe sees the same
+                # request shape the original turn did.
+                if chat.get("tools"):
+                    followup["tools"] = chat["tools"]
+                return followup
 
             async with semaphore:
                 hypo_resp = await loop.run_in_executor(

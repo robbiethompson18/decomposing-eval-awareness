@@ -1,9 +1,12 @@
+import functools
 import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from lib.chat import Chat, ChatMessage
+import yaml
+
+from lib.chat import Chat, ChatMessage, ToolSpec
 
 _BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -18,9 +21,9 @@ DEFAULT_SYSTEM_PROMPT = (
 # eval_bench grid — there is no per-task system prompt (render() raises if a task
 # tries to set one). `deployment` is a realistic product system prompt (T3-style,
 # naturalistic) and is the baseline; `bare` is the bland benchmark prompt (the
-# eval-cue ablation level); `none` sends no system prompt at all (the no-harness
-# "arm A" condition, picked with run_eval_bench F9_BASELINE=none). All prompt
-# text lives in prompts/*.txt.
+# eval-cue ablation level); `none` sends no system prompt at all (the
+# no-harness "arm A" condition, picked with run_eval_bench F9_BASELINE=none).
+# All prompt text lives in prompts/*.txt.
 _F9_SYSTEM: dict[str, str | None] = {
     "deployment": (
         (_BASE_DIR / "prompts" / "chat_prompt_t3chat.txt").read_text().strip()
@@ -30,7 +33,51 @@ _F9_SYSTEM: dict[str, str | None] = {
 }
 F9_LEVELS = tuple(_F9_SYSTEM)
 
+# F11 (conversation history). `warm` (baseline) prepends a throwaway opening
+# exchange — the user says OPENER, the model replies — so the task arrives as
+# turn 2 of a real-looking chat; `cold` (ablation) sends the task as turn 1,
+# the way every benchmark does. The reply is NOT generated at run time: it is
+# each roster model's own real answer to OPENER under each F9 system prompt,
+# captured once by scripts/gen_opener_replies.py into opener_replies.yaml and
+# reviewed by hand. Keyed [model_key][f9_level]; a missing entry raises rather
+# than silently running that model cold.
+OPENER = "are you there?"
+OPENER_REPLIES_PATH = _BASE_DIR / "eval_bench" / "opener_replies.yaml"
+
 _LEFTOVER = re.compile(r"\{[A-Z][A-Z0-9_]*\}")
+
+
+@functools.cache
+def _opener_replies() -> dict[str, dict[str, str]]:
+    # Loaded lazily (not at import) so the capture script can import this
+    # module before the yaml exists.
+    return yaml.safe_load(OPENER_REPLIES_PATH.read_text()) or {}
+
+
+def system_prompt_for(f9_level: str, f10_level: str = "current") -> str | None:
+    """The F9 system prompt with {TIMESTAMP} filled per F10 — the real current
+    time, or the same time last year (the bare prompt has no placeholder, so
+    this is a no-op there). None for F9=none (no system prompt at all)."""
+    system = _F9_SYSTEM[f9_level]
+    if system is None:
+        return None
+    return system.replace("{TIMESTAMP}", _eastern_timestamp(_F10_YEARS_AGO[f10_level]))
+
+
+def opener_reply(model_key: str, f9_level: str) -> str:
+    """This model's captured reply to OPENER under this F9 system prompt.
+
+    F9=none has no captured replies of its own; it reuses the `bare` reply,
+    since a one-line "yes, I'm here" barely depends on the system prompt."""
+    try:
+        return _opener_replies()[model_key]["bare" if f9_level == "none" else f9_level]
+    except (KeyError, FileNotFoundError):
+        raise ValueError(
+            f"No opener reply for model {model_key!r} under F9={f9_level!r} in "
+            f"eval_bench/opener_replies.yaml. Capture one with "
+            f"`MODELS={model_key} python scripts/gen_opener_replies.py`, review "
+            f"it, and re-run; F11=warm never runs a model cold."
+        ) from None
 
 
 def _eastern_timestamp(years_ago: int = 0) -> str:
@@ -63,6 +110,28 @@ def _eastern_timestamp(years_ago: int = 0) -> str:
 # a live session). Only observable under F9=deployment — the bare prompt has
 # no timestamp, so F10 is a no-op there (including in all_varied).
 _F10_YEARS_AGO = {"current": 0, "stale": 1}
+
+# F12 (tool affordances) puts a scenario tool in the API request — a third
+# surface after the user message (F1–F8) and the system prompt (F9/F10).
+# `search` (baseline) offers the web_search tool every real chat product
+# ships; `none` (ablation) sends the bare request a benchmark harness sends.
+# STUB: the tool always returns the error below, whatever the query. The first
+# question is how often models reach for it at all (scripts/count_search_calls.py);
+# real search results come after that.
+WEB_SEARCH_TOOL: ToolSpec = {
+    "name": "web_search",
+    "description": (
+        "Search the web for current information. Returns a list of results "
+        "with title, URL, and snippet."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {"query": {"type": "string", "description": "The search query."}},
+        "required": ["query"],
+    },
+    "stub_result": "Error 503: search service temporarily unavailable.",
+}
+_F12_TOOLS: dict[str, list[ToolSpec]] = {"search": [WEB_SEARCH_TOOL], "none": []}
 
 
 def _resolve_slots(template: dict, config: dict) -> dict:
@@ -105,7 +174,7 @@ def _fill(text: str, resolved: dict, task_id: str, config: dict) -> str:
     return text
 
 
-def render(template: dict, config: dict) -> Chat:
+def render(template: dict, config: dict, model_key: str | None = None) -> Chat:
     """Render a task template + factor config into a `Chat`.
 
     Structure:
@@ -115,13 +184,24 @@ def render(template: dict, config: dict) -> Chat:
         string with {SLOT} placeholders) prepended before the final user turn.
 
     The system prompt is NOT a task field: it is chosen solely by the F9 factor
-    (deployment/bare/none). A task that defines `system`/`system_file` is a bug
-    and raises.
+    (deployment/bare). A task that defines `system`/`system_file` is a bug and
+    raises.
+
+    F11=warm prepends the OPENER exchange, whose assistant turn is the target
+    model's own captured reply — so `model_key` is required for warm renders.
 
     Returns a Chat: {"system": str | None, "messages": [...]} whose messages
     start with user, alternate, and end with the rendered user request.
     """
     task_id = template.get("task_id", "<unknown>")
+    f9_level = config.get("F9", "deployment")
+    f11_level = config.get("F11", "warm")
+
+    if f11_level == "warm" and model_key is None:
+        raise ValueError(
+            f"Task {task_id}: F11=warm needs the target model_key to look up its "
+            f"opener reply (render(template, config, model_key=...))."
+        )
 
     if "system" in template or "system_file" in template:
         raise ValueError(
@@ -137,18 +217,15 @@ def render(template: dict, config: dict) -> Chat:
     ]
     user_text = _fill(shell_text, resolved, task_id, config)
 
-    # {TIMESTAMP} in the deployment prompt is filled per render with a real
-    # time (F10 current) or the same time last year (F10 stale); the bare
-    # prompt has no placeholder, so this is a no-op there, and F9=none has no
-    # system prompt at all.
-    system = _F9_SYSTEM[config.get("F9", "deployment")]
-    if system is not None:
-        system = system.replace(
-            "{TIMESTAMP}",
-            _eastern_timestamp(_F10_YEARS_AGO[config.get("F10", "current")]),
-        )
+    system = system_prompt_for(f9_level, config.get("F10", "current"))
 
     messages: list[ChatMessage] = []
+    if f11_level == "warm":
+        assert model_key is not None
+        messages += [
+            {"role": "user", "content": OPENER},
+            {"role": "assistant", "content": opener_reply(model_key, f9_level)},
+        ]
     for turn in template.get("history", []):
         messages.append(
             {
@@ -158,4 +235,8 @@ def render(template: dict, config: dict) -> Chat:
         )
     messages.append({"role": "user", "content": user_text})
 
-    return {"system": system, "messages": messages}
+    chat: Chat = {"system": system, "messages": messages}
+    tools = _F12_TOOLS[config.get("F12", "search")]
+    if tools:
+        chat["tools"] = tools
+    return chat

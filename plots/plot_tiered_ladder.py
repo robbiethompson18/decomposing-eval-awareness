@@ -4,7 +4,7 @@ climbs across what a monitor can see —
 
     output-only  ->  output + CoT  ->  self-report (ask the model)
 
-One slope-line per model (colored by provider), for three metrics:
+One slope-line per model (colored by lab — each open-weight lab its own hue), for three metrics:
   awareness     model_awareness      (does the model know it's being evaluated)
   realistic     hypothetical_recognition (does it recognize a constructed scenario)
   is_guarded    task_performance == "guarded"  (deliberate softening; NO self-report
@@ -29,7 +29,7 @@ from collections import Counter
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lib.model_meta import MODEL_META
-from plots.style import PROVIDER_COLOR, color_legend, new_fig, save
+from plots.style import LAB_COLOR, color_legend, new_fig, save
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RES = os.path.join(BASE, "results", "eval_bench")
@@ -114,12 +114,12 @@ def main() -> None:
         stages = ["output-only", "output + CoT"] + (["self-report"] if has_sr else [])
         xs = list(range(len(stages)))
         fig, ax = new_fig(w=8.5, h=6.0)
-        used_providers = {}
+        used_labs = {}
         label_pts = []  # (y, model) for right-end labels
         for m, d in data.items():
-            prov = MODEL_META.get(m, {}).get("provider", "Open-weight")
-            color = PROVIDER_COLOR.get(prov, "#888")
-            used_providers[prov] = color
+            lab = MODEL_META.get(m, {}).get("lab", "Open-weight")
+            color = LAB_COLOR.get(lab, "#888")
+            used_labs[lab] = color
             ys = [
                 tiered_rate(d["tiered"], "output", metric),
                 tiered_rate(d["tiered"], "output_cot", metric),
@@ -158,7 +158,7 @@ def main() -> None:
         ax.set_title(TITLES[name], fontsize=12, loc="left")
         ax.grid(axis="y", color="#e5e4e0", lw=0.6)
         ax.set_axisbelow(True)
-        color_legend(ax, used_providers, marker=True, loc="upper left")
+        color_legend(ax, used_labs, marker=True, loc="upper left")
         save(fig, OUT_DIR, f"ladder_{name}.png")
 
 

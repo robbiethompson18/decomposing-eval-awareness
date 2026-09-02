@@ -12,7 +12,7 @@ Everything here is plain dicts at runtime (TypedDict is annotation-only), so a
 without conversion. This module is a leaf: it imports nothing from the repo.
 """
 
-from typing import Literal, TypedDict
+from typing import Any, Literal, NotRequired, TypedDict
 
 
 # ---------------------------------------------------------------------------
@@ -55,9 +55,22 @@ class ChatMessage(TypedDict):
     content: str | list[Block]
 
 
+class ToolSpec(TypedDict):
+    """A scenario tool offered to the model (F12). Stub-only for now: every
+    call returns `stub_result` verbatim, whatever the arguments. The think
+    tool the closed backends use for CoT extraction is NOT a ToolSpec — it is
+    methodology, not scenario, and lives in core/target.py."""
+
+    name: str
+    description: str
+    parameters: dict[str, Any]  # JSON schema; lowercase types (Gemini uppercases)
+    stub_result: str
+
+
 class Chat(TypedDict):
     system: str | None  # scenario framing only; None == no system prompt
     messages: list[ChatMessage]  # starts with user, alternates, ends with user
+    tools: NotRequired[list[ToolSpec]]  # scenario tools in the request; absent == none
 
 
 # ---------------------------------------------------------------------------
@@ -127,7 +140,9 @@ def to_openai_chat_content(content: "str | list[Block]"):
         if b["type"] == "text":
             out.append({"type": "text", "text": b["text"]})
         else:
-            out.append({"type": "image_url", "image_url": {"url": _data_uri(b["source"])}})
+            out.append(
+                {"type": "image_url", "image_url": {"url": _data_uri(b["source"])}}
+            )
     return out
 
 
@@ -160,11 +175,21 @@ def to_gemini_parts(content: "str | list[Block]"):
                 # ImageUrlSource carries no media_type; Gemini's file_data wants
                 # one but tolerates an empty string when the URL extension is clear.
                 out.append(
-                    {"file_data": {"mime_type": src.get("media_type", ""), "file_uri": src["url"]}}
+                    {
+                        "file_data": {
+                            "mime_type": src.get("media_type", ""),
+                            "file_uri": src["url"],
+                        }
+                    }
                 )
             else:
                 out.append(
-                    {"inline_data": {"mime_type": src["media_type"], "data": src["data"]}}
+                    {
+                        "inline_data": {
+                            "mime_type": src["media_type"],
+                            "data": src["data"],
+                        }
+                    }
                 )
     return out
 
@@ -213,18 +238,76 @@ def to_gemini_contents(messages: list[ChatMessage]) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
+# Per-API tool-definition adapters
+# ---------------------------------------------------------------------------
+# Each takes (name, description, parameters) rather than a ToolSpec so the
+# think tool (no stub_result) goes through the same path as scenario tools.
+def to_anthropic_tool(name: str, description: str, parameters: dict) -> dict:
+    return {"name": name, "description": description, "input_schema": parameters}
+
+
+def to_openai_responses_tool(name: str, description: str, parameters: dict) -> dict:
+    return {
+        "type": "function",
+        "name": name,
+        "description": description,
+        "parameters": parameters,
+    }
+
+
+def to_openai_chat_tool(name: str, description: str, parameters: dict) -> dict:
+    """OpenAI Chat Completions (also OpenRouter) nests the function under `function`."""
+    return {
+        "type": "function",
+        "function": {
+            "name": name,
+            "description": description,
+            "parameters": parameters,
+        },
+    }
+
+
+def to_gemini_tool(name: str, description: str, parameters: dict) -> dict:
+    """One Gemini functionDeclaration. Gemini's function schemas use
+    OpenAPI-style uppercase type names, so the JSON-schema `type` values are
+    uppercased recursively."""
+    return {
+        "name": name,
+        "description": description,
+        "parameters": _gemini_schema(parameters),
+    }
+
+
+def _gemini_schema(schema: Any) -> Any:
+    if isinstance(schema, dict):
+        return {
+            k: (v.upper() if k == "type" and isinstance(v, str) else _gemini_schema(v))
+            for k, v in schema.items()
+        }
+    if isinstance(schema, list):
+        return [_gemini_schema(v) for v in schema]
+    return schema
+
+
+# ---------------------------------------------------------------------------
 # Human-readable transcript (for the CoT judge's {task} slot)
 # ---------------------------------------------------------------------------
 def chat_to_transcript_text(chat: Chat) -> str:
     """Flatten a Chat to a readable transcript for the text judge.
 
-    Includes the system prompt and every prior turn so the judge sees the whole
-    scenario. Image blocks become a `[image: <media_type>]` placeholder (the
-    text judge cannot see pixels, but should know an image was present).
+    Includes the system prompt, the scenario tools offered (F12), and every
+    prior turn so the judge sees the whole scenario. Image blocks become a
+    `[image: <media_type>]` placeholder (the text judge cannot see pixels, but
+    should know an image was present).
     """
     lines: list[str] = []
     if chat.get("system"):
         lines.append(f"[system]\n{chat['system']}")
+    if chat.get("tools"):
+        lines.append(
+            "[tools available]\n"
+            + "\n".join(f"{t['name']}: {t['description']}" for t in chat["tools"])
+        )
     for m in chat["messages"]:
         lines.append(f"[{m['role']}]\n{_content_to_text(m['content'])}")
     return "\n\n".join(lines)

@@ -42,7 +42,8 @@ def _cfg(**extra):
 
 
 def test_f9_none_renders_no_system_prompt():
-    base = dict(build_configs()[0][1])
+    # F11=cold so no captured opener reply is needed for the test model.
+    base = dict(build_configs()[0][1], F11="cold")
     chat = render(TEMPLATE, {**base, "F9": "none"})
     assert chat["system"] is None
     assert render(TEMPLATE, base)["system"]  # deployment default still a string

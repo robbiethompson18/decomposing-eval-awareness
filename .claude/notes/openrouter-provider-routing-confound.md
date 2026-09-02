@@ -1,0 +1,56 @@
+# OpenRouter provider routing is a confound between grid cells
+
+Found 2026-09-01 while testing F12 (tool affordances) on the 5 open-weight roster models.
+
+## What happened
+
+The F12 test run (100 tasks × 2 valences × 1 sample, configs `baseline` = web_search tool in the
+request vs `F12` = no tool) showed a huge, one-directional self-report effect on deepseek-v4-pro:
+
+| deepseek-v4-pro, self-report | baseline (tool) | F12 (no tool) | discordant pairs (b/c) |
+|---|---|---|---|
+| awareness, safety arm | 74% | 22% | 53 / 1 |
+| hypothetical, safety arm | 62% | 14% | 49 / 1 |
+| hypothetical, capability arm | 44% | 3% | 41 / 0 |
+
+The other four OW models moved 0–8pp, mostly within noise. The deepseek effect is real in the data
+(not a parse artifact: 72 of 100 baseline-safety self-report answers literally start with
+"Safety Evaluation" vs 22 in F12), but it is **not attributable to the tool**:
+
+- OpenRouter routes a request **with `tools`** only to providers that support tool calling. For
+  deepseek-v4-pro that was **StreamLake exclusively** (221 of ~400 calls in the log ≈ the 200
+  tool-bearing baseline calls). Requests **without** tools were spread over Baidu, Ionstream,
+  GMICloud, DigitalOcean, BaseTen, Alibaba, SiliconFlow, Novita, Parasail, NextBit, AtlasCloud, Azure.
+- A direct A/B (same task, 8 generations with the tool, 8 without, each followed by the awareness
+  self-report *without* the tool) gave StreamLake ×8 vs {Ionstream, GMICloud, Baidu, AtlasCloud}, and
+  6/8 vs 5/8 "Safety Evaluation" — i.e. the 74→22 gap in the full run is mostly *which providers
+  served the F12 cell that afternoon*, not the tool.
+- Replaying the tool in the self-report follow-up itself changes little (7/8 vs 5/8 on one sample,
+  same provider both ways).
+
+Provider mix per model in that run (from the `[OpenRouter] ... provider=` log lines):
+
+- deepseek-v4-pro: StreamLake 221, Baidu 35, Ionstream 23, GMICloud 20, DigitalOcean 17, BaseTen 15, Alibaba 14, SiliconFlow 12, Novita 12, Parasail 11, NextBit 8, AtlasCloud 8, Azure 4
+- glm-5.3: BaseTen 371, Z.AI 10, Venice 8, Phala 8, others 3
+- kimi-k3: Moonshot AI 213, DigitalOcean 152, Phala 19, Chutes 9, others 7
+- minimax-m3: Novita 222, CoreWeave 37, Venice 27, Minimax 24, StreamLake 22, DeepInfra 22, AtlasCloud 19, others 27
+- qwen3.8-2.4t: Modal 122, SiliconFlow 84, DeepInfra 69, Alibaba 39, Novita 36, Together 28, Venice 22
+
+Different providers = different quantization, sampling defaults, reasoning handling
+(see [[ow-native-cot-vs-think-tool]]: three per-provider reasoning-disable behaviors), and possibly
+different model snapshots. Any factor that changes the *request shape* (tools now; images, long
+context, or `response_format` later) changes the eligible-provider set and therefore the serving
+stack, so its delta is confounded. Even factors that don't change request shape are exposed to
+provider drift between cells run at different times.
+
+## How to apply
+
+- **Treat OpenRouter baseline-vs-ablation deltas as suspect until the provider is pinned.** Closed
+  backends (Anthropic, Gemini, OpenAI native APIs) don't have this problem.
+- **Pin providers.** OpenRouter supports `extra_body={"provider": {"order": ["StreamLake"],
+  "allow_fallbacks": False}}` (or `"only": [...]`). One provider per OW model, chosen for
+  tool-calling support so every cell is eligible. Not implemented yet as of this note.
+- **Record `provider` in every sample.** `OpenRouterApiClient.query_chat_meta` already returns it;
+  the runner drops it (`query_chat` discards meta). Plumb it into the record so analyses can
+  stratify. Until then the only trace is the run log.
+- The F12 numbers for the 5 OW models should be re-run pinned before any writeup uses them.

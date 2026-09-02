@@ -3,7 +3,7 @@ Run eval_bench tasks across all models.
 
 For each task (safety + capability variant), runs:
   - 1 baseline config (all factors at naturalistic level)
-  - 8 single-factor ablations (one factor varied, rest naturalistic)
+  - 12 single-factor ablations (one factor varied, rest naturalistic)
   - 2 anchor configs off the OFAT grid:
       all_varied          every factor at its varied level (the grid's ceiling)
       harmbench_verbatim  the original HarmBench behavior text, safety arm only
@@ -41,8 +41,11 @@ Environment variables:
   VALENCE_FILTER        Comma-separated valences to run, e.g. "capability" (default: all)
   CONFIG_FILTER         Comma-separated config names to run, e.g. "F6" or "baseline,F1" or
                         "all_varied,harmbench_verbatim" (default: all)
+  RUN_TAG               Extra filename suffix, e.g. "f11test" -> responses_<model>_f11test_<ts>.json.
+                        Runs resume by sample id, so after a prompt/factor change a tag is how you
+                        get a FRESH file instead of resuming into (and skipping) stale samples.
   THINK_TOOL            "0" disables think-tool CoT extraction on the closed backends
-                        (no tool, no mandate, native reasoning at API default, no
+                        (no think tool, no mandate, native reasoning at API default, no
                         <think> block in the response). Default: "1".
   F9_BASELINE           F9 level used as the baseline system prompt: deployment
                         (default), bare, or none (no system prompt at all).
@@ -50,7 +53,7 @@ Environment variables:
   Arm A of the think-tool-confound test (no harness at all, self-report only):
     THINK_TOOL=0 F9_BASELINE=none CONFIG_FILTER=baseline TARGET_BACKEND=... python run/run_eval_bench.py
   Its output file is suffixed _no_think_tool_f9none so it never resumes into an
-  arm-B (think-tool) file.
+  arm-B (think-tool) file. See .claude/notes/think-tool-harness-vs-selfreport.md.
 """
 
 import asyncio
@@ -96,6 +99,13 @@ BASELINE_CONFIG = {
     # F10 (deployment date) sets the {TIMESTAMP} in the deployment prompt.
     # Baseline = the real current time; the ablation shifts it back one year.
     "F10": "current",
+    # F11 (conversation history). Baseline = the task arrives as turn 2, after a
+    # throwaway "are you there?" exchange; the ablation sends it as turn 1.
+    "F11": "warm",
+    # F12 (tool affordances). Baseline = a web_search tool in the request, as
+    # every real chat product ships (still a stub that returns an error on
+    # every call — see eval_bench/render.py); the ablation sends no tools.
+    "F12": "search",
 }
 
 FACTOR_VARIED_LEVELS = {
@@ -109,6 +119,8 @@ FACTOR_VARIED_LEVELS = {
     "F8": "varied",
     "F9": "bare",
     "F10": "stale",
+    "F11": "cold",
+    "F12": "none",
 }
 
 
@@ -116,7 +128,7 @@ ALL_VARIED = "all_varied"
 
 
 def build_configs(f9_baseline: str = BASELINE_CONFIG["F9"]) -> list[tuple]:
-    """Build 13 configs: baseline + 10 single-factor ablations + 2 anchors.
+    """Build 15 configs: baseline + 12 single-factor ablations + 2 anchors.
 
     The anchors are off the OFAT grid. `all_varied` is the grid's far corner;
     `harmbench_verbatim` is not a render at all (its Chat and factor_config are
@@ -254,6 +266,8 @@ def main() -> None:
         allowed_configs = {c.strip() for c in config_filter.split(",")}
         configs = [(name, c) for name, c in configs if name in allowed_configs]
 
+    n_task_sets = len({t["task_name"] for t in tasks})
+
     # Determine output file and load existing progress. The suffix encodes
     # every run-level choice that changes what a sample id means, so a run
     # never resumes into a file generated under a different harness.
@@ -265,6 +279,8 @@ def main() -> None:
         reasoning_method, mode_suffix = "none", "_no_think_tool"
     if f9_baseline != BASELINE_CONFIG["F9"]:
         mode_suffix += f"_f9{f9_baseline}"
+    if os.getenv("RUN_TAG"):
+        mode_suffix += f"_{os.environ['RUN_TAG']}"
     out_file = get_output_path(model_slug, mode_suffix)
     existing_data, completed_ids = load_existing_results(out_file)
 
@@ -291,7 +307,7 @@ def main() -> None:
     )
     n_grid_configs = sum(1 for name, _ in configs if name != HARMBENCH_VERBATIM)
     total_calls = (len(tasks) * n_grid_configs + n_verbatim_tasks) * samples_per_config
-    print(f"\nTasks loaded: {len(tasks)} (task sets x valences)")
+    print(f"\nTasks loaded: {len(tasks)} ({n_task_sets} task sets x 2 valences)")
     print(f"Configs: {len(configs)} ({', '.join(name for name, _ in configs)})")
     print(f"Samples per config: {samples_per_config}")
     print(f"Model: {model_slug} (backend: {backend})")
@@ -316,12 +332,17 @@ def main() -> None:
         }
 
     start_time = now_pacific()
+    new_count = 0
 
-    # Build every pending item up front, then run them in MAX_CONCURRENT-sized
-    # chunks (saving after each) so the concurrency cap is actually reached even
-    # for narrow runs like CONFIG_FILTER=baseline, where a single task has only
-    # 2 valences x SAMPLES_PER_CONFIG calls.
+    # Build EVERY pending item up front, then dispatch in chunks. This loop used
+    # to run one task at a time, which silently capped in-flight requests at that
+    # task's item count regardless of MAX_CONCURRENT: a full run has 54 items per
+    # task (2 valences x 9 configs x 3 samples) so the cap was invisible, but a
+    # filtered run (e.g. CONFIG_FILTER=all_varied,harmbench_verbatim at 1 sample)
+    # has 3 items per task, so only 3 requests ran at once and a slow provider
+    # turned a 4-minute job into 70+ minutes.
     items = []
+    cached = 0
     for task in tasks:
         template = task["template"]
         for config_name, factor_config in configs:
@@ -332,10 +353,11 @@ def main() -> None:
                 chat = harmbench_verbatim_chat(row)
                 factor_config = harmbench_factor_config(row)
             else:
-                chat = render(template, factor_config)
+                chat = render(template, factor_config, model_slug)
             for s_idx in range(1, samples_per_config + 1):
                 sample_id = f"{task['task_id']}_{config_name}_sample{s_idx}"
                 if sample_id in completed_ids:
+                    cached += 1
                     continue
                 items.append(
                     (
@@ -354,17 +376,26 @@ def main() -> None:
                     )
                 )
 
-    chunk_size = cfg["MAX_CONCURRENT"]
-    chunks = [items[i : i + chunk_size] for i in range(0, len(items), chunk_size)]
-    new_count = 0
-    for c_idx, chunk in enumerate(chunks, 1):
-        print(f"[chunk {c_idx}/{len(chunks)}] {len(chunk)} calls")
+    print(f"Pending: {len(items)} calls ({cached} cached)")
+
+    # Chunked so a crash loses at most one chunk, but each chunk is several times
+    # max_concurrent so the semaphore stays saturated as fast calls retire and
+    # we're not left idling on one straggler before the next save.
+    chunk_size = max(cfg["MAX_CONCURRENT"] * 4, 100)
+    for start in range(0, len(items), chunk_size):
+        chunk = items[start : start + chunk_size]
+        print(
+            f"[chunk {start // chunk_size + 1}/{-(-len(items) // chunk_size)}] "
+            f"{len(chunk)} calls, up to {cfg['MAX_CONCURRENT']} in flight"
+        )
         batch_results = asyncio.run(
             query_parallel(chunk, build_result, cfg["MAX_CONCURRENT"])
         )
+
         output_data["samples"].extend(batch_results)
         completed_ids.update(r["id"] for r in batch_results)
         new_count += len(batch_results)
+
         save_results(out_file, output_data)
         print(f"  -> saved ({len(output_data['samples'])} total samples)")
 
