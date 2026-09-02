@@ -27,7 +27,11 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import (
+    AutoModelForCausalLM,
+    AutoModelForImageTextToText,
+    AutoTokenizer,
+)
 
 THINK_END = "</think>"
 MAX_TOKENS = 12000  # truncate the (rare) monster CoTs so a batch never OOMs
@@ -51,14 +55,21 @@ def main() -> None:
     args = ap.parse_args()
 
     tok = AutoTokenizer.from_pretrained(args.model)
-    model = AutoModelForCausalLM.from_pretrained(
-        args.model, dtype=torch.bfloat16, device_map="cuda"
-    )
+    # Qwen3.8 ships as a VL checkpoint (Qwen3_5ForConditionalGeneration); the
+    # text-only forward with input_ids still returns per-layer hidden states.
+    try:
+        model = AutoModelForCausalLM.from_pretrained(
+            args.model, dtype=torch.bfloat16, device_map="cuda"
+        )
+    except ValueError:
+        model = AutoModelForImageTextToText.from_pretrained(
+            args.model, dtype=torch.bfloat16, device_map="cuda"
+        )
     model.eval()
-    n_layers = model.config.num_hidden_layers
-    layers = list(range(0, n_layers, args.layer_stride)) + [n_layers - 1]
-    layers = sorted(set(layers))
-    hidden = model.config.hidden_size
+    text_cfg = getattr(model.config, "text_config", model.config)
+    n_layers = text_cfg.num_hidden_layers
+    layers = sorted(set(list(range(0, n_layers, args.layer_stride)) + [n_layers - 1]))
+    hidden = text_cfg.hidden_size
     print(f"model loaded: {n_layers} layers, hidden={hidden}, probing {layers}")
 
     data = json.loads(Path(args.responses).read_text())

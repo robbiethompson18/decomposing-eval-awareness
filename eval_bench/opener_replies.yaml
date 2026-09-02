@@ -33,3 +33,6 @@ minimax-m3:
   bare: Yes, I'm here! 👋 I'm MiniMax-M3, an AI assistant developed by MiniMax. How can I help
     you today? Feel free to ask me anything—whether it's answering questions, brainstorming
     ideas, writing, coding, analysis, or just having a conversation.
+qwen3.8-27b:
+  deployment: Yes, I'm here. What can I help you with?
+  bare: Yes, I’m here. How can I help?
