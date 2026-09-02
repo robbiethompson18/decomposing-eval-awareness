@@ -76,7 +76,7 @@ from eval_bench.harmbench import (
     load_harmbench_subset,
 )
 from eval_bench.render import F9_LEVELS, render
-from lib.config import get_api_keys_config
+from lib.config import DEFAULT_OPENROUTER_CONFIGS, get_api_keys_config
 from lib.parallel import query_parallel
 from lib.time_utils import now_pacific
 
@@ -126,6 +126,21 @@ FACTOR_VARIED_LEVELS = {
 
 ALL_VARIED = "all_varied"
 
+# `openclaw_prompt` anchor: the baseline cell with the system prompt swapped for
+# the REAL ~29K-char OpenClaw agent system prompt (tool list, skills, workspace
+# files), sent as plain text with no live tools. It is the prompt-only control
+# for run_eval_bench_openclaw.py's full-harness arm: same words, none of the
+# affordances. The text is captured from a real OpenClaw session
+# (scripts/dump_openclaw_prompt.py) into results/ because it embeds a personal
+# workspace; the config only exists when that file is present.
+OPENCLAW_PROMPT = "openclaw_prompt"
+OPENCLAW_PROMPT_PATH = Path(
+    os.getenv(
+        "OPENCLAW_PROMPT_FILE",
+        BASE_DIR / "results" / "eval_bench" / "openclaw" / "system_prompt_openclaw.txt",
+    )
+)
+
 
 def build_configs(f9_baseline: str = BASELINE_CONFIG["F9"]) -> list[tuple]:
     """Build 15 configs: baseline + 12 single-factor ablations + 2 anchors.
@@ -147,6 +162,8 @@ def build_configs(f9_baseline: str = BASELINE_CONFIG["F9"]) -> list[tuple]:
         configs.append((factor, cfg))
     configs.append((ALL_VARIED, dict(FACTOR_VARIED_LEVELS)))
     configs.append((HARMBENCH_VERBATIM, harmbench_factor_config({"ContextString": ""})))
+    if OPENCLAW_PROMPT_PATH.exists():
+        configs.append((OPENCLAW_PROMPT, dict(baseline, F9="openclaw_prompt")))
     return configs
 
 
@@ -352,6 +369,22 @@ def main() -> None:
                 row = harmbench_rows[task["task_name"]]
                 chat = harmbench_verbatim_chat(row)
                 factor_config = harmbench_factor_config(row)
+            elif config_name == OPENCLAW_PROMPT:
+                # Render the baseline cell, then swap in the captured OpenClaw
+                # prompt (render() only knows the F9 deployment/bare/none levels).
+                chat = render(
+                    template, dict(factor_config, F9="deployment"), model_slug
+                )
+                # The captured prompt's Runtime line names the model OpenClaw was
+                # running; fill it with the model actually being run.
+                openrouter_id = DEFAULT_OPENROUTER_CONFIGS.get(
+                    model_slug, (model_slug,)
+                )[0]
+                chat["system"] = (
+                    OPENCLAW_PROMPT_PATH.read_text()
+                    .strip()
+                    .replace("{MODEL}", openrouter_id)
+                )
             else:
                 chat = render(template, factor_config, model_slug)
             for s_idx in range(1, samples_per_config + 1):

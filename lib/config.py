@@ -66,6 +66,10 @@ DEFAULT_OPENROUTER_CONFIGS: dict[str, tuple[str, float | None]] = {
     "kimi-k3": ("moonshotai/kimi-k3", 0.3),  # Moonshot flagship, Jul 2026
     "glm-5.3": ("z-ai/glm-5.3", 0.3),  # Z.ai flagship, Aug 2026
     "minimax-m3": ("minimax/minimax-m3", 0.3),  # MiniMax flagship, May 2026
+    # Closed models via OpenRouter: only for the OpenClaw-harness comparison,
+    # where the harness itself can't reach the native APIs with our keys and the
+    # bare-API control must ride the same provider route.
+    "gemini-3.5-flash": ("google/gemini-3.5-flash", 0.3),
 }
 
 
