@@ -77,7 +77,7 @@ def main() -> None:
     if args.responses.endswith(".jsonl"):  # prompt-only probe train set
         records = [
             json.loads(line)
-            for line in Path(args.responses).read_text().splitlines()
+            for line in Path(args.responses).read_text().split("\n")
             if line
         ]
     else:
@@ -97,11 +97,10 @@ def main() -> None:
     t0 = time.time()
     for i, r in enumerate(records):
         chat = r["chat"] if isinstance(r["chat"], dict) else json.loads(r["chat"])
-        prompt_ids = tok.apply_chat_template(
-            _messages(chat), add_generation_prompt=True, tokenize=True
+        prompt_text = tok.apply_chat_template(
+            _messages(chat), add_generation_prompt=True, tokenize=False
         )
-        if isinstance(prompt_ids, dict):  # newer transformers return a BatchEncoding
-            prompt_ids = prompt_ids["input_ids"]
+        prompt_ids = tok(prompt_text, add_special_tokens=False).input_ids
         resp_ids = tok(r.get("response", ""), add_special_tokens=False).input_ids
         ids_all = (list(prompt_ids) + resp_ids)[:MAX_TOKENS]
         n_p = len(prompt_ids)

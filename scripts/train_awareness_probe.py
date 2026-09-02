@@ -91,7 +91,7 @@ def safe_auc(y: np.ndarray, s: np.ndarray) -> float | None:
 
 
 def load_jsonl(path: str) -> list[dict]:
-    return [json.loads(line) for line in Path(path).read_text().splitlines() if line]
+    return [json.loads(line) for line in Path(path).read_text().split("\n") if line]
 
 
 def main() -> None:
