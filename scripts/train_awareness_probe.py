@@ -109,6 +109,12 @@ def main() -> None:
     ap.add_argument("--eval-responses", default="")
     ap.add_argument("--cot", default="")
     ap.add_argument("--positions", default="prompt_last,prompt_mean")
+    ap.add_argument(
+        "--exclude-sources",
+        default="",
+        help="comma-separated train sources to drop (e.g. harmbench: eval_bench's "
+        "harmbench_verbatim cell reuses those exact behaviors)",
+    )
     ap.add_argument("--out", default="")
     args = ap.parse_args()
 
@@ -116,7 +122,9 @@ def main() -> None:
     acts = np.load(args.train_acts)
     layers = [int(v) for v in acts["layers"]]
     meta = {r["id"]: r for r in load_jsonl(args.train_jsonl)}
-    ids = [str(i) for i in acts["ids"]]
+    drop = set(filter(None, args.exclude_sources.split(",")))
+    keep = np.array([meta[str(i)]["source"] not in drop for i in acts["ids"]])
+    ids = [str(i) for i in acts["ids"][keep]]
     y = np.array([meta[i]["label"] for i in ids])
     src = np.array([meta[i]["source"] for i in ids])
     topic = np.array([meta[i]["topic"] for i in ids])
@@ -129,7 +137,7 @@ def main() -> None:
     # 1. sweep (position, layer), folds grouped by source
     sweep = []
     for pos in args.positions.split(","):
-        feats = acts[pos].astype(np.float32)
+        feats = acts[pos][keep].astype(np.float32)
         for li, layer in enumerate(layers):
             x = feats[:, li]
             s_lr = oof_lr(x, y, src, c_grid=[0.01])  # fixed C: the sweep is 34 slices
@@ -152,7 +160,7 @@ def main() -> None:
     print(f"\nBEST (source-grouped OOF): {best}")
 
     # per-source held-out accuracy, topic-matched + per-F9 AUROC at the best slice
-    x = acts[pos].astype(np.float32)[:, li]
+    x = acts[pos][keep].astype(np.float32)[:, li]
     s = oof_lr(x, y, src)
     per_source = {}
     for name in sorted(set(src)):
@@ -284,7 +292,7 @@ def main() -> None:
             for c in sorted(set(cfg[vsel])):
                 m = vsel & (cfg == c)
                 yy = np.array([verbal[i] for i in np.array(e_ids)[m]])
-                within[c] = safe_auc(yy, logit[m])
+                within[str(c)] = safe_auc(yy, logit[m])
             out["verbal_gap_within_config"] = within
             print(f"  within-config AUROC (config held fixed): {within}")
 

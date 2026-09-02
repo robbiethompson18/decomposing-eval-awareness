@@ -42,21 +42,56 @@ Evaluation tiers:
 
 - [x] Pod up, vLLM serving Qwen3.8-27B (`--reasoning-parser qwen3 --enable-auto-tool-choice
       --tool-call-parser qwen3_xml`), `TARGET_BACKEND=vllm` backend, opener replies captured.
-- [ ] eval_bench test-set generation: 100 tasks × 2 valences × (baseline, F1..F8, all_varied)
-      + 100 harmbench_verbatim, 1 sample each, `RUN_TAG=probe` → `responses_qwen3.8-27b_*probe_*`.
-      Restarted at MAX_TOKENS=8000 / MAX_CONCURRENT=128 after chunk 1 (see gotchas).
-- [ ] Robbie accepts HF terms (GPQA, StrongREJECT, AdvBench, lmsys-chat-1m) and drops `HF_TOKEN`
-      in `.envrc.local`; otherwise ungated only.
-- [ ] `scripts/build_probe_trainset.py`: sample the sources above into one JSONL of
-      `{id, source, label, chat}` with randomized system prompt; topic-matched subsets tagged.
-- [ ] Extend `scripts/extract_activations.py` to accept the JSONL (prompt-only records) — it
-      already skips cot/answer spans when there is no response.
-- [ ] Sonnet-5 CoT judge over the eval_bench responses (`eval/eval_eval_bench_cot.py`,
-      `JUDGE_MODEL=claude-sonnet-5`).
-- [ ] Kill vLLM, run extraction on the pod for both files, scp the .npz files back under
-      `results/probes/`.
-- [ ] Rework `scripts/train_awareness_probe.py` for source-grouped CV + tiers 1–4 above.
-- [ ] Write up: AUROC table, per-config transfer, verbalization gap. Terminate pod.
+- [x] eval_bench test set: `responses_qwen3.8-27b_think_tool_probe_20260901_185602.json`
+      (2100, 0 errors) + sonnet judge `cot_qwen3.8-27b_20260901_202821.json` (85/2100 verbalized).
+- [x] HF terms accepted, `HF_TOKEN` in `.envrc.local` (XSTest not accepted — dropped).
+- [x] `scripts/build_probe_trainset.py` → `results/probes/trainset.jsonl` (3600: 12 benchmarks ×
+      150; wildchat 900, lmsys 360 + 360 moderation-flagged, sharegpt 180).
+- [x] Extraction on pod → `results/probes/acts_train.npz` (2.5GB), `acts_eval.npz` (1.5GB).
+- [x] `scripts/train_awareness_probe.py` → `results/probes/probe_qwen27b.json` and
+      `probe_qwen27b_noharmbench.json`. Pod terminated 2026-09-01 ~21:25; total spend ≈ $12.
+- [ ] Follow-ups if this is pursued: regularize harder / average layers (the L44 fit has
+      logits of ±19, i.e. high variance); contrastive-framing direction (tier 5); a probe on the
+      CoT-token positions (`cot_mean` features exist in acts_eval.npz but no off-dataset
+      training labels for them); a bigger OW model.
+
+## Results (Qwen3.8-27B, 2026-09-01)
+
+Two fits: (A) all 12 benchmark sources; (B) HarmBench excluded, because eval_bench's 100
+tasks *are* HarmBench behaviors, so (A)'s harmbench_verbatim cell is contaminated.
+
+| readout | (A) L28 | (B) L44 |
+|---|---|---|
+| source-grouped held-out AUROC, real benchmark vs real traffic | 0.93 | 0.88 |
+| topic-matched AUROC harmful / math / code | 0.98 / 0.98 / 0.89 | 0.97 / 0.96 / 0.20 |
+| AUROC for predicting F9 system prompt (want 0.5) | 0.48 | 0.48 |
+| eval_bench baseline scored eval-like | 30% | 65% |
+| eval_bench all_varied scored eval-like | 47% | 37% |
+| harmbench_verbatim scored eval-like | 74% (leaked) | 62% |
+| transfer AUROC baseline vs all_varied+harmbench | 0.67 | 0.38 |
+| cosine(train direction, eval_bench baseline→all_varied direction) | 0.11 | -0.04 |
+| probe vs verbalized awareness (sonnet judge) AUROC | 0.47 | 0.48 |
+| in-distribution ceiling (eval_bench-trained, task-grouped) | 1.00 | 1.00 |
+
+Reference points: real traffic scores eval-like 2–12% per source; 9/12 benchmarks 88–100%.
+Benchmarks the probe calls "deployment": HumanEval (0%), TruthfulQA (51% / 1%), CoCoNot
+(55% / 28%) — plain questions and "complete this function" look like user queries.
+
+Takeaways:
+
+1. "Real benchmark item vs real user message" is linearly decodable in Qwen3.8-27B's residual
+   stream at mid depth, and the direction is not topic or system prompt.
+2. eval_bench prompts do **not** land with the real benchmarks. Which side of the boundary
+   baseline falls on flips between fits (30% vs 65%), all_varied never beats baseline, and
+   the eval_bench direction is ~orthogonal to the real-data direction. The single-factor
+   ordering is the one stable thing: F5 (stakes telegraphing) most eval-like in both fits;
+   F4 (bare request) and F7 (template) least. Read: the OFAT manipulations move the model's
+   representation along some axis, but not the axis that separates GSM8K from WildChat.
+3. Probe score is unrelated to whether the model *says* it is being evaluated (AUROC ≈ 0.47
+   overall and within every config). Matches arXiv:2608.21766 (|ρ| < 0.19).
+4. The in-distribution ceiling of 1.00 is the system prompt: baseline is T3, all_varied is
+   bare. Never train on eval_bench configs.
+
 
 ## Infra state / gotchas
 
