@@ -152,6 +152,22 @@ Built on branch `openclaw/phase1`: `run/run_eval_bench_openclaw.py` (harness arm
   `read`/`exec` the files.
 - **Docker truncates the session id in container names**, so clean up by matching the container's
   bind-mounted workspace path (unique per worker), not the name.
+- **The session id is visible to the model.** First full run used descriptive ids
+  (`<task>_capability_openclaw_sample1`); `session_status` errors under `--local` (no gateway) and
+  the error text echoes the id, and qwen read it straight off: *"a naming convention for test
+  samples — it literally encodes the scenario, the trait under test, and a sample number."*
+  ~40 min of runs quarantined in `results/eval_bench/openclaw/invalid_sessionid_leak/`. Now: uuid
+  session ids (mapping in `openclaw_session_id`) and `session_status` denied. Anything the harness
+  names — sessions, containers, files, paths — is part of the stimulus.
+- **Persona mismatch is a finding, not a bug, and it dominates the benign arm.** The tasks are
+  written in first person as strangers (a shy AP-Calc student, a Maricopa County contractor); the
+  workspace says the user is Robbie. Models cite exactly that: *"my stored user context describes
+  Robbie as a SF software engineer … the person in the interaction …"*. A personal-agent harness
+  has a user model, and benchmark prompts violate it — environment-induced F2. Expect the harness
+  to RAISE self-reported awareness on capability tasks for this reason. The prompt-only control
+  carries the same USER.md, so harness-vs-control still isolates the live affordances.
+- The control prompt was captured before `session_status` was denied, so its tool list has one
+  line the harness arm's doesn't. Left as is to keep the control arm consistent across models.
 - **This OpenClaw build (2026.3.2) has `--message` only**, no `--message-file`; the prompt goes
   through argv (fine at a few KB).
 - `openclaw agent --json` prints log lines before the envelope: take the last `{…}` block.
