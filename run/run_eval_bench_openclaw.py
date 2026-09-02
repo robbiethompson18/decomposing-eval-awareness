@@ -51,6 +51,7 @@ import subprocess
 import sys
 import threading
 import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
@@ -86,6 +87,9 @@ TOOLS_DENY = [
     "sessions_spawn",
     "subagents",
     "tts",
+    # session_status has no gateway to talk to under --local: it errors, and the
+    # error text echoes the session id. Deny it outright.
+    "session_status",
 ]
 SANDBOX_TOOLS_ALLOW = [
     "exec",
@@ -96,7 +100,6 @@ SANDBOX_TOOLS_ALLOW = [
     "apply_patch",
     "web_search",
     "web_fetch",
-    "session_status",
 ]
 
 
@@ -427,6 +430,12 @@ def main() -> None:
             continue
         chat = render(t["template"], factor_config, model_key)
         items.append((t, sid, chat))
+    # The OpenClaw session id is visible to the model (session_status, /status,
+    # error strings), so it must be opaque: a descriptive id like
+    # "<task>_capability_openclaw_sample1" was read straight off by qwen as
+    # "a naming convention for test samples". Records keep the descriptive id;
+    # the session file name is the opaque one (stored in openclaw_session_id).
+    opaque = {sid: uuid.uuid4().hex[:12] for _, sid, _ in items}
     print(f"model={model_key} ({model_id})  samples={len(items)}  skipped={len(done)}")
     print(
         f"workspace={template}  thinking={thinking}  sandbox={sandbox}  opener={use_opener}"
@@ -434,6 +443,7 @@ def main() -> None:
     print(f"state: {run_root}")
 
     def run_one(t: dict, sid: str, chat: Chat) -> tuple[dict, dict]:
+        osid = opaque[sid]
         with lock:
             w = free.pop()
         try:
@@ -442,15 +452,15 @@ def main() -> None:
             messages: list[dict[str, Any]] = []
             report = None
             if use_opener:
-                env0 = w.turn(sid, OPENER, thinking)
+                env0 = w.turn(osid, OPENER, thinking)
                 messages += [
                     {"role": "user", "content": OPENER},
                     {"role": "assistant", "content": payload_text(env0)},
                 ]
-            env1 = w.turn(sid, user_text, thinking)
+            env1 = w.turn(osid, user_text, thinking)
             report = (env1.get("meta") or {}).get("systemPromptReport")
             messages.append({"role": "user", "content": user_text})
-            sess = w.sessions_dir() / f"{sid}.jsonl"
+            sess = w.sessions_dir() / f"{osid}.jsonl"
             if "error" in env1 or not sess.exists():
                 response = payload_text(env1)
                 tx = {"turns": [], "cost": 0.0, "n_tool_calls": 0}
@@ -458,9 +468,9 @@ def main() -> None:
             else:
                 tx = transcript_after(read_session(sess), user_text)
                 response = to_response(tx)
-                hypo_sid = f"{sid}__hypo"
-                w.fork_session(sid, hypo_sid)
-                aware_resp = payload_text(w.turn(sid, awareness_q, thinking))
+                hypo_sid = uuid.uuid4().hex[:12]
+                w.fork_session(osid, hypo_sid)
+                aware_resp = payload_text(w.turn(osid, awareness_q, thinking))
                 hypo_resp = payload_text(w.turn(hypo_sid, hypo_q, thinking))
             w.cleanup_containers()
         finally:
@@ -490,6 +500,7 @@ def main() -> None:
             "openclaw_system_prompt_report": report,
             "openclaw_n_tool_calls": tx.get("n_tool_calls", 0),
             "openclaw_cost_usd": tx.get("cost", 0.0),
+            "openclaw_session_id": osid,
             "openclaw_session": str(sess) if sess.exists() else None,
         }
         if aware_resp.startswith("ERROR"):

@@ -32,15 +32,21 @@ control() {  # model config tag
   RESPONSE_FILE=$f MAX_CONCURRENT=20 $PY eval/eval_eval_bench_selfreport.py > $LOG/${3}_selfreport_$1.log 2>&1
 }
 
-( for m in qwen3.8-2.4t deepseek-v4-pro kimi-k3 glm-5.3; do harness $m 0; done ) &
-( for m in minimax-m3 claude-sonnet-4.5 gemini-3.5-flash; do harness $m 10; done ) &
-(
-  for m in qwen3.8-2.4t deepseek-v4-pro kimi-k3 glm-5.3 minimax-m3 claude-sonnet-4.5 gemini-3.5-flash; do
-    control $m openclaw_prompt ${TAG}ctl
-  done
-  for m in claude-sonnet-4.5 gemini-3.5-flash; do
-    control $m baseline ${TAG}base
-  done
-) &
+# LANES=harness or LANES=control runs one side only (default: both).
+LANES=${LANES:-harness,control}
+if [[ $LANES == *harness* ]]; then
+  ( for m in qwen3.8-2.4t deepseek-v4-pro kimi-k3 glm-5.3; do harness $m 0; done ) &
+  ( for m in minimax-m3 claude-sonnet-4.5 gemini-3.5-flash; do harness $m 10; done ) &
+fi
+if [[ $LANES == *control* ]]; then
+  (
+    for m in qwen3.8-2.4t deepseek-v4-pro kimi-k3 glm-5.3 minimax-m3 claude-sonnet-4.5 gemini-3.5-flash; do
+      control $m openclaw_prompt ${TAG}ctl
+    done
+    for m in claude-sonnet-4.5 gemini-3.5-flash; do
+      control $m baseline ${TAG}base
+    done
+  ) &
+fi
 wait
 echo "phase 1 launch complete $(date)"
