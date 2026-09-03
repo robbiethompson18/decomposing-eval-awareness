@@ -205,6 +205,100 @@ self-report; BDV is the better *steering handle* for unprompted verbalization. E
 with self-report" (11 cells, both valences) did not replicate on 17 safety cells (−0.06): small-n
 rank correlations carried by the two anchors.
 
+## Second and third models (2026-09-03 early morning): GPT-OSS 20B done, Gemma 4 31B running
+
+Per-model pipeline (`scratchpad/pod_model_setup.sh` → `model_runner.sh` → `postprocess.sh`):
+train-set activations + BDV/PAV on the pod (HF), then vLLM+lens serves the 17-cell OFAT (safety),
+the 3,400-prompt stacking design, and steering (control, BDV +0.5, PAV +0.5); sonnet judge +
+OpenRouter self-report locally; prompt-only extraction on the pod at the end. Robbie's working doc
+with the per-model numbers is `activation_probe_plan.md` (Agent I section); the direction files
+live in `results/probes/{gptoss,gemma}/`.
+
+GPT-OSS 20B (layer 12/24, picked by BDV held-out AUROC):
+
+- PAV does **not** separate real benchmarks from real chat here (AUROC 0.46; best layer 0.64), and
+  cos(BDV, PAV) = −0.04. BDV held-out 0.82.
+- Ladder: PAV tracks k monotonically (d-units −0.71 → +1.76; Spearman +0.98 vs CoT, +0.93 vs
+  self-report; per-transcript AUROC → CoT 0.86, → SR 0.78). BDV runs the *wrong way* (0 → −1.35,
+  Spearman −0.98 / −0.93); not a norm artifact (cosine-normalized projections show the same).
+  Self-report 6→20%, CoT 0→2%: GPT-OSS barely admits or verbalizes anything.
+- Steering (+0.5 norm-matched at L12): neither vector induces verbalization (0% everywhere).
+  BDV degrades (33% no visible answer, reasoning 1.2k→17k chars); PAV inert.
+- OFAT: CoT 0% in every cell; SR 7–41%; Spearman over 17 cells vs SR: PAV +0.57, BDV −0.45.
+
+Gemma 4 31B: reasoning is OFF by default in its chat template → first OFAT run had empty CoT
+(judge marks N/A). Fixed with `VLLM_CHAT_TEMPLATE_KWARGS='{"enable_thinking": true}'` (new
+pass-through in `core/target.py`). bf16 31B leaves ~10GB KV on an H100 → 14 concurrent seqs →
+restarted with `--quantization fp8 --max-model-len 20000`. Directions: BDV held-out 0.80 at L24,
+PAV inverted (AUROC 0.40) at L24, cos ≈ 0 everywhere.
+
+Cross-model scatter (`scripts/intervention_scatter.py`, `results/probes/scatter/`): per model the
+9 ladder points lie on a monotone PAV↔self-report line; the 17 OFAT cells spread widely in
+self-report at nearly constant PAV. R²(SR, PAV) within model ≈ 0.3; pooled 0.03 (different SR
+baselines per model).
+
+More gotchas: `pkill -f` inside an ssh command kills the remote shell if the pattern matches the
+command line that also *starts* the server (use `gemm[a]4`-style brackets); `pkill -f
+"VAR=value"` does not kill the python child (env vars are not in its argv) — kill by pid via
+`lsof` cwd; zsh `$var:x` is a modifier (`${var}:x`); a `nohup ... &` inside `ssh` often leaves the
+ssh session hanging — run it, then poll from a separate call.
+
+Gemma 4 31B, final (L28 readout after a layer sweep; L24 was the pre-registered pick and is bad):
+
+- Ladder: both vectors monotone in k (PAV ρ +0.97 vs self-report, BDV +0.98); per transcript BDV
+  predicts self-report at AUROC 0.82 (d 1.29), PAV 0.59 (d 0.33). SR 20→98%, CoT 2→4%.
+- OFAT: BDV→SR AUROC 0.70 (d 0.74), PAV 0.53. CoT ≤11% (all_varied).
+- Steering at L24 +0.5: both vectors degenerate (BDV 5/200 in 30 min with empty reasoning, PAV
+  0/200); killed. Control: 0.5% CoT, 66% refusal.
+- Direction quality: BDV held-out 0.79 at L28; PAV bench-vs-chat AUROC 0.51 (no separation).
+
+Three-model summary (`activation_probe_plan.md`, Agent I section, has the tables):
+
+| | Qwen3.8-27B L28 | GPT-OSS-20B L12 | Gemma-4-31B L28 |
+|---|---|---|---|
+| PAV separates real bench vs chat | 0.86 | 0.46 | 0.51 |
+| BDV held-out | 0.83 | 0.82 | 0.79 |
+| ladder ρ vs self-report: PAV / BDV | 1.00 / −0.13 | 0.93 / −0.93 | 0.97 / 0.98 |
+| per-transcript AUROC→SR: PAV / BDV | 0.83 / 0.56 | 0.78 / 0.26 | 0.59 / 0.82 |
+| steering +0.5 → CoT verbalization | BDV 1.5→15%, PAV inert | both nothing (BDV degrades) | both degenerate (L24) |
+
+No single vector is "the" eval-awareness direction across models: PAV is the readout on Qwen and
+GPT-OSS, BDV on Gemma; only Qwen steers. Scatter over 78 interventions: R²(SR, vector) ≤ 0.33
+within any model; the ladder points are monotone, the OFAT cells are the scatter.
+
+Cost this session: RunPod ≈ $95 (incl. ~$45 of idle/wasted pods), Anthropic judge ≈ $110,
+OpenRouter self-report ≈ $25. All my pods removed 2026-09-03 03:44; Agent II/III pods
+(`qwen27b-biasbake`, `probe-bdvprime`) are theirs.
+
+## BDV re-derived with no system prompts (2026-09-03, ~$3 of pod)
+
+Robbie's objection: the training prompts got a coin-flipped system prompt (T3 vs bare) while the
+source datasets carry none (WildChat/LMSYS first turns are bare user messages; ShareGPT has 6
+system turns in ~21k). Re-extracted the 3,600 prompts with no system prompt on one pod for all
+three models (`results/probes/nosys/`, `trainset_nosys.jsonl`; `scratchpad` driver reused
+`probe_vs_verbalization.py` with `--train-jsonl results/probes/trainset_nosys.jsonl`).
+
+| model | cos(new, old BDV) | held-out AUROC new / old | example-level AUROC→self-report new / old |
+|---|---|---|---|
+| Qwen L28 | 0.93 | 0.87 / 0.83 | 0.69 / 0.65 |
+| GPT-OSS L12 | 0.88 | 0.78 / 0.82 | 0.33 / 0.34 |
+| Gemma L28 | 0.88 | 0.84 / 0.79 | 0.68 / 0.69 |
+
+Either vector separates either version of the training set at 0.89–0.96 in-sample; the system
+prompt was not what BDV learned. No conclusion changes: GPT-OSS BDV still inverted on the ladder,
+Qwen BDV still flat, every agreement number moves ≤0.04 AUROC. Only sign flip: Gemma's BDV ladder
+Spearman +0.98 → −0.62, on a range of 0.13 d-units (noise on a flat line). Full tables at the end
+of `activation_probe_plan.md`.
+
+Lesson for the design: randomizing a nuisance variable across both classes is the right move
+when the *test* distribution has it (every EvalAwareBench transcript carries a system prompt),
+and here it was also harmless. The check worth doing up front next time is the one-liner above:
+fit the direction on each nuisance level separately and report the cosine.
+
+Branch hygiene: `probe/qwen27b` was rebuilt overnight from 62ec68a, dropping 95112cd/7b074e3
+(GPT-OSS + Gemma note sections) and 745f710 (`scripts/intervention_scatter.py`); both restored
+in the same commit as this section.
+
 
 ## Infra state / gotchas
 
