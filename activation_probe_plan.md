@@ -208,6 +208,18 @@ model by BDV held-out AUROC near mid-depth: GPT-OSS L12/24, Gemma L24/60, Qwen L
   | CoT % | 0 | 0 | 0 | 0.2 | 0.4 | 0.6 | 1.0 | 1.0 | 2.0 |
 
   Qwen L28 for comparison: PAV d −0.22 → +1.13, BDV d +0.33 → +0.28 (flat); SR 18→98, CoT 0→5.
+- Scatter / R² (see "See if results are interesting" section), 26 interventions per model
+  (17 OFAT + k=0..8), `scripts/intervention_scatter.py`, PNGs in `results/probes/scatter/`.
+  With Qwen + GPT-OSS (Gemma pending), PAV in d-units:
+  - R²(self-report, PAV): pooled 0.03 (models sit at different SR baselines), per model
+    Qwen 0.33, GPT-OSS 0.28. R²(CoT, PAV): Qwen 0.16, GPT-OSS 0.34. R²(SR, CoT): Qwen 0.47,
+    GPT-OSS 0.01.
+  - BDV: R²(SR, BDV) Qwen 0.01, GPT-OSS 0.29 (negative slope); R²(CoT, BDV) 0.01 / 0.32 (neg).
+  - Shape: per model the 9 ladder points lie on a monotone line (PAV up, SR up); the 17 OFAT
+    cells spread over SR 30–100% (Qwen) / 7–41% (GPT-OSS) at nearly constant PAV. I.e. single
+    cues under the T3 harness raise self-report without moving the vector; stacking under the
+    bare harness moves both. Biggest divergences (high SR, low PAV): Qwen F6 (97% SR, PAV
+    d −0.28), F2 (82%, −0.51), F1 (78%, −0.51).
 - GPT-OSS 17-cell OFAT (safety): CoT verbalization is 0% in every cell (GPT-OSS never verbalizes
   under the T3 harness); SR 7–41% (all_varied 41, F6 31, F4 28, baseline 12, bare_harness 7).
   Spearman over 17 cells vs SR: PAV +0.57, BDV −0.45. Per-transcript AUROC → SR: PAV 0.61, BDV
