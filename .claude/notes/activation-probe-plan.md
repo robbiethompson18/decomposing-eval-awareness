@@ -300,6 +300,57 @@ Branch hygiene: `probe/qwen27b` was rebuilt overnight from 62ec68a, dropping 951
 in the same commit as this section.
 
 
+## Bias-baked steering (2026-09-03, branch `steer/bias-bake`)
+
+**Method.** Constant steering vector c = α·m·v̂ (arXiv:2608.21766 recipe; m = 49.9 = mean ‖h₂₈‖
+over the 3,600 probe-training prompts) baked into the checkpoint as
+`model.language_model.layers.28.mlp.down_proj.bias`, served by stock vLLM 0.28 with a 70-line
+plugin (`scripts/probes/vllm-static-bias/`, env `STATIC_BIAS_MODULES=layers.28.mlp`) that rebuilds that
+one `down_proj` with `bias=True` before weights load. CUDA graphs and the V2 runner stay on.
+Checkpoints from `scripts/probes/bake_steer_bias.py` (symlinks the 18 shards + one 10 KB bias shard).
+
+**Correctness** (`scripts/probes/test_static_bias.py`, 20 prompts, top-10 next-token logprobs): stock vs
+zero-bias checkpoint 20/20 top-1, max |Δlogprob| 0.053; vLLM-baked (data, α=0.5) vs HF
+transformers with a forward hook adding the same c after block 28: 20/20, max |Δlogprob| 0.021;
+stock vs baked differ (max |Δlogprob| 0.59).
+
+**Throughput** (`scripts/probes/bench_steer_throughput.py`, 100 stacking prompts, concurrency 64, 2k
+max tokens, one H100): stock 1,511 gen tok/s · **baked 1,535 (+1.6%)** · vllm-lens unsteered 742
+(0.49×: it forces `enforce_eager` + the V1 model runner in every process) · vllm-lens steered 257
+(0.17×). Total LOC ≈ 350 incl. tests. All three of Robbie's bars cleared.
+
+**Experiment.** 1,000 random cells of the STACKING design (seed 1, k mixed 0–8, both valences,
+paper harness = bare system prompt / cold / no tool / clean; ids in
+`results/probes/steer_ids_1k.txt`), one sample each, MAX_TOKENS=6000, four conditions served
+from their own checkpoint. Judge = sonnet-5; self-report replayed through OpenRouter
+`qwen/qwen3.8-27b`. Files `responses_qwen3.8-27b_think_tool_stacking_bb_<cond>_*.json`,
+judges `cot_qwen3.8-27b_20260903_{034720,044949,0553xx,062xxx}.json` (map in runners.log).
+
+| condition (α=0.5, constant) | CoT-verbalized | self-report | truncated at 6k | safety refusal | mean reasoning chars |
+|---|---|---|---|---|---|
+| control (stock) | 4.3% | 68% | 32% | 44% | 13,906 |
+| **BDV** (benchmark−chat) | **9.8%** | 71% | 44% | 60% | 16,344 |
+| PAV (paper's 16 stubs) | 4.9% | 73% | 50% | 62% | 17,184 |
+| BDV + PAV | 10.5% | 72% | 70% | 74% | 21,115 |
+
+Norm-matched vllm-lens runs on 200 T3-baseline prompts (2026-09-02, table above): control 1.5%,
+BDV +0.5 15.3%, PAV +0.5 2.4%. Same ordering with 5× the n and the paper's magnitude
+convention: **BDV ≈ 2.3× control on unprompted CoT verbalization, PAV ≈ control, BDV+PAV ≈
+BDV.** Self-report is flat (68–73%) across all four. The per-token norm-matching made no
+qualitative difference.
+
+**Truncation check.** On the vLLM backend a reasoning cap-hit shows as an empty visible answer
+(the parser closes the think block), so "no-answer" in the earlier tables mixes truncation with
+genuine empty answers; `steering_table.py` now splits them on CoT length. A 20k-cap regeneration
+of the control's truncated prompts (85 done before it was stopped: ~1 prompt/min, the four
+conditions would have been ~30 h) shows 84% eventually answer (median CoT 30k chars, none hit
+20k) and verbalization is unchanged (8 → 6 of 85), so the CoT numbers above are not truncation
+artefacts; the refusal column is (truncated safety prompts are not counted as refused).
+
+Infra: the control run was SIGTERM'd at 556/1000 by another process on the machine and resumed
+by id; ssh tunnels need a keeper loop (`scratchpad/tunnel.sh`, note the `${1}:localhost` zsh
+modifier trap); the hybrid GDN model caps `max_num_seqs` at ~200 via the Mamba cache.
+
 ## Infra state / gotchas
 
 - (all pods terminated 2026-09-02 02:49; balance $0.01) Pod `bzxa5p2bu2984g` (`qwen27b-probe-20260901`, H100 SXM, $3.29/hr), ssh

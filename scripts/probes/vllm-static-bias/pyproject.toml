@@ -1,0 +1,16 @@
+[project]
+name = "vllm-static-bias"
+version = "0.1.0"
+description = "vLLM plugin: give one MLP down_proj a bias so a constant steering vector can be baked into the checkpoint (CUDA graphs stay on)."
+requires-python = ">=3.10"
+dependencies = []
+
+[project.entry-points."vllm.general_plugins"]
+static_bias = "vllm_static_bias:register"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]

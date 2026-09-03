@@ -31,10 +31,15 @@ def stats(resp_file: str, cot_file: str) -> dict:
         r = s["response"]
         think, _, answer = r.partition("</think>")
         reasoning_chars.append(len(think))
+        # vLLM's reasoning parser closes the think block even when MAX_TOKENS
+        # cut the reasoning off, so a cap hit looks like an empty answer. Split
+        # on reasoning length: empty answer after a long CoT = truncation, empty
+        # answer after a short CoT = the model stopped without answering.
         if not answer.strip():
-            no_answer += 1
-        if "</think>" not in r:
-            cap_hit += 1  # reasoning never closed: hit MAX_TOKENS inside <think>
+            if len(think) > 18000:
+                cap_hit += 1
+            else:
+                no_answer += 1
     aware = parsed = 0
     refused = safety_n = 0
     for s in samples:
