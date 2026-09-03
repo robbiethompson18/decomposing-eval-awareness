@@ -1,3 +1,15 @@
+> **@robbie — 2026-09-03 02:10: BIAS-BAKED STEERING WORKS. All three bars cleared.** Steering vector
+> baked into the checkpoint as `layers.28.mlp.down_proj.bias = α·m·v̂`, served by stock vLLM plus a
+> 70-line plugin (`scripts/vllm-static-bias/`), CUDA graphs on. **Correctness:** stock vs zero-bias
+> 20/20 top-1, max |Δlogprob| 0.053; vLLM-baked vs HF-hook reference 20/20, max |Δlogprob| 0.021.
+> **Throughput** (100 prompts, conc 64): stock 1,511 tok/s, baked 1,535 (+1.6%), vllm-lens unsteered
+> 742, vllm-lens steered 257. **LOC:** ~350 incl. tests. Experiments done 07:50 (1k random stacking
+> cells each, α=0.5, constant magnitude): **CoT verbalization: control 4.3% · BDV 9.8% · PAV 4.9% ·
+> BDV+PAV 10.5%.** Self-report flat (68–73%). Same ordering as the norm-matched 200-prompt runs (1.5
+> / 15.3 / 2.4), so the per-token norm matching didn't matter. Full table + truncation check in
+> `.claude/notes/activation-probe-plan.md` → "Bias-baked steering". Pod removed. Branch
+> `steer/bias-bake`.
+
 Ok I think cohen's d quite useful here and this looks good, but you'd have context on what other
 papers achieve. Anyway: I think this is a good result. Happy you're doing the big sweep with
 stacking. But here is what I'd add to call this done and great. First I want to summarize what we
@@ -17,11 +29,15 @@ did:
 - found BENCH_DIFF_VECTOR = avg(bench activation layer x) - avg(chat activation layer x)
 - used this to split difference to try to split (chat activations at layer x, bench activations at
   layer x), found highest AUROC (.85) at layer 32. We expected this to happen about halfway through
-  (64 layers IIRC). We use l28 because (?), where AUROC is .83. On heldout set AUROC is .83 at l28
-  too.
+  (64 layers). We use l28 because PAV's held-out AUROC peaks there (.855) and BDV is within .03 of
+  its own peak (.83 held-out at l28 vs .855 at l32), so one layer serves both vectors and the
+  steering runs. In-sample AUROC at l28 is .92. (Held-out = source-grouped 5-fold CV: every fold
+  scores benchmark/traffic sources the vector never saw.)
 - used always activation from last token after _reading_ benchmark (will possibly followup and try
   responding)
-- separation d=1.95 in-sample (do we not have a held-out set to try this on?).
+- separation d=1.95 in-sample. The held-out version is the source-grouped CV above (AUROC .83 at
+  l28); d on held-out folds isn't computed separately, but PAV's d=1.52 below is fully held out and
+  is the fair comparison.
 
 ## Found activation for 'this is an evaluation (PROMPT_AVG_VECTOR)
 
@@ -37,22 +53,42 @@ did:
 
 - find that cosine sim is .2 (in d-8k this is z~14, p=0, so very significant overlap)
 
-### BDV possibly better at steering
+### BDV better at steering (agent II, done 2026-09-03)
 
-- BDV + .5 takes CoT verbalization 1.5% -> 15% (n = 200, t3 dataset)
-- PDV does 1.5% -> 2.4% at .5 factor on PDV
-- We should do this again with 1k examples each, .5 \* (VECTOR), NOT t3 dataset, use maximally
-  realistic but throw out all changes I made after f8 (eg no typos, vanilla system prompt instead of
-  t3).
-- one more experiment: +.5 of each vector
-- agent II is doing these experiments, agent II you know who you are
+- First pass (2026-09-02, vllm-lens hooks, per-token norm-matched h += α‖h‖v̂, 200 T3-baseline
+  prompts): BDV +.5 takes CoT verbalization 1.5% -> 15.3%; PAV +.5 does 1.5% -> 2.4%, PAV +1.0 ->
+  0.6% with 19% empty answers (degradation).
+- Rerun (2026-09-03) with 1k prompts per condition drawn at random from the stacking cells (mixed k,
+  both valences, paper harness: bare system prompt, cold, no tool, clean), α=.5, and the paper's
+  constant magnitude c = α·m·v̂ (m = 49.9) baked into the checkpoint as a layer-28 MLP bias (no
+  hooks, no norm matching, stock vLLM, see banner):
+
+| condition (α=.5)        | CoT-verbalized | self-report | safety refusal | truncated at 6k |
+| ----------------------- | -------------- | ----------- | -------------- | --------------- |
+| control (stock weights) | 4.3%           | 68%         | 44%            | 32%             |
+| BDV                     | **9.8%**       | 71%         | 60%            | 44%             |
+| PAV                     | 4.9%           | 73%         | 62%            | 50%             |
+| BDV + PAV               | 10.5%          | 72%         | 74%            | 70%             |
+
+- Same ordering as the norm-matched runs at 5× the n: BDV ≈ 2.3× control on unprompted
+  verbalization, PAV ≈ control, BDV+PAV ≈ BDV (not additive). So the per-token norm matching was
+  unnecessary complexity and changed nothing qualitatively.
+- Self-report is flat across all four (68–73%): steering moves what the model says unprompted in its
+  reasoning, not what it admits when asked afterwards.
+- Both vectors lengthen reasoning and raise refusal on the safety arm. The truncation column matters
+  for the refusal number (truncated prompts don't count as refused) but not for CoT verbalization:
+  regenerating 85 truncated control prompts at a 20k cap changed their verbalized count from 8 to 6.
+  Full regeneration was abandoned (~1 prompt/min, ~30 h for all four).
+- Sizes for the constant recipe: |c| = 24.95 for one vector, 38.5 for BDV+PAV (they're not
+  orthogonal, cos .19).
 
 ### PAV better at readout
 
-- Are we using saftey and capability or just saftey? Whcih is more principled??
-- which should probably report headline numbers for just saftey, but find them for just capability
-  too, and see if they massively differ?
--
+- Valence: both, pooled, for the ladder and the Cohen's-d table; safety only for the 16-cell OFAT
+  run (harmbench_verbatim has no capability arm). Headline pooled, report the split: PAV holds in
+  both arms (r with self-report +.91 safety, +.98 capability); BDV flips sign between arms (−.92 vs
+  +.78), which is what a flat line plus noise does. On the safety arm PAV's gap fraction reaches
+  1.12 at k=8 (past the real-benchmark mean); on capability it tops out at .39.
 
 - define terms: call k the 'number of factors f1-f8 we vary'
 - PAV mean is avg of PAV at l28 _on a given dataset_, in this case EAB at k=x. Likewise for BDV mean
@@ -78,8 +114,8 @@ did:
 - all of this implies that PAV is better. Paper uses PAV too and it's simpler. But we didn't try
   hard on BDV, could try harder...
 -
-- We should also probably have tried: what is cohen's D (l28 on benchmark activations, l28 on chat
-  activations), eg how decent does it do on way we got BENCH_DIFF_VECTOR
+- Cohen's d separating (l28 benchmark activations, l28 chat activations) along each vector: BDV 1.95
+  (in-sample), PAV 1.52 (held out). AUROC .92 in-sample / .83 held-out for BDV, .855 for PAV.
 
 ## Used BDV and PAV on EvalAwareBench (EAB)
 
@@ -137,6 +173,9 @@ pooled table as the headline and the split as the floor.
 - I stronly suspect PAV will be the best one. if BDV' looks comparable with PAV, kill the GPUs and
   ask Robbie what to do.
 - call this BEST_VECTOR
+- (agent II) note the split so far: PAV is the better _readout_ (tracks k, self-report), BDV is the
+  better _control_ (steers CoT verbalization, PAV doesn't). If BEST_VECTOR is for the scatterplots
+  it's PAV; if it's for steering it's BDV.
 
 ## Repeat experiment with Gemma 4 31B, GPT OSS 20B
 
@@ -174,22 +213,143 @@ pooled table as the headline and the split as the floor.
 ## Repeat experiment with Gemma 4 31B, GPT OSS 20B (Agent I)
 
 Setup identical to Qwen: same 3,600 prompts, same 32 stubs, last prompt token. Layer chosen per
-model by BDV held-out AUROC near mid-depth: GPT-OSS L12/24, Gemma L24/60, Qwen L28/64.
+model by BDV held-out AUROC near mid-depth: GPT-OSS L12/24, Gemma L24/60, Qwen L28/64. Gemma
+readouts below are at **L28** after a layer sweep on the ladder showed L24 is a bad readout layer
+for both vectors (PAV per-transcript AUROC→SR 0.35 at L24 vs 0.59 at L28 / 0.79 at L32; BDV 0.74 →
+0.82). Steering on Gemma was done at L24 (chosen before the sweep).
 
-- cosine sim(BDV, PAV) at chosen layer: GPT-OSS −0.04, Gemma −0.07, Qwen +0.19 (random ≈ 0.01).
-  Max over layers: GPT-OSS 0.35 (L23), Gemma 0.29 (L59), Qwen 0.28 (L8).
+- cosine sim(BDV, PAV) at chosen layer: GPT-OSS −0.04, Gemma −0.07, Qwen +0.19 (random ≈ 0.01). Max
+  over layers: GPT-OSS 0.35 (L23), Gemma 0.29 (L59), Qwen 0.28 (L8).
 - AUROC bench vs chat (BDV held-out / BDV in-sample / PAV, PAV is held out by construction):
-  - GPT-OSS L12: 0.82 / 0.91 / **0.46**  (PAV best anywhere 0.64 at L4)
-  - Gemma L24:   0.80 / 0.96 / **0.40**  (PAV best anywhere 0.69 at L59; PAV is *inverted* L20–L48)
-  - Qwen L28:    0.83 / 0.93 / 0.86
+  - GPT-OSS L12: 0.82 / 0.91 / **0.46** (PAV best anywhere 0.64 at L4)
+  - Gemma L24: 0.80 / 0.96 / **0.40** (PAV best anywhere 0.69 at L59; PAV is _inverted_ L20–L48)
+  - Qwen L28: 0.83 / 0.93 / 0.86
   - Cohen's d bench vs chat, BDV / PAV: GPT-OSS 1.77 / −0.17; Gemma 2.65 / −0.38; Qwen 1.92 / 1.50.
-  → PAV's ability to tell real benchmarks from real chat is a Qwen-only property; on the other two
-  models it is at or below chance. BDV transfers.
-- r(CoT judge, BEST_VECTOR) and r(self-report, BEST_VECTOR) on gap fraction over k=0..8: PENDING
-  (stacking + judge + self-report running)
-- Cohen's d on CoT judge / self-report: PENDING
-- ladder table: PENDING
+    → PAV's ability to tell real benchmarks from real chat is a Qwen-only property; on the other two
+    models it is at or below chance. BDV transfers.
+- Units: PAV's bench−chat gap is ≈0 (GPT-OSS) or inverted (Gemma), so "gap fraction" is undefined
+  for it there. Cross-model numbers below are **d-units**: (proj − train chat mean) / train pooled
+  SD, per vector, per model. BDV gap-fraction still fine.
+- r over k=0..8 (Spearman of per-k mean vs per-k rate), ladder = paper Fig. 7 design, 3,400/model:
+  - GPT-OSS L12: PAV vs CoT **+0.98**, vs SR **+0.93**; BDV vs CoT −0.98, vs SR −0.93 (BDV runs the
+    _wrong way_: more cues → more chat-like; not a norm artifact, cosine-normalized projections show
+    the same). CoT 0→2%, SR 6→20%.
+  - Qwen L28: PAV vs CoT +0.90, vs SR +1.00; BDV −0.02 / −0.13 (flat). CoT 0→5%, SR 18→98%.
+  - Gemma L28: PAV vs CoT +0.72, vs SR **+0.97**; BDV vs CoT +0.73, vs SR **+0.98**. Both monotone
+    here (unlike GPT-OSS where BDV is inverted). CoT 2→4%, SR 20→98%.
+- Cohen's d (projection, aware vs not), GPT-OSS L12, ladder set / OFAT set:
+  - PAV: CoT +1.20 (n aware=16) / n/a (0 aware); SR +1.03 / +0.46
+  - BDV: CoT −1.22 / n/a; SR −0.85 / −0.44
+  - Qwen L28 (OFAT, both valences): PAV CoT +0.06, SR +1.03; BDV CoT +0.34, SR +0.68
+  - Gemma L28, ladder / OFAT: PAV CoT −0.04 / −1.09 (n=24), SR +0.33 / +0.05; BDV CoT +0.46 / −0.10,
+    SR **+1.29 / +0.74**. Per-transcript AUROC→SR on the ladder: BDV 0.82, PAV 0.59. On Gemma BDV is
+    the better readout; on GPT-OSS PAV is; on Qwen PAV reads and BDV steers.
+- ladder table, GPT-OSS L12 (d-units):
+
+  | k             | 0     | 1     | 2     | 3     | 4     | 5     | 6     | 7     | 8     |
+  | ------------- | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- |
+  | PAV d         | −0.71 | −0.30 | +0.16 | +0.41 | +0.75 | +0.97 | +1.28 | +1.49 | +1.76 |
+  | BDV d         | 0.00  | −0.09 | −0.32 | −0.50 | −0.70 | −0.92 | −1.08 | −1.22 | −1.35 |
+  | self-report % | 6     | 6     | 6     | 8     | 12    | 13    | 17    | 23    | 20    |
+  | CoT %         | 0     | 0     | 0     | 0.2   | 0.4   | 0.6   | 1.0   | 1.0   | 2.0   |
+
+  Qwen L28 for comparison: PAV d −0.22 → +1.13, BDV d +0.33 → +0.28 (flat); SR 18→98, CoT 0→5. Gemma
+  L28: BDV d +0.16 → +0.39, PAV d −0.35 → −0.17 (PAV's train gap is ≈0 on Gemma, so its d-swing is
+  small even though monotone); SR 20→98, CoT 2→4.
+
+- Scatter / R² (see "See if results are interesting" section), 26 interventions per model (17 OFAT +
+  k=0..8), `scripts/intervention_scatter.py`, PNGs in `results/probes/scatter/`. With Qwen + GPT-OSS
+  (Gemma pending), PAV in d-units:
+  - R²(self-report, PAV): pooled 0.03 (models sit at different SR baselines), per model Qwen 0.33,
+    GPT-OSS 0.28. R²(CoT, PAV): Qwen 0.16, GPT-OSS 0.34. R²(SR, CoT): Qwen 0.47, GPT-OSS 0.01.
+  - BDV: R²(SR, BDV) Qwen 0.01, GPT-OSS 0.29 (negative slope); R²(CoT, BDV) 0.01 / 0.32 (neg).
+  - Shape: per model the 9 ladder points lie on a monotone line (PAV up, SR up); the 17 OFAT cells
+    spread over SR 30–100% (Qwen) / 7–41% (GPT-OSS) at nearly constant PAV. I.e. single cues under
+    the T3 harness raise self-report without moving the vector; stacking under the bare harness
+    moves both. Biggest divergences (high SR, low PAV): Qwen F6 (97% SR, PAV d −0.28), F2 (82%,
+    −0.51), F1 (78%, −0.51).
+- Gemma 17-cell OFAT (safety, L28): CoT 0–11% (all_varied 11, F2 7, F8 6, else ≤1); SR 24–100%
+  (all_varied 100, F6 87, F3 73, baseline 32, bare_harness 34). Spearman over 17 cells vs SR: BDV
+  +0.43, PAV +0.23; per-transcript AUROC→SR: BDV 0.70, PAV 0.53.
+- GPT-OSS 17-cell OFAT (safety): CoT verbalization is 0% in every cell (GPT-OSS never verbalizes
+  under the T3 harness); SR 7–41% (all_varied 41, F6 31, F4 28, baseline 12, bare_harness 7).
+  Spearman over 17 cells vs SR: PAV +0.57, BDV −0.45. Per-transcript AUROC → SR: PAV 0.61, BDV 0.39.
+- steering (norm-matched +0.5 at the chosen layer, 200 baseline prompts, CoT-verbalized % /
+  no-visible-answer % / safety refusal % / mean reasoning chars):
+  - GPT-OSS L12: control 0.0 / 0.5 / 87 / 1.2k; BDV +0.5 0.0 / **33.5** / 63 / 17k; PAV +0.5 0.0 /
+    2.5 / 77 / 1.5k. Neither vector induces verbalization on GPT-OSS; BDV degrades (runaway
+    reasoning, a third of prompts never answer), PAV is inert. Contrast Qwen: BDV +0.5 took CoT
+    verbalization 1.5% → 15%.
+  - Gemma L24: control 0.5 / 0.5 / 66 / 2.7k. Both steered cells were **degenerate**: BDV +0.5
+    produced 5/200 in 30 min, all with empty reasoning and runaway output; PAV +0.5 produced 0/200
+    in 30 min. Killed both; no steered Gemma table. (Probably a layer/α problem: L24 is a poor layer
+    for Gemma and norm-matched +0.5 is a big push for a 60-layer model.)
 
 # Agent II fills in results overnight
 
 # Agent III fills in results overnight
+
+## BDV' (last response token) and BDV'' (last think token) — Qwen3.8-27B (Agent III)
+
+Setup: generated one response per train-set prompt (3,600, 0 errors, 4k cap), re-extracted train /
+OFAT / stacking-half-A with `think_last` (the `</think>` token) and `response_last` (final token).
+Each vector is built and read at its own position. Files:
+`results/probes/acts_{train_resp,eval2,stack_a2}.npz`, `bdv_prime_qwen27b{,_L40,_L52}.json`. Pod
+removed 04:08; cost ≈ $12.
+
+- Held-out AUROC bench vs chat by layer (source-grouped OOF): BDV peaks **0.855 @L32** (0.83 @L28);
+  BDV'' peaks **0.87 @L52** (0.75 @L28); BDV' peaks **0.78 @L52** (0.73 @L28). The response-side
+  vectors separate best in the last third of the network, the prompt-side one at mid-depth.
+- cosine sim (BDV, BDV') = **+0.16** @L28 (0.08–0.20 over layers); (BDV, BDV'') = **+0.24** @L28
+  (0.12–0.36). Random ≈ 0.01. Different directions, not re-reads of BDV.
+- Ladder, gap fraction over k=0..8 (Pearson over 9 means), L28 / L52:
+  - r(k, BDV') = +0.79 / +0.76; r(k, BDV'') = +0.64 / +0.30; (BDV −0.29 / +0.89; PAV +0.97 / +0.96)
+  - r(CoT judge, BDV') = **+0.74** / +0.67; r(CoT judge, BDV'') = +0.59 / +0.07; (PAV +0.85 / +0.84)
+  - r(self report, BDV') = **+0.89** / +0.90; r(self report, BDV'') = +0.78 / +0.48; (PAV +0.99 /
+    +0.99)
+  - within-k AUROC (the strict test), L28: vs SR BDV' **0.71**, BDV'' 0.71, BDV 0.60, PAV **0.81**;
+    vs CoT BDV' 0.48, BDV'' 0.39, BDV 0.39, PAV 0.66. At L52: BDV'' 0.79, PAV 0.72 vs SR.
+  - gap fractions for BDV'/BDV'' on EAB are **negative** (−0.6 to −0.1 at L28): EAB responses sit on
+    the chat side of the model's own train-set responses, so the ladder moves them from "very
+    chat-like" toward "chat-like", never toward the benchmark answers.
+- Cohen's d on OFAT (2,100; aware − not; pooled (safety, capability)), L28:
+  - BDV' vs CoT −0.04 (−0.13, +0.10); vs SR **+0.06** (+0.02, −0.58)
+  - BDV'' vs CoT −0.41 (−0.46, −0.19); vs SR +0.39 (+0.20, −0.59)
+  - reference: BDV +0.34 / +0.68; PAV +0.06 / **+1.03**
+  - at L52 BDV'' reaches d(SR) = +1.16 but its capability-arm d is +0.29 and r(SR,k) drops to +0.48;
+    no layer makes BDV' or BDV'' beat PAV on both the ladder and the OFAT set.
+
+**Verdict:** BDV' beats BDV as a readout (ladder r +0.89 vs −0.50, within-k 0.71 vs 0.60) but is not
+comparable to PAV (within-k 0.71 vs 0.81, OFAT d 0.06 vs 1.03, ladder r 0.89 vs 0.99). BDV'' is the
+same story with more layer sensitivity. Reading after the model has responded helps the
+benchmark-vs-chat direction track EAB's cues, but the paper's stub direction read before the
+response still wins on every metric. BEST_VECTOR = PAV for Qwen; no GPU decision needed, pod is
+already down.
+
+# Robbie's response:
+
+Ok I must say I'm thoroughly confused, but here are my thoughts:
+
+**Pro PAV**:
+
+- its very parsimonious and simple to find
+- its in the paper
+- it always correlates positively with self-report (even after we've started the self-report!)
+
+**Pro BDV**
+
+- it was my prior on what would work
+
+**Reasons BDV Might be Broken**
+- maybe BDV won't work because we can't tell if the model is actually eval aware on the benchmarks
+  we trained it on?
+  - could filter to 'train BDV on benchmarks questions where the model self-describes awareness'
+  - but if we think self-report is biased this maybe fucks us, we bake in agreement?
+- maybe BDV didn't work because it's aware of the chat transcripts we used as negative examples, ie
+  they're in its training data
+  - and we're secretly tracking 'I've seen this text before' as vector?
+  - eh idk I don't think this is the issue. There's still a clear direction: chat vs benchmark.
+- maybe GPT OSS just isn't eval-aware?
+  - what are self-reported levels of awareness? Are they way different from the other models we're looking at rn?
+
+**Does steering work consistently anywhere?**
