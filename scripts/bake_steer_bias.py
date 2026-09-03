@@ -54,6 +54,9 @@ def main() -> None:
     layers = [int(v) for v in d["layers"]]
     li = layers.index(args.layer)
     m = float(d["train_mean_norm"][li])
+    # |c| in absolute units, for alpha scaled relative to that layer's mean norm.
+    # Gemma 4's residual norms are ~4x Qwen's at mid-depth (212 vs 50 at L28), so
+    # the same alpha is a proportionally equal push, not an equal absolute one.
     vecs = {"data": d["data_unit"][li], "framing": d["framing_unit"][args.layer]}
     if args.vector == "zero":
         c = np.zeros_like(vecs["data"])
