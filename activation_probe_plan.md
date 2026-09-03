@@ -165,8 +165,6 @@ pooled table as the headline and the split as the floor.
   - 3. qualitatively analyze places where (1) and (2) most diverge (as I expect they will agree the
        most)
 
-@Claude you are not allowed to edit anything above this line
-
 # Agent I fills in results overnight
 
 (be _very_ concise plz, follow same structure specified above)
@@ -246,16 +244,36 @@ for both vectors (PAV per-transcript AUROC→SR 0.35 at L24 vs 0.59 at L28 / 0.7
     in 30 min. Killed both; no steered Gemma table. (Probably a layer/α problem: L24 is a poor layer
     for Gemma and norm-matched +0.5 is a big push for a 60-layer model.)
 
+## Example-level table (Agent I, per Robbie's request): every transcript scored individually
+
+All unsteered transcripts pooled per model (OFAT 17 cells + ladder 3,400; Qwen also its original
+2,100). Projection at the model's readout layer, last prompt token. AUROC / point-biserial r /
+Cohen's d, label from the sonnet judge (CoT+transcript) or the self-report replay. Transcript-only
+awareness: 0 positives on Qwen (2,057 judged with CoT stripped); not run on the other two.
+
+| model | vector | CoT+transcript AUROC / r / d (n+/n) | self-report AUROC / r / d (n+/n) |
+|---|---|---|---|
+| Qwen3.8-27B L28 | BDV | 0.50 / −0.01 / −0.07 (200/5963) | 0.65 / +0.25 / +0.54 (3679/6059) |
+| Qwen3.8-27B L28 | PAV | 0.60 / +0.06 / +0.35 | **0.80 / +0.51 / +1.20** |
+| GPT-OSS-20B L12 | BDV | 0.14 / −0.08 / −1.37 (16/4997) | 0.34 / −0.21 / −0.61 (713/4995) |
+| GPT-OSS-20B L12 | PAV | **0.89 / +0.08 / +1.36** | 0.67 / +0.22 / +0.65 |
+| Gemma-4-31B L28 | BDV | 0.56 / +0.04 / +0.24 (129/4942) | **0.69 / +0.33 / +0.73** (3200/5097) |
+| Gemma-4-31B L28 | PAV | 0.47 / −0.05 / −0.28 | 0.52 / +0.04 / +0.09 |
+
+Read: self-report is the measure the vectors line up with (PAV on Qwen r=0.51, BDV on Gemma
+0.33); CoT verbalization is near-orthogonal to both everywhere except GPT-OSS PAV (AUROC 0.89 on
+16 positives). r is depressed by base rates (4% CoT positives); AUROC is base-rate free.
+
 # Agent II fills in results overnight
 
 ## Steering: BDV vs PAV at α=.5, constant magnitude, bias-baked (Agent II)
 
-Setup: c = α·m·v̂ (paper recipe, m = mean ‖h₂₈‖ over the 3,600 train prompts = 49.9) written into
-the Qwen3.8-27B checkpoint as `layers.28.mlp.down_proj.bias`; served by stock vLLM 0.28 + a 70-line
+Setup: c = α·m·v̂ (paper recipe, m = mean ‖h₂₈‖ over the 3,600 train prompts = 49.9) written into the
+Qwen3.8-27B checkpoint as `layers.28.mlp.down_proj.bias`; served by stock vLLM 0.28 + a 70-line
 plugin that gives that one `down_proj` a bias (`scripts/vllm-static-bias/`, `bake_steer_bias.py`,
 branch `steer/bias-bake`). No hooks, no per-token norm matching, CUDA graphs on. 1,000 prompts per
-condition drawn at random from the stacking cells (seed 1; k 0–8 mixed; 503 safety / 497
-capability; paper harness), 1 sample, 6k reasoning cap. Judge sonnet-5; self-report via OpenRouter.
+condition drawn at random from the stacking cells (seed 1; k 0–8 mixed; 503 safety / 497 capability;
+paper harness), 1 sample, 6k reasoning cap. Judge sonnet-5; self-report via OpenRouter.
 
 - Correctness: stock vs zero-bias checkpoint 20/20 top-1, max |Δlogprob| .053 (bf16 noise);
   vLLM-baked vs HF-transformers hook adding the same c after block 28: 20/20, max |Δlogprob| .021;
@@ -266,33 +284,32 @@ capability; paper harness), 1 sample, 6k reasoning cap. Judge sonnet-5; self-rep
   slower" was entirely vllm-lens. ~350 LOC incl. tests. All three bars cleared.
 - Results:
 
-  | condition (α=.5)  | CoT-verbalized | self-report | safety refusal | truncated at 6k | reasoning chars |
-  | ----------------- | -------------- | ----------- | -------------- | --------------- | --------------- |
-  | control (stock)   | 4.3%           | 68%         | 44%            | 32%             | 13.9k           |
-  | BDV               | **9.8%**       | 71%         | 60%            | 44%             | 16.3k           |
-  | PAV               | 4.9%           | 73%         | 62%            | 50%             | 17.2k           |
-  | BDV + PAV         | 10.5%          | 72%         | 74%            | 70%             | 21.1k           |
+  | condition (α=.5) | CoT-verbalized | self-report | safety refusal | truncated at 6k | reasoning chars |
+  | ---------------- | -------------- | ----------- | -------------- | --------------- | --------------- |
+  | control (stock)  | 4.3%           | 68%         | 44%            | 32%             | 13.9k           |
+  | BDV              | **9.8%**       | 71%         | 60%            | 44%             | 16.3k           |
+  | PAV              | 4.9%           | 73%         | 62%            | 50%             | 17.2k           |
+  | BDV + PAV        | 10.5%          | 72%         | 74%            | 70%             | 21.1k           |
 
 - vs the norm-matched vllm-lens runs (200 T3-baseline prompts, 2026-09-02: control 1.5, BDV 15.3,
   PAV 2.4, PAV +1.0 0.6 with 19% empty answers): same ordering at 5× the n. **BDV ≈ 2.3× control on
   unprompted verbalization, PAV ≈ control, BDV+PAV ≈ BDV (not additive).** The per-token norm
   matching was unnecessary and changed nothing qualitatively. Higher floor here (4.3 vs 1.5) because
   these prompts have factors varied.
-- Self-report is flat (68–73%) across all four: steering moves what the model says unprompted in
-  its reasoning, not what it admits when asked.
+- Self-report is flat (68–73%) across all four: steering moves what the model says unprompted in its
+  reasoning, not what it admits when asked.
 - Both vectors lengthen reasoning and raise refusal on the safety arm; BDV+PAV (|c| = 38.5 vs 25)
   mostly just reasons longer.
 - Truncation: on the vLLM backend a cap hit shows as an empty visible answer (parser closes the
   think block; `steering_table.py` now splits cap-hit from empty-answer on CoT length). Regenerating
-  85 truncated control prompts at a 20k cap: 84% eventually answer (median CoT 30k chars), verbalized
-  count 8 → 6 on the same prompts → the CoT column is not a truncation artefact; the refusal column
-  is undercounted (truncated safety prompts aren't counted as refused). Full regeneration abandoned
-  (~1 prompt/min, ~30 h for all four).
+  85 truncated control prompts at a 20k cap: 84% eventually answer (median CoT 30k chars),
+  verbalized count 8 → 6 on the same prompts → the CoT column is not a truncation artefact; the
+  refusal column is undercounted (truncated safety prompts aren't counted as refused). Full
+  regeneration abandoned (~1 prompt/min, ~30 h for all four).
 - Infra: control run SIGTERM'd at 556/1000 by another process on this machine, resumed by id;
   hybrid-GDN Mamba cache caps `max_num_seqs` ≈ 200; `${1}:localhost` in zsh is a modifier (tunnel
   keeper bug). Files `responses_qwen3.8-27b_think_tool_stacking_bb_<cond>_*.json`; detail in
   `.claude/notes/activation-probe-plan.md` → "Bias-baked steering".
-
 
 # Agent III fills in results overnight
 
@@ -337,17 +354,33 @@ already down.
 
 Ok I must say I'm thoroughly confused, but here are my thoughts:
 
+**Repeatedly taking rsq of vector over a group of examples (eg OFAT F7) was dumb**
+
+- it should just be rsq / cohen's D over our whole dataset, example by example?
+- maybe we can say 'works better on saftey vs capability, starts to degrade with many factors varied
+
+**Maybe Cohen's D isn't really what we want?**
+
+- The question we are trying to answer is 'do our activation vector and self-admitted awareness line
+  up?'
+- Cohen's D shows an effect _size_ but... idk something something it's designed to work in the
+  direction of 'self-admitted awareness causes BDV'? low credence in this bullet
+- I take it back Cohen's D probably fine
+
 **Pro PAV**:
 
 - its very parsimonious and simple to find
 - its in the paper
 - it always correlates positively with self-report (even after we've started the self-report!)
+- it more or less works on every model
 
 **Pro BDV**
 
 - it was my prior on what would work
+- it steers (once)
 
 **Reasons BDV Might be Broken**
+
 - maybe BDV won't work because we can't tell if the model is actually eval aware on the benchmarks
   we trained it on?
   - could filter to 'train BDV on benchmarks questions where the model self-describes awareness'
@@ -357,8 +390,40 @@ Ok I must say I'm thoroughly confused, but here are my thoughts:
   - and we're secretly tracking 'I've seen this text before' as vector?
   - eh idk I don't think this is the issue. There's still a clear direction: chat vs benchmark.
 - maybe GPT OSS just isn't eval-aware?
-  - what are self-reported levels of awareness? Are they way different from the other models we're looking at rn?
+  - only gets to 20% at top of ladder!
 
 **Does steering work consistently anywhere?**
+
 - Eh idk it's our only non-correlated metric
-- can we throw in a table? of y/n for 3 models x 2 vectors 
+- Only works on BDV or BDV+ and only on Qwen
+- literature seems to suggest it's very fragile
+- we steered at position 0 which is bad
+- Qwen steering kinda sorta works (that's the one we optimized)
+- GPT totally fails but we didn't use optimize it
+- we have nothing for Gemma?
+
+**Things that are not worth exploring**
+
+- retyring steering experiments with BDV' and BDV''
+- retrying steering experiments period...?
+
+**What have we learned? Why would we care in context of original project?**
+
+What _would_ we have cared about?
+
+- BDV / PAV are massively correlated with transcript awareness but not self-described awareness.
+  Self-described would be bunk. (Sure is dumb that we decided which of these vectors we like based
+  on correlation with self-described awarenes lol)
+  - fix this! over whole dataset of examples (no splitting), and per-model, find rsq (is that the
+    right metric? not apples to apples because lower rates of transcript awareness? I hope not!)
+    between ({BDV, PAV}, {transcript, transcript + COT, self-described})
+  - we sort of already did this with those scatter plots but I think not aggregated at the right
+    level. We shouldn't be taking rsq of aggregated datapoints, which should be (possibly filteer /
+    takign a subset, possibly not) then taking rsq over individual datapoints
+- BDV / PAV have nothing to do with our old awareness methods, they wildly disagree
+  - seems not really true
+- BDV / PAV disagree on some specific factor
+  - also nothing really jumps out
+
+@ Claude you are not allowed to write or edit about this line!
+## Agent I's response
