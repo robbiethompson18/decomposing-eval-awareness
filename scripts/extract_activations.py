@@ -10,6 +10,8 @@ four spans:
   prompt_mean   mean over all prompt tokens (system + user)
   cot_mean      mean over the generated reasoning tokens (inside <think>)
   answer_mean   mean over the generated visible-answer tokens
+  think_last    the </think> token (last token of the reasoning span)
+  response_last last token of the whole generated response (BDV' readout)
 
 Output: an .npz with feats[position] of shape (n_records, n_layers, hidden)
 in float16, plus ids/layers so the probe script can join back to the
@@ -86,7 +88,14 @@ def main() -> None:
     records = [r for r in records if not str(r.get("response", "")).startswith("ERROR")]
     if args.limit:
         records = records[: args.limit]
-    positions = ["prompt_last", "prompt_mean", "cot_mean", "answer_mean"]
+    positions = [
+        "prompt_last",
+        "prompt_mean",
+        "cot_mean",
+        "answer_mean",
+        "think_last",
+        "response_last",
+    ]
     feats = {
         p: np.zeros((len(records), len(layers), hidden), dtype=np.float16)
         for p in positions
@@ -127,6 +136,10 @@ def main() -> None:
                 feats["cot_mean"][i, li] = h[n_p : n_p + cot_end].mean(0).cpu().numpy()
             if len(resp_part) > cot_end:
                 feats["answer_mean"][i, li] = h[n_p + cot_end :].mean(0).cpu().numpy()
+            if cot_end > 0:
+                feats["think_last"][i, li] = h[n_p + cot_end - 1].cpu().numpy()
+            if len(resp_part) > 0:
+                feats["response_last"][i, li] = h[len(ids_all) - 1].cpu().numpy()
         ids.append(r["id"])
         n_tok.append(len(ids_all))
         del out, hs
