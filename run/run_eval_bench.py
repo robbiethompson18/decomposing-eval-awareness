@@ -348,6 +348,13 @@ def main() -> None:
     task_filter = os.getenv("TASK_FILTER", "")
     valence_filter = os.getenv("VALENCE_FILTER", "")
     config_filter = os.getenv("CONFIG_FILTER", "")
+    # ID_FILTER_FILE: newline-separated sample ids to run (anything else is
+    # skipped). Used to draw a fixed random subset of the STACKING cells.
+    allowed_ids: set[str] | None = None
+    if os.getenv("ID_FILTER_FILE"):
+        with open(os.environ["ID_FILTER_FILE"], encoding="utf-8") as f:
+            allowed_ids = {line.strip() for line in f if line.strip()}
+        print(f"ID_FILTER_FILE: {len(allowed_ids)} ids allowed")
     if task_filter:
         allowed_tasks = {t.strip() for t in task_filter.split(",")}
         tasks = [t for t in tasks if t["task_name"] in allowed_tasks]
@@ -492,6 +499,8 @@ def main() -> None:
                 chat = render(template, factor_config, model_slug)
             for s_idx in range(1, samples_per_config + 1):
                 sample_id = f"{task['task_id']}_{config_name}_sample{s_idx}"
+                if allowed_ids is not None and sample_id not in allowed_ids:
+                    continue
                 if sample_id in completed_ids:
                     cached += 1
                     continue
