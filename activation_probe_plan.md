@@ -189,6 +189,13 @@ model by BDV held-out AUROC near mid-depth: GPT-OSS L12/24, Gemma L24/60, Qwen L
   (stacking + judge + self-report running)
 - Cohen's d on CoT judge / self-report: PENDING
 - ladder table: PENDING
+- steering (norm-matched +0.5 at the chosen layer, 200 baseline prompts, CoT-verbalized % /
+  no-visible-answer % / safety refusal % / mean reasoning chars):
+  - GPT-OSS L12: control 0.0 / 0.5 / 87 / 1.2k; BDV +0.5 0.0 / **33.5** / 63 / 17k; PAV +0.5
+    0.0 / 2.5 / 77 / 1.5k. Neither vector induces verbalization on GPT-OSS; BDV degrades
+    (runaway reasoning, a third of prompts never answer), PAV is inert. Contrast Qwen: BDV +0.5
+    took CoT verbalization 1.5% → 15%.
+  - Gemma L24: PENDING
 
 # Agent II fills in results overnight
 
