@@ -102,6 +102,10 @@ Current notes:
 <!-- As notes are added under .claude/notes/, list them here, one per line: -->
 <!-- - [Title — when to read](.claude/notes/foo.md) — short gloss -->
 
+- [Activation-probe plan + todo — read before touching the probe/qwen27b branch, the RunPod pod, or claiming a probe generalizes](.claude/notes/activation-probe-plan.md)
+  — BDV (bench-vs-chat) and PAV (paper's 16 stubs) on Qwen3.8-27B / GPT-OSS-20B / Gemma-4-31B: which vector reads self-report vs CoT per model, steering, ladder, no-system-prompt BDV robustness check; RunPod/vLLM/vllm-lens gotchas.
+- [Activation-probe working doc — Robbie's running notes + Agent I/II/III results for the probe/steering experiments; read with the plan note above](.claude/notes/activation-probe-working-doc.md)
+  — BDV/PDV definitions as Robbie wrote them, per-agent result sections, the example-level and pairwise-agreement tables.
 - [Think-tool harness vs self-report — read before quoting closed-model self-report numbers, deciding whether to keep the think tool, or comparing F9 system-prompt levels](.claude/notes/think-tool-harness-vs-selfreport.md)
   — 4 models x {think tool, no tool} x {bare, T3, none} system prompt, 1000/cell: the tool
   suppresses (sonnet −15) or does nothing; no-system-prompt is the high-awareness condition;
