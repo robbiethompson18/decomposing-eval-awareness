@@ -70,10 +70,13 @@ OAI banned us for 'distilling' so further runs are on Robbie's credit card. Be v
   (`ln -s ../decomposing-eval-awareness/results results`) so all outputs land in one place — safe
   because result files are timestamped, so parallel runs don't collide. Also symlink `.envrc`. Don't
   symlink `.venv`; make a fresh one if you need to run code there.
-- Target-model roster (14 models; starvation configs per model in
+- Target-model roster (13 models; starvation configs per model in
   `.claude/notes/cot-extraction-model-roster.md`):
   - Gemini: `gemini-3.1-pro-preview`, `gemini-3.5-flash`
-  - Anthropic: `claude-sonnet-4-5-20250929`, `claude-haiku-4-5-20251001`
+  - Anthropic: `claude-sonnet-4-5-20250929`. **Haiku 4.5 is excluded by default** (Robbie,
+    2026-09-01): under the think-tool harness 75% of its answers come back empty and ~77% of its
+    self-reports are unparseable, so its rows are instrument noise. Only run it when a note asks
+    for it explicitly.
   - OpenAI: `gpt-5`, `gpt-5.1`, `gpt-5.2`, `gpt-5.4`, `gpt-5.6-sol` — even Aug'25→mid-'26 spread;
     gpt-5.5 dropped (adjacent to 5.4, identical extraction behavior)
   - Open-weight tier-1 (newest flagship from each top-5 OW lab; OpenRouter keys in
@@ -99,6 +102,10 @@ Current notes:
 <!-- As notes are added under .claude/notes/, list them here, one per line: -->
 <!-- - [Title — when to read](.claude/notes/foo.md) — short gloss -->
 
+- [Activation-probe plan + todo — read before touching the probe/qwen27b branch, the RunPod pod, or claiming a probe generalizes](.claude/notes/activation-probe-plan.md)
+  — BDV (bench-vs-chat) and PAV (paper's 16 stubs) on Qwen3.8-27B / GPT-OSS-20B / Gemma-4-31B: which vector reads self-report vs CoT per model, steering, ladder, no-system-prompt BDV robustness check; RunPod/vLLM/vllm-lens gotchas.
+- [Activation-probe working doc — Robbie's running notes + Agent I/II/III results for the probe/steering experiments; read with the plan note above](.claude/notes/activation-probe-working-doc.md)
+  — BDV/PDV definitions as Robbie wrote them, per-agent result sections, the example-level and pairwise-agreement tables.
 - [Think-tool harness vs self-report — read before quoting closed-model self-report numbers, deciding whether to keep the think tool, or comparing F9 system-prompt levels](.claude/notes/think-tool-harness-vs-selfreport.md)
   — 4 models x {think tool, no tool} x {bare, T3, none} system prompt, 1000/cell: the tool
   suppresses (sonnet −15) or does nothing; no-system-prompt is the high-awareness condition;
@@ -156,13 +163,14 @@ Current notes:
   — requests with `tools` route to a different provider subset (deepseek: StreamLake-only vs 12
   providers), which alone moved self-reported awareness 74→22%; provider mix per model from the
   F12 run; fix = pin providers via `extra_body["provider"]` and record `provider` per sample.
-- [OpenClaw realism harness scope — read before building the "deliver EvalAwareBench through a real agent" experiment or claiming a realistic harness does/doesn't move awareness](.claude/notes/openclaw-realism-scope.md)
-  — smoke-test facts (headless `openclaw agent --local --json`, session JSONL keeps thinking blocks,
-  $0.06/turn, `~/clawd` is the blank template), Phase 1 (same 200 requests through OpenClaw,
-  2–3 h) vs Phase 2 (agentic tasks, real tools, 1–2 days), ban/sandbox risks.
-- [F12 search-tool results — read before re-running F12, citing tool-affordance numbers, or claiming the deployment trappings (T3 prompt / opener / search) do or don't move awareness](.claude/notes/f12-search-tool-results.md)
+- [OpenClaw realism harness: scope, build log, Phase 1 results (CLOSED) — read before claiming a realistic agent harness does/doesn't move awareness, or before re-running anything OpenClaw](.claude/notes/openclaw-realism-scope.md)
+  — same 200 requests through a real OpenClaw agent vs prompt-only control vs bare API, 6 models:
+  live tools buy nothing (harness = control), the context text flips direction by model (qwen/kimi
+  −20 pts, deepseek/glm ×2), benign arm rises via USER.md persona mismatch; gotchas (session-id
+  leak, memory_search hang, sandbox tool allow-list, path in prompt). Code on branch `openclaw/phase1`.
+- [F12 search-tool results — read before re-running F12, citing tool-affordance numbers, or claiming the harness features (T3 prompt / opener / search) do or don't move awareness](.claude/notes/f12-search-tool-results.md)
   — two runs (stub, then live Serper): removing the tool alone is null; removing all run-level
-  trappings at once (`bare_harness`) gives +6pp self-reported awareness on closed models (p=0.01),
+  harness features at once (`bare_harness`) gives +6pp self-reported awareness on closed models (p=0.01),
   CoT floored; who searches (OW 10–27% of benign tasks, Gemini 0%) and that a live index is too
   forgiving to expose fake entities; haiku unusable; OW rows provider-confounded.
 - [Factor-stacking replication (paper Fig. 7) — read before running `STACKING=1`, pinning files in `plots/plot_stacking.py`, or comparing stacking/matched-type numbers to the paper](.claude/notes/stacking-replication.md)

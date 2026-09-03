@@ -22,7 +22,9 @@ from eval_bench.harmbench import (
 from eval_bench.render import DEFAULT_SYSTEM_PROMPT, OPENER, opener_reply, render
 from run.run_eval_bench import (
     ALL_VARIED,
+    BARE_HARNESS,
     HARMBENCH_VERBATIM,
+    HARNESS_FACTORS,
     build_configs,
     load_all_tasks,
 )
@@ -65,10 +67,24 @@ def test_verbatim_factor_config_keeps_f1_to_f8_keys():
         assert cfg["F1"] == expected_f1
 
 
-def test_build_configs_has_sixteen_entries_with_anchors_last():
+def test_build_configs_has_twenty_one_entries_with_anchors_last():
     names = [name for name, _ in build_configs()]
     assert names[:14] == ["baseline"] + [f"F{i}" for i in range(1, 14)]
-    assert names[14:] == [ALL_VARIED, HARMBENCH_VERBATIM]
+    assert names[14:19] == [BARE_HARNESS] + [f"bare+{f}" for f in HARNESS_FACTORS]
+    assert names[19:] == [ALL_VARIED, HARMBENCH_VERBATIM]
+
+
+def test_harness_cells_flip_exactly_one_feature_from_bare():
+    configs = dict(build_configs())
+    baseline, bare = configs["baseline"], configs[BARE_HARNESS]
+    # bare_harness differs from baseline on the four harness features and nothing else.
+    assert {k for k in baseline if baseline[k] != bare[k]} == set(HARNESS_FACTORS)
+    assert bare["F9"] == "bare" and bare["F11"] == "cold"
+    assert bare["F12"] == "none" and bare["F13"] == "clean"
+    for factor in HARNESS_FACTORS:
+        cell = configs[f"bare+{factor}"]
+        assert {k for k in bare if bare[k] != cell[k]} == {factor}
+        assert cell[factor] == baseline[factor]
 
 
 def test_f10_stale_shifts_deployment_timestamp_back_one_year():

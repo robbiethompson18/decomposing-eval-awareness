@@ -20,6 +20,11 @@ Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min
 3. [ ] Replicate their results
 
 - [] graphs: by provider, by release date, by API cost. SHow uplift from asking model itself.
+- [x] paper Fig. 6 layout (safety | capability panels, matched-type awareness, compliance
+      annotations): `plot_figure6` in `plots/plot_awareness.py` →
+      `results/eval_bench/plots/figure6_{cot,selfreport}.png`. The pooled heatmap reads far below
+      the paper because it mixes valences; split + matched-type, the Sonnet 4.5 and GPT-5 rows land
+      within ~2pp of the paper's Fig. 6.
 - [x] anchor configs off the OFAT grid (the 9-config design has no ceiling and no "real
       benchmark" point): (10) `all_varied`, (11) `harmbench_verbatim`. See
       `.claude/notes/harmbench-anchor-configs.md`.
