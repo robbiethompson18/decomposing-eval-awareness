@@ -202,6 +202,30 @@ def build_stacking_configs(
     return per_task
 
 
+# The run-level "harness features": everything the harness adds around the
+# per-question content. `bare_harness` is F1-F8 at their realistic levels with
+# all four switched off (bare system prompt, so no F10 timestamp either; task as
+# turn 1; no search tool; copy-edited text) — the same tasks as sent from a
+# plain benchmark harness. `bare+F<n>` switches exactly one harness feature back on,
+# so bare_harness / bare+F* / baseline is a second OFAT grid that prices each
+# harness feature from the bare side and the bundle against `baseline` (all on).
+# (Ported from main's harness-trappings cells.)
+HARNESS_FACTORS = ("F9", "F11", "F12", "F13")
+BARE_HARNESS = "bare_harness"
+
+
+def harness_configs() -> list[tuple]:
+    bare = dict(
+        BASELINE_CONFIG, **{f: FACTOR_VARIED_LEVELS[f] for f in HARNESS_FACTORS}
+    )
+    configs = [(BARE_HARNESS, bare)]
+    for factor in HARNESS_FACTORS:
+        configs.append(
+            (f"bare+{factor}", dict(bare, **{factor: BASELINE_CONFIG[factor]}))
+        )
+    return configs
+
+
 def build_configs() -> list[tuple]:
     """Build 16 configs: baseline + 13 single-factor ablations + 2 anchors.
 
@@ -216,6 +240,7 @@ def build_configs() -> list[tuple]:
         cfg = dict(BASELINE_CONFIG)
         cfg[factor] = varied_level
         configs.append((factor, cfg))
+    configs.extend(harness_configs())
     configs.append((ALL_VARIED, dict(FACTOR_VARIED_LEVELS)))
     configs.append((HARMBENCH_VERBATIM, harmbench_factor_config({"ContextString": ""})))
     return configs
