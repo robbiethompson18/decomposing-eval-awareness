@@ -62,7 +62,14 @@ DEFAULT_OPENROUTER_CONFIGS: dict[str, tuple[str, float | None]] = {
     # Tier-1 current-generation open-weight reasoning models (added 2026-08-31),
     # one per lab; all have published HF weights (checked via OpenRouter metadata)
     "qwen3.8-2.4t": ("qwen/qwen3.8-2.4t-a95b", 0.3),  # Alibaba flagship, Aug 2026
-    "qwen3.8-27b": ("qwen/qwen3.8-27b", 0.3),  # dense 27B; activation-probe prototype (self-report leg)
+    "qwen3.8-27b": (
+        "qwen/qwen3.8-27b",
+        0.3,
+    ),  # dense 27B; activation-probe prototype (self-report leg)
+    "gemma-4-31b": (
+        "google/gemma-4-31b-it",
+        0.3,
+    ),  # activation-probe model #2 (self-report leg)
     "deepseek-v4-pro": ("deepseek/deepseek-v4-pro", 0.3),  # DeepSeek flagship, Apr 2026
     "kimi-k3": ("moonshotai/kimi-k3", 0.3),  # Moonshot flagship, Jul 2026
     "glm-5.3": ("z-ai/glm-5.3", 0.3),  # Z.ai flagship, Aug 2026

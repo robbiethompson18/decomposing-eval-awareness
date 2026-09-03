@@ -63,6 +63,13 @@ def main() -> None:
     ap.add_argument("--directions", default="results/probes/steer_directions.npz")
     ap.add_argument("--layer", type=int, default=28)
     ap.add_argument("--group", default="config_name", help="config_name or n_varied")
+    ap.add_argument(
+        "--train-acts",
+        default="",
+        help="train-set activations: adds gap-fraction (0=real chat, 1=real benchmark) "
+        "and d-unit columns so numbers compare across models/layers",
+    )
+    ap.add_argument("--train-jsonl", default="results/probes/trainset.jsonl")
     ap.add_argument("--out", default="")
     args = ap.parse_args()
 
@@ -76,6 +83,38 @@ def main() -> None:
         "data": x @ d["data_unit"][li],
         "framing": x @ d["framing_unit"][args.layer],
     }
+    # normalization references from the train set (HarmBench excluded)
+    ref = {}
+    if args.train_acts:
+        tr = np.load(args.train_acts)
+        tli = [int(v) for v in tr["layers"]].index(args.layer)
+        meta = {
+            r["id"]: r
+            for r in (
+                json.loads(line)
+                for line in Path(args.train_jsonl).read_text().split("\n")
+                if line
+            )
+        }
+        keep = np.array([meta[str(i)]["source"] != "harmbench" for i in tr["ids"]])
+        ty = np.array([meta[str(i)]["label"] for i in tr["ids"][keep]])
+        tx = tr["prompt_last"][keep][:, tli].astype(np.float32)
+        for name, vec in (
+            ("data", d["data_unit"][li]),
+            ("framing", d["framing_unit"][args.layer]),
+        ):
+            p = tx @ vec
+            c, b = p[ty == 0].mean(), p[ty == 1].mean()
+            sd = np.sqrt((p[ty == 0].var(ddof=1) + p[ty == 1].var(ddof=1)) / 2)
+            ref[name] = (float(c), float(b), float(sd))
+            print(f"ref {name}: chat {c:+.2f} bench {b:+.2f} sd {sd:.2f}")
+
+    def norm(name: str, value: float) -> dict:
+        if name not in ref:
+            return {}
+        c, b, sd = ref[name]
+        return {f"{name}_gapfrac": (value - c) / (b - c), f"{name}_d": (value - c) / sd}
+
     resp = {r["id"]: r for r in load_records(args.responses)}
     cot = verdicts(args.cot)
     sr = verdicts(args.selfreport)
@@ -107,13 +146,25 @@ def main() -> None:
             "sr_pct": 100 * float(np.mean(s)) if s else None,
         }
         r = rows[str(g)]
+        r.update(norm("data", r["data_mean"]))
+        r.update(norm("framing", r["framing_mean"]))
+        extra = (
+            f"  gapfrac data={r['data_gapfrac']:+.2f} framing={r['framing_gapfrac']:+.2f}"
+            if ref
+            else ""
+        )
         print(
             f"{g!s:20s} {r['n']:5d} {r['data_mean']:7.2f} {r['framing_mean']:8.2f} "
             f"{(r['cot_pct'] if r['cot_pct'] is not None else float('nan')):6.1f} "
-            f"{(r['sr_pct'] if r['sr_pct'] is not None else float('nan')):6.1f}"
+            f"{(r['sr_pct'] if r['sr_pct'] is not None else float('nan')):6.1f}{extra}"
         )
 
-    out = {"layer": args.layer, "group": args.group, "per_group": rows}
+    out = {
+        "layer": args.layer,
+        "group": args.group,
+        "per_group": rows,
+        "reference": ref,
+    }
     # group-level rank agreement
     for dname in ("data", "framing"):
         for vname, col in (("cot", "cot_pct"), ("sr", "sr_pct")):
