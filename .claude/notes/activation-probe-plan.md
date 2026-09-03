@@ -321,6 +321,16 @@ Infra: the control run was SIGTERM'd at 556/1000 by another process on the machi
 by id; ssh tunnels need a keeper loop (`scratchpad/tunnel.sh`, note the `${1}:localhost` zsh
 modifier trap); the hybrid GDN model caps `max_num_seqs` at ~200 via the Mamba cache.
 
+**Gemma 4 31B bias-bake (2026-09-03, abandoned by Robbie before the sweep ran).** Plugin extended
+to `Gemma4MLP`; checkpoints baked at L28 (m = 212.2, so |c| = 32 / 64 / 106 at α .15 / .3 / .5 —
+Gemma's residual norm at mid-depth is ~4× Qwen's, which is why norm-matched +.5 blew it up on
+2026-09-02). Null test exact (zero-bias vs stock fp8: 20/20, Δ 0.000). vLLM-baked vs HF-hook
+reference: 14/20 at α .3, 18/20 at α .15, converging as α→0, and fp8-vs-bf16 alone is 20/20
+(max Δlogprob .21) — so the plumbing is right and Gemma is simply sensitive to the push. Also
+confirmed: the earlier "Gemma steering" file (`steer_framing_L24_ap050_*`) is 200/200
+"Connection error" rows (dead tunnel), so there is no steered Gemma output on disk from any run.
+No α sweep or 1k run was done; pod removed.
+
 
 ## Infra state / gotchas
 
