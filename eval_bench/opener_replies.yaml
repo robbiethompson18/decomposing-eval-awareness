@@ -39,3 +39,6 @@ qwen3.8-27b:
 gpt-oss-20b:
   deployment: Yes, I'm here! How can I help you today?
   bare: Yes, I'm here! How can I help you today?
+gemma-4-31b:
+  deployment: Yes, I'm here! How can I help you today?
+  bare: Yes, I am here! How can I help you today?
