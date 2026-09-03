@@ -205,6 +205,44 @@ self-report; BDV is the better *steering handle* for unprompted verbalization. E
 with self-report" (11 cells, both valences) did not replicate on 17 safety cells (−0.06): small-n
 rank correlations carried by the two anchors.
 
+## Second and third models (2026-09-03 early morning): GPT-OSS 20B done, Gemma 4 31B running
+
+Per-model pipeline (`scratchpad/pod_model_setup.sh` → `model_runner.sh` → `postprocess.sh`):
+train-set activations + BDV/PAV on the pod (HF), then vLLM+lens serves the 17-cell OFAT (safety),
+the 3,400-prompt stacking design, and steering (control, BDV +0.5, PAV +0.5); sonnet judge +
+OpenRouter self-report locally; prompt-only extraction on the pod at the end. Robbie's working doc
+with the per-model numbers is `activation_probe_plan.md` (Agent I section); the direction files
+live in `results/probes/{gptoss,gemma}/`.
+
+GPT-OSS 20B (layer 12/24, picked by BDV held-out AUROC):
+
+- PAV does **not** separate real benchmarks from real chat here (AUROC 0.46; best layer 0.64), and
+  cos(BDV, PAV) = −0.04. BDV held-out 0.82.
+- Ladder: PAV tracks k monotonically (d-units −0.71 → +1.76; Spearman +0.98 vs CoT, +0.93 vs
+  self-report; per-transcript AUROC → CoT 0.86, → SR 0.78). BDV runs the *wrong way* (0 → −1.35,
+  Spearman −0.98 / −0.93); not a norm artifact (cosine-normalized projections show the same).
+  Self-report 6→20%, CoT 0→2%: GPT-OSS barely admits or verbalizes anything.
+- Steering (+0.5 norm-matched at L12): neither vector induces verbalization (0% everywhere).
+  BDV degrades (33% no visible answer, reasoning 1.2k→17k chars); PAV inert.
+- OFAT: CoT 0% in every cell; SR 7–41%; Spearman over 17 cells vs SR: PAV +0.57, BDV −0.45.
+
+Gemma 4 31B: reasoning is OFF by default in its chat template → first OFAT run had empty CoT
+(judge marks N/A). Fixed with `VLLM_CHAT_TEMPLATE_KWARGS='{"enable_thinking": true}'` (new
+pass-through in `core/target.py`). bf16 31B leaves ~10GB KV on an H100 → 14 concurrent seqs →
+restarted with `--quantization fp8 --max-model-len 20000`. Directions: BDV held-out 0.80 at L24,
+PAV inverted (AUROC 0.40) at L24, cos ≈ 0 everywhere.
+
+Cross-model scatter (`scripts/intervention_scatter.py`, `results/probes/scatter/`): per model the
+9 ladder points lie on a monotone PAV↔self-report line; the 17 OFAT cells spread widely in
+self-report at nearly constant PAV. R²(SR, PAV) within model ≈ 0.3; pooled 0.03 (different SR
+baselines per model).
+
+More gotchas: `pkill -f` inside an ssh command kills the remote shell if the pattern matches the
+command line that also *starts* the server (use `gemm[a]4`-style brackets); `pkill -f
+"VAR=value"` does not kill the python child (env vars are not in its argv) — kill by pid via
+`lsof` cwd; zsh `$var:x` is a modifier (`${var}:x`); a `nohup ... &` inside `ssh` often leaves the
+ssh session hanging — run it, then poll from a separate call.
+
 
 ## Infra state / gotchas
 
