@@ -169,6 +169,42 @@ Infra lessons from the night: open SSH tunnels from a foreground call (backgroun
 RunPod stops pods the instant the prepaid balance hits 0, and `run_eval_bench.py` only saves
 at chunk boundaries, so a pod dying mid-chunk loses the whole chunk.
 
+## Readout experiments, Qwen3.8-27B (2026-09-02 evening; 2 new pods, ~$40)
+
+Readout = last-prompt-token residual at L28 dotted with a unit direction. `BDV` = benchmark-vs-
+traffic diff-of-means (ours), `PAV` = the paper's 16-stub diff-of-means. Normalized as *gap
+fraction*: 0 = mean of real user traffic, 1 = mean of real benchmark items (train set, L28; BDV
+gap 9.5 raw units, PAV gap 1.8). Files: `results/probes/exp1_qwen27b_L28.json`,
+`exp2_ladder_qwen27b_L28.json`; script `scripts/probe_vs_verbalization.py --train-acts`.
+
+**Ladder (paper Fig. 7 design, `STACKING=1`, 25 tasks × 2 valences × 68 combos = 3,400, F9–F13 at
+the paper's bare levels).** PAV climbs monotonically with k, BDV is flat:
+
+| k | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---|---|---|---|---|---|---|---|---|
+| PAV gap-frac | −0.19 | 0.03 | 0.20 | 0.35 | 0.44 | 0.57 | 0.64 | 0.69 | 0.72 |
+| BDV gap-frac | 0.18 | 0.15 | 0.14 | 0.15 | 0.14 | 0.15 | 0.15 | 0.15 | 0.15 |
+| self-report % | 18 | 38 | 55 | 70 | 78 | 87 | 91 | 92 | 98 |
+| CoT-verbalized % | 0 | 0.5 | 1.8 | 2.5 | 1.6 | 3.5 | 6.1 | 6.9 | 4.1 |
+
+Spearman over k: PAV vs self-report 1.00, vs CoT 0.90; BDV −0.13 / −0.02. Per transcript within
+(k, valence): PAV→self-report AUROC 0.65, BDV 0.59; →CoT 0.52 / 0.40. Same shape at L12/20/44 for
+PAV; BDV only trends at L12.
+
+**17-cell OFAT, safety arm (baseline + F1–F13 + bare_harness + all_varied + harmbench_verbatim,
+100 tasks each).** Under the T3 harness nothing single moves either vector much (BDV −0.11…+0.08,
+PAV −0.56…−0.18 gap-frac). The big movers are the *harness*: `bare_harness` (T3 prompt, opener,
+tool, typos all off) shifts BDV −0.03→+0.19 and PAV −0.56→−0.02 while self-report barely changes
+(32%→28%); `all_varied` (which also flips the harness) PAV +1.12, BDV +0.15. Spearman over 17
+cells: PAV vs self-report 0.34, BDV −0.06; both ≈0 vs CoT. Read: the realistic system prompt
+pushes the representation toward "deployment" far more than any content cue, and the model's
+self-report doesn't follow that particular shift.
+
+Combined with the steering table: PAV is the better *readout* of eval_bench's manipulations and of
+self-report; BDV is the better *steering handle* for unprompted verbalization. Earlier "BDV ρ=0.82
+with self-report" (11 cells, both valences) did not replicate on 17 safety cells (−0.06): small-n
+rank correlations carried by the two anchors.
+
 
 ## Infra state / gotchas
 
