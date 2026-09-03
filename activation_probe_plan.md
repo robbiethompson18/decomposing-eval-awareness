@@ -184,6 +184,9 @@ pooled table as the headline and the split as the floor.
 
 Setup identical to Qwen: same 3,600 prompts, same 32 stubs, last prompt token. Layer chosen per
 model by BDV held-out AUROC near mid-depth: GPT-OSS L12/24, Gemma L24/60, Qwen L28/64.
+Gemma readouts below are at **L28** after a layer sweep on the ladder showed L24 is a bad readout
+layer for both vectors (PAV per-transcript AUROC→SR 0.35 at L24 vs 0.59 at L28 / 0.79 at L32;
+BDV 0.74 → 0.82). Steering on Gemma was done at L24 (chosen before the sweep).
 
 - cosine sim(BDV, PAV) at chosen layer: GPT-OSS −0.04, Gemma −0.07, Qwen +0.19 (random ≈ 0.01). Max
   over layers: GPT-OSS 0.35 (L23), Gemma 0.29 (L59), Qwen 0.28 (L8).
@@ -202,11 +205,15 @@ model by BDV held-out AUROC near mid-depth: GPT-OSS L12/24, Gemma L24/60, Qwen L
     _wrong way_: more cues → more chat-like; not a norm artifact, cosine-normalized projections show
     the same). CoT 0→2%, SR 6→20%.
   - Qwen L28: PAV vs CoT +0.90, vs SR +1.00; BDV −0.02 / −0.13 (flat). CoT 0→5%, SR 18→98%.
-  - Gemma L24: PENDING
+  - Gemma L28: PAV vs CoT +0.72, vs SR **+0.97**; BDV vs CoT +0.73, vs SR **+0.98**. Both
+    monotone here (unlike GPT-OSS where BDV is inverted). CoT 2→4%, SR 20→98%.
 - Cohen's d (projection, aware vs not), GPT-OSS L12, ladder set / OFAT set:
   - PAV: CoT +1.20 (n aware=16) / n/a (0 aware); SR +1.03 / +0.46
   - BDV: CoT −1.22 / n/a; SR −0.85 / −0.44
   - Qwen L28 (OFAT, both valences): PAV CoT +0.06, SR +1.03; BDV CoT +0.34, SR +0.68
+  - Gemma L28, ladder / OFAT: PAV CoT −0.04 / −1.09 (n=24), SR +0.33 / +0.05; BDV CoT +0.46 /
+    −0.10, SR **+1.29 / +0.74**. Per-transcript AUROC→SR on the ladder: BDV 0.82, PAV 0.59.
+    On Gemma BDV is the better readout; on GPT-OSS PAV is; on Qwen PAV reads and BDV steers.
 - ladder table, GPT-OSS L12 (d-units):
 
   | k             | 0     | 1     | 2     | 3     | 4     | 5     | 6     | 7     | 8     |
@@ -217,6 +224,8 @@ model by BDV held-out AUROC near mid-depth: GPT-OSS L12/24, Gemma L24/60, Qwen L
   | CoT %         | 0     | 0     | 0     | 0.2   | 0.4   | 0.6   | 1.0   | 1.0   | 2.0   |
 
   Qwen L28 for comparison: PAV d −0.22 → +1.13, BDV d +0.33 → +0.28 (flat); SR 18→98, CoT 0→5.
+  Gemma L28: BDV d +0.16 → +0.39, PAV d −0.35 → −0.17 (PAV's train gap is ≈0 on Gemma, so its
+  d-swing is small even though monotone); SR 20→98, CoT 2→4.
 
 - Scatter / R² (see "See if results are interesting" section), 26 interventions per model (17 OFAT +
   k=0..8), `scripts/intervention_scatter.py`, PNGs in `results/probes/scatter/`. With Qwen + GPT-OSS
@@ -229,6 +238,9 @@ model by BDV held-out AUROC near mid-depth: GPT-OSS L12/24, Gemma L24/60, Qwen L
     the T3 harness raise self-report without moving the vector; stacking under the bare harness
     moves both. Biggest divergences (high SR, low PAV): Qwen F6 (97% SR, PAV d −0.28), F2 (82%,
     −0.51), F1 (78%, −0.51).
+- Gemma 17-cell OFAT (safety, L28): CoT 0–11% (all_varied 11, F2 7, F8 6, else ≤1); SR 24–100%
+  (all_varied 100, F6 87, F3 73, baseline 32, bare_harness 34). Spearman over 17 cells vs SR: BDV
+  +0.43, PAV +0.23; per-transcript AUROC→SR: BDV 0.70, PAV 0.53.
 - GPT-OSS 17-cell OFAT (safety): CoT verbalization is 0% in every cell (GPT-OSS never verbalizes
   under the T3 harness); SR 7–41% (all_varied 41, F6 31, F4 28, baseline 12, bare_harness 7).
   Spearman over 17 cells vs SR: PAV +0.57, BDV −0.45. Per-transcript AUROC → SR: PAV 0.61, BDV 0.39.
@@ -238,7 +250,10 @@ model by BDV held-out AUROC near mid-depth: GPT-OSS L12/24, Gemma L24/60, Qwen L
     2.5 / 77 / 1.5k. Neither vector induces verbalization on GPT-OSS; BDV degrades (runaway
     reasoning, a third of prompts never answer), PAV is inert. Contrast Qwen: BDV +0.5 took CoT
     verbalization 1.5% → 15%.
-  - Gemma L24: PENDING
+  - Gemma L24: control 0.5 / 0.5 / 66 / 2.7k. Both steered cells were **degenerate**: BDV +0.5
+    produced 5/200 in 30 min, all with empty reasoning and runaway output; PAV +0.5 produced
+    0/200 in 30 min. Killed both; no steered Gemma table. (Probably a layer/α problem: L24 is a
+    poor layer for Gemma and norm-matched +0.5 is a big push for a 60-layer model.)
 
 # Agent II fills in results overnight
 

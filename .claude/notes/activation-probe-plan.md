@@ -243,6 +243,33 @@ command line that also *starts* the server (use `gemm[a]4`-style brackets); `pki
 `lsof` cwd; zsh `$var:x` is a modifier (`${var}:x`); a `nohup ... &` inside `ssh` often leaves the
 ssh session hanging — run it, then poll from a separate call.
 
+Gemma 4 31B, final (L28 readout after a layer sweep; L24 was the pre-registered pick and is bad):
+
+- Ladder: both vectors monotone in k (PAV ρ +0.97 vs self-report, BDV +0.98); per transcript BDV
+  predicts self-report at AUROC 0.82 (d 1.29), PAV 0.59 (d 0.33). SR 20→98%, CoT 2→4%.
+- OFAT: BDV→SR AUROC 0.70 (d 0.74), PAV 0.53. CoT ≤11% (all_varied).
+- Steering at L24 +0.5: both vectors degenerate (BDV 5/200 in 30 min with empty reasoning, PAV
+  0/200); killed. Control: 0.5% CoT, 66% refusal.
+- Direction quality: BDV held-out 0.79 at L28; PAV bench-vs-chat AUROC 0.51 (no separation).
+
+Three-model summary (`activation_probe_plan.md`, Agent I section, has the tables):
+
+| | Qwen3.8-27B L28 | GPT-OSS-20B L12 | Gemma-4-31B L28 |
+|---|---|---|---|
+| PAV separates real bench vs chat | 0.86 | 0.46 | 0.51 |
+| BDV held-out | 0.83 | 0.82 | 0.79 |
+| ladder ρ vs self-report: PAV / BDV | 1.00 / −0.13 | 0.93 / −0.93 | 0.97 / 0.98 |
+| per-transcript AUROC→SR: PAV / BDV | 0.83 / 0.56 | 0.78 / 0.26 | 0.59 / 0.82 |
+| steering +0.5 → CoT verbalization | BDV 1.5→15%, PAV inert | both nothing (BDV degrades) | both degenerate (L24) |
+
+No single vector is "the" eval-awareness direction across models: PAV is the readout on Qwen and
+GPT-OSS, BDV on Gemma; only Qwen steers. Scatter over 78 interventions: R²(SR, vector) ≤ 0.33
+within any model; the ladder points are monotone, the OFAT cells are the scatter.
+
+Cost this session: RunPod ≈ $95 (incl. ~$45 of idle/wasted pods), Anthropic judge ≈ $110,
+OpenRouter self-report ≈ $25. All my pods removed 2026-09-03 03:44; Agent II/III pods
+(`qwen27b-biasbake`, `probe-bdvprime`) are theirs.
+
 
 ## Infra state / gotchas
 
