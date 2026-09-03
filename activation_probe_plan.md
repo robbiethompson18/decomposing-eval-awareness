@@ -185,10 +185,33 @@ model by BDV held-out AUROC near mid-depth: GPT-OSS L12/24, Gemma L24/60, Qwen L
   - Cohen's d bench vs chat, BDV / PAV: GPT-OSS 1.77 / −0.17; Gemma 2.65 / −0.38; Qwen 1.92 / 1.50.
   → PAV's ability to tell real benchmarks from real chat is a Qwen-only property; on the other two
   models it is at or below chance. BDV transfers.
-- r(CoT judge, BEST_VECTOR) and r(self-report, BEST_VECTOR) on gap fraction over k=0..8: PENDING
-  (stacking + judge + self-report running)
-- Cohen's d on CoT judge / self-report: PENDING
-- ladder table: PENDING
+- Units: PAV's bench−chat gap is ≈0 (GPT-OSS) or inverted (Gemma), so "gap fraction" is
+  undefined for it there. Cross-model numbers below are **d-units**: (proj − train chat mean) /
+  train pooled SD, per vector, per model. BDV gap-fraction still fine.
+- r over k=0..8 (Spearman of per-k mean vs per-k rate), ladder = paper Fig. 7 design, 3,400/model:
+  - GPT-OSS L12: PAV vs CoT **+0.98**, vs SR **+0.93**; BDV vs CoT −0.98, vs SR −0.93 (BDV runs
+    the *wrong way*: more cues → more chat-like; not a norm artifact, cosine-normalized
+    projections show the same). CoT 0→2%, SR 6→20%.
+  - Qwen L28: PAV vs CoT +0.90, vs SR +1.00; BDV −0.02 / −0.13 (flat). CoT 0→5%, SR 18→98%.
+  - Gemma L24: PENDING
+- Cohen's d (projection, aware vs not), GPT-OSS L12, ladder set / OFAT set:
+  - PAV: CoT +1.20 (n aware=16) / n/a (0 aware); SR +1.03 / +0.46
+  - BDV: CoT −1.22 / n/a; SR −0.85 / −0.44
+  - Qwen L28 (OFAT, both valences): PAV CoT +0.06, SR +1.03; BDV CoT +0.34, SR +0.68
+- ladder table, GPT-OSS L12 (d-units):
+
+  | k | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+  |---|---|---|---|---|---|---|---|---|---|
+  | PAV d | −0.71 | −0.30 | +0.16 | +0.41 | +0.75 | +0.97 | +1.28 | +1.49 | +1.76 |
+  | BDV d | 0.00 | −0.09 | −0.32 | −0.50 | −0.70 | −0.92 | −1.08 | −1.22 | −1.35 |
+  | self-report % | 6 | 6 | 6 | 8 | 12 | 13 | 17 | 23 | 20 |
+  | CoT % | 0 | 0 | 0 | 0.2 | 0.4 | 0.6 | 1.0 | 1.0 | 2.0 |
+
+  Qwen L28 for comparison: PAV d −0.22 → +1.13, BDV d +0.33 → +0.28 (flat); SR 18→98, CoT 0→5.
+- GPT-OSS 17-cell OFAT (safety): CoT verbalization is 0% in every cell (GPT-OSS never verbalizes
+  under the T3 harness); SR 7–41% (all_varied 41, F6 31, F4 28, baseline 12, bare_harness 7).
+  Spearman over 17 cells vs SR: PAV +0.57, BDV −0.45. Per-transcript AUROC → SR: PAV 0.61, BDV
+  0.39.
 - steering (norm-matched +0.5 at the chosen layer, 200 baseline prompts, CoT-verbalized % /
   no-visible-answer % / safety refusal % / mean reasoning chars):
   - GPT-OSS L12: control 0.0 / 0.5 / 87 / 1.2k; BDV +0.5 0.0 / **33.5** / 63 / 17k; PAV +0.5
