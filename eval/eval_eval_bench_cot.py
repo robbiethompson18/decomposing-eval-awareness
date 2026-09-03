@@ -51,7 +51,13 @@ def find_response_file(response_dir: str, model_key: str) -> str:
     """Find the most recent eval_bench response file for a model ("*" = any model)."""
     pattern = os.path.join(response_dir, f"responses_{model_key}_*.json")
     matches = sorted(glob(pattern))
-    matches = [m for m in matches if "_scratchpad_" not in os.path.basename(m)]
+    # Stacking-design files (STACKING=1) are a different experiment; judge them
+    # via RESPONSE_FILE so a MODEL_KEY lookup never silently picks one up.
+    matches = [
+        m
+        for m in matches
+        if not any(s in os.path.basename(m) for s in ("_scratchpad_", "_stacking_"))
+    ]
     return matches[-1] if matches else ""
 
 
