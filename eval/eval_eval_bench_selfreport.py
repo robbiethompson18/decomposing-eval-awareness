@@ -46,6 +46,7 @@ BACKEND_MODEL_ENV = {
     "openai_api": "OPENAI_MODEL_KEY",
     "openrouter": "OPENROUTER_MODEL_KEY",
     "gemini_api": "GEMINI_MODEL_KEY",
+    "vllm": "VLLM_MODEL_KEY",  # self-hosted (probe/steering work); VLLM_BASE_URL from env
 }
 
 SKIPPED_MSG = "No stored response to continue; self-report skipped."
@@ -179,6 +180,10 @@ def main() -> None:
     os.environ[BACKEND_MODEL_ENV[backend]] = model
     cfg = get_api_keys_config()
     cfg["THINK_TOOL"] = reasoning_mode != "none"
+    # Follow-up answers are short; a self-hosted vLLM rejects max_tokens above
+    # its max_model_len, so let the cap be set per run (default = client default).
+    if os.getenv("MAX_TOKENS"):
+        cfg["MAX_TOKENS"] = int(os.environ["MAX_TOKENS"])
     client, client_model_key = create_target_client(backend, cfg)
 
     awareness_prompt = read_file(

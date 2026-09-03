@@ -468,13 +468,31 @@ class OpenRouterApiClient:
         self.temperature = cfg.get(
             "TEMPERATURE", 0.3
         )  # None = don't set (for reasoning models)
+        # VLLM_BASE_URL points this same client at a self-hosted vLLM server
+        # (TARGET_BACKEND=vllm); vLLM ignores OpenRouter's reasoning/provider extra_body.
+        self.is_vllm = bool(cfg.get("VLLM_BASE_URL"))
+        # Activation steering (vllm-lens server): STEER_XARGS_FILE points at a JSON
+        # dict sent as `vllm_xargs` on every request, e.g. {"apply_steering_vectors":
+        # "<json list of serialized SteeringVector>"}. Built by scripts/make_steer_payloads.py.
+        self.vllm_xargs = None
+        if self.is_vllm and os.getenv("STEER_XARGS_FILE"):
+            with open(os.environ["STEER_XARGS_FILE"], encoding="utf-8") as f:
+                self.vllm_xargs = json.load(f)
+        # Chat-template switches for self-hosted models whose reasoning is off by
+        # default (Gemma 4: {"enable_thinking": true}); JSON dict in the env.
+        self.chat_template_kwargs = (
+            json.loads(os.environ["VLLM_CHAT_TEMPLATE_KWARGS"])
+            if self.is_vllm and os.getenv("VLLM_CHAT_TEMPLATE_KWARGS")
+            else None
+        )
+        self.base_url = cfg.get("VLLM_BASE_URL") or "https://openrouter.ai/api/v1"
         # Serving-provider pin (lib.config.OPENROUTER_PROVIDERS): every request
         # goes to this one endpoint, no fallbacks, so an ablation that changes
         # request shape (tools) never also changes the serving stack. None =
         # unpinned (legacy model keys only).
         self.provider: str | None = cfg.get("OPENROUTER_PROVIDER")
         self.client = create_openai_client(
-            cfg["OPENROUTER_API_KEY"], base_url="https://openrouter.ai/api/v1"
+            cfg.get("OPENROUTER_API_KEY") or "EMPTY", base_url=self.base_url
         )
 
     def query_chat(self, chat: Chat) -> str:
@@ -491,18 +509,26 @@ class OpenRouterApiClient:
         """
         try:
             # Build request kwargs - temperature is optional for reasoning models
-            extra_body: dict[str, Any] = {"reasoning": {"effort": "high"}}
-            if self.provider:
-                extra_body["provider"] = {
-                    "order": [self.provider],
-                    "allow_fallbacks": False,
-                }
+            if self.is_vllm:
+                extra_body: dict[str, Any] = (
+                    {"vllm_xargs": self.vllm_xargs} if self.vllm_xargs else {}
+                )
+                if self.chat_template_kwargs:
+                    extra_body["chat_template_kwargs"] = self.chat_template_kwargs
+            else:
+                extra_body = {"reasoning": {"effort": "high"}}
+                if self.provider:
+                    extra_body["provider"] = {
+                        "order": [self.provider],
+                        "allow_fallbacks": False,
+                    }
             kwargs: dict[str, Any] = {
                 "model": self.model,
                 "max_tokens": self.max_tokens,
                 "stream": False,
-                "extra_body": extra_body,
             }
+            if extra_body:
+                kwargs["extra_body"] = extra_body
             if self.temperature is not None:
                 kwargs["temperature"] = self.temperature
             tools = _tool_defs(chat, to_openai_chat_tool, think=False)
@@ -521,8 +547,12 @@ class OpenRouterApiClient:
                 msg = choice.message
                 # `reasoning` can exist but be None (provider returned no
                 # reasoning); without `or ""` that f-strings into "<think>None</think>"
-                if getattr(msg, "reasoning", None):
-                    reasoning_parts.append(msg.reasoning)
+                # OpenRouter: `reasoning`; vLLM reasoning parsers: `reasoning_content`
+                native_reasoning = getattr(msg, "reasoning", None) or getattr(
+                    msg, "reasoning_content", None
+                )
+                if native_reasoning:
+                    reasoning_parts.append(native_reasoning)
                 if msg.content:
                     contents.append(msg.content)
                 calls = msg.tool_calls or []
@@ -661,6 +691,20 @@ def create_target_client(
                 f"Using OpenRouter API backend (model={model_key}, id={model_id}, {pin})..."
             )
         return OpenRouterApiClient(cfg), model_key
+    if b == "vllm":
+        # Self-hosted open-weight model behind vLLM's OpenAI-compatible server
+        # (activation-probe work). VLLM_MODEL is the served model id; the
+        # result-file key is VLLM_MODEL_KEY (default: last path segment).
+        model_id = os.getenv("VLLM_MODEL", "Qwen/Qwen3.8-27B")
+        model_key = os.getenv("VLLM_MODEL_KEY", model_id.split("/")[-1].lower())
+        cfg["OPENROUTER_MODEL"] = model_id
+        cfg["VLLM_BASE_URL"] = os.getenv("VLLM_BASE_URL", "http://localhost:8000/v1")
+        cfg["TEMPERATURE"] = 0.3
+        if verbose:
+            print(
+                f"Using vLLM backend (model={model_id}, url={cfg['VLLM_BASE_URL']})..."
+            )
+        return OpenRouterApiClient(cfg), model_key
     if b == "gemini_api":
         model_key = os.getenv("GEMINI_MODEL_KEY", "gemini-3.5-flash")
         if model_key not in DEFAULT_GEMINI_CONFIGS:
@@ -680,6 +724,6 @@ def create_target_client(
             )
         return GeminiApiClient(cfg), model_key
     print(
-        f"ERROR: Unsupported TARGET_BACKEND '{backend}'. Use: anthropic_api, openai_api, openrouter, gemini_api"
+        f"ERROR: Unsupported TARGET_BACKEND '{backend}'. Use: anthropic_api, openai_api, openrouter, gemini_api, vllm"
     )
     sys.exit(1)
