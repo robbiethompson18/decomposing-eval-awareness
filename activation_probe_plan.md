@@ -264,6 +264,20 @@ Read: self-report is the measure the vectors line up with (PAV on Qwen r=0.51, B
 0.33); CoT verbalization is near-orthogonal to both everywhere except GPT-OSS PAV (AUROC 0.89 on
 16 positives). r is depressed by base rates (4% CoT positives); AUROC is base-rate free.
 
+## Pairwise agreement, example level (Agent I): r / AUROC per pair, sorted by mean r
+
+All unsteered transcripts per model (~5–6k each), same readout layers as above. r = Pearson
+(point-biserial for vector×label, φ for CoT×SR). AUROC only where one side is a binary label.
+
+| pair | Qwen | GPT-OSS | Gemma | mean r |
+|---|---|---|---|---|
+| PAV × self-report | +0.51 / 0.80 | +0.22 / 0.67 | +0.04 / 0.52 | +0.26 |
+| BDV × self-report | +0.25 / 0.65 | −0.21 / 0.34 | +0.33 / 0.69 | +0.13 |
+| CoT × self-report | +0.10 / NA | +0.07 / NA | +0.11 / NA | +0.10 |
+| PAV × CoT | +0.06 / 0.60 | +0.08 / 0.89 | −0.05 / 0.47 | +0.03 |
+| BDV × PAV | +0.64 / NA | −0.74 / NA | +0.13 / NA | +0.01 |
+| BDV × CoT | −0.01 / 0.50 | −0.08 / 0.14 | +0.04 / 0.56 | −0.02 |
+
 # Agent II fills in results overnight
 
 ## Steering: BDV vs PAV at α=.5, constant magnitude, bias-baked (Agent II)
