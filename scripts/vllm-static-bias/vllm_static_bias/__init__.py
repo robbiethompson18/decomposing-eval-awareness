@@ -15,6 +15,7 @@ every vLLM process via the ``vllm.general_plugins`` entry point; a no-op unless
 ``STATIC_BIAS_MODULES`` is set.
 """
 
+import inspect
 import logging
 import os
 
@@ -31,42 +32,30 @@ def register() -> None:
     from vllm.model_executor.models import qwen2_moe
 
     orig_init = qwen2_moe.Qwen2MoeMLP.__init__
+    sig = inspect.signature(orig_init)
 
-    def patched_init(
-        self,
-        hidden_size,
-        intermediate_size,
-        hidden_act,
-        quant_config=None,
-        reduce_results=True,
-        expert_gate=None,
-        is_sequence_parallel=False,
-        disable_tp=False,
-        prefix="",
-    ):
-        orig_init(
-            self,
-            hidden_size,
-            intermediate_size,
-            hidden_act,
-            quant_config=quant_config,
-            reduce_results=reduce_results,
-            expert_gate=expert_gate,
-            is_sequence_parallel=is_sequence_parallel,
-            disable_tp=disable_tp,
-            prefix=prefix,
+    def patched_init(self, *args, **kwargs):
+        # Signature-agnostic: vLLM main and 0.28 differ (`disable_tp` vs
+        # `is_sequence_parallel`), so bind whatever this version takes.
+        orig_init(self, *args, **kwargs)
+        bound = sig.bind(self, *args, **kwargs)
+        bound.apply_defaults()
+        a = bound.arguments
+        prefix = a.get("prefix", "")
+        if not any(prefix.endswith(t) for t in targets):
+            return
+        self.down_proj = RowParallelLinear(
+            a["intermediate_size"],
+            a["hidden_size"],
+            bias=True,
+            quant_config=a.get("quant_config"),
+            reduce_results=a.get("reduce_results", True),
+            disable_tp=bool(
+                a.get("disable_tp", False) or a.get("is_sequence_parallel", False)
+            ),
+            prefix=f"{prefix}.down_proj",
         )
-        if any(prefix.endswith(t) for t in targets):
-            self.down_proj = RowParallelLinear(
-                intermediate_size,
-                hidden_size,
-                bias=True,
-                quant_config=quant_config,
-                reduce_results=reduce_results,
-                disable_tp=disable_tp or is_sequence_parallel,
-                prefix=f"{prefix}.down_proj",
-            )
-            log.warning("vllm_static_bias: %s.down_proj rebuilt with bias=True", prefix)
+        log.warning("vllm_static_bias: %s.down_proj rebuilt with bias=True", prefix)
 
     qwen2_moe.Qwen2MoeMLP.__init__ = patched_init
     log.warning("vllm_static_bias: active for module suffixes %s", targets)
