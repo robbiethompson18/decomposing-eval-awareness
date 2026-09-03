@@ -4,8 +4,11 @@
 > **Correctness:** stock vs zero-bias 20/20 top-1, max |Δlogprob| 0.053; vLLM-baked vs HF-hook
 > reference 20/20, max |Δlogprob| 0.021. **Throughput** (100 prompts, conc 64): stock 1,511 tok/s,
 > baked 1,535 (+1.6%), vllm-lens unsteered 742, vllm-lens steered 257. **LOC:** ~350 incl. tests.
-> Experiments (control / BDV / PAV / both at α=0.5, 1k random stacking cells) started 02:10.
-> Branch `steer/bias-bake`.
+> Experiments done 07:50 (1k random stacking cells each, α=0.5, constant magnitude):
+> **CoT verbalization: control 4.3% · BDV 9.8% · PAV 4.9% · BDV+PAV 10.5%.** Self-report flat
+> (68–73%). Same ordering as the norm-matched 200-prompt runs (1.5 / 15.3 / 2.4), so the
+> per-token norm matching didn't matter. Full table + truncation check in
+> `.claude/notes/activation-probe-plan.md` → "Bias-baked steering". Pod removed. Branch `steer/bias-bake`.
 
 Ok I think cohen's d quite useful here and this looks good, but you'd have context on what other
 papers achieve. Anyway: I think this is a good result. Happy you're doing the big sweep with
@@ -258,3 +261,39 @@ BDV 0.74 → 0.82). Steering on Gemma was done at L24 (chosen before the sweep).
 # Agent II fills in results overnight
 
 # Agent III fills in results overnight
+
+## BDV' (last response token) and BDV'' (last think token) — Qwen3.8-27B (Agent III)
+
+Setup: generated one response per train-set prompt (3,600, 0 errors, 4k cap), re-extracted
+train / OFAT / stacking-half-A with `think_last` (the `</think>` token) and `response_last`
+(final token). Each vector is built and read at its own position. Files:
+`results/probes/acts_{train_resp,eval2,stack_a2}.npz`, `bdv_prime_qwen27b{,_L40,_L52}.json`.
+Pod removed 04:08; cost ≈ $12.
+
+- Held-out AUROC bench vs chat by layer (source-grouped OOF): BDV peaks **0.855 @L32** (0.83 @L28);
+  BDV'' peaks **0.87 @L52** (0.75 @L28); BDV' peaks **0.78 @L52** (0.73 @L28). The response-side
+  vectors separate best in the last third of the network, the prompt-side one at mid-depth.
+- cosine sim (BDV, BDV') = **+0.16** @L28 (0.08–0.20 over layers); (BDV, BDV'') = **+0.24** @L28
+  (0.12–0.36). Random ≈ 0.01. Different directions, not re-reads of BDV.
+- Ladder, gap fraction over k=0..8 (Pearson over 9 means), L28 / L52:
+  - r(k, BDV') = +0.79 / +0.76; r(k, BDV'') = +0.64 / +0.30; (BDV −0.29 / +0.89; PAV +0.97 / +0.96)
+  - r(CoT judge, BDV') = **+0.74** / +0.67; r(CoT judge, BDV'') = +0.59 / +0.07; (PAV +0.85 / +0.84)
+  - r(self report, BDV') = **+0.89** / +0.90; r(self report, BDV'') = +0.78 / +0.48; (PAV +0.99 / +0.99)
+  - within-k AUROC (the strict test), L28: vs SR BDV' **0.71**, BDV'' 0.71, BDV 0.60, PAV **0.81**;
+    vs CoT BDV' 0.48, BDV'' 0.39, BDV 0.39, PAV 0.66. At L52: BDV'' 0.79, PAV 0.72 vs SR.
+  - gap fractions for BDV'/BDV'' on EAB are **negative** (−0.6 to −0.1 at L28): EAB responses sit
+    on the chat side of the model's own train-set responses, so the ladder moves them from
+    "very chat-like" toward "chat-like", never toward the benchmark answers.
+- Cohen's d on OFAT (2,100; aware − not; pooled (safety, capability)), L28:
+  - BDV' vs CoT −0.04 (−0.13, +0.10); vs SR **+0.06** (+0.02, −0.58)
+  - BDV'' vs CoT −0.41 (−0.46, −0.19); vs SR +0.39 (+0.20, −0.59)
+  - reference: BDV +0.34 / +0.68; PAV +0.06 / **+1.03**
+  - at L52 BDV'' reaches d(SR) = +1.16 but its capability-arm d is +0.29 and r(SR,k) drops to
+    +0.48; no layer makes BDV' or BDV'' beat PAV on both the ladder and the OFAT set.
+
+**Verdict:** BDV' beats BDV as a readout (ladder r +0.89 vs −0.50, within-k 0.71 vs 0.60) but is
+not comparable to PAV (within-k 0.71 vs 0.81, OFAT d 0.06 vs 1.03, ladder r 0.89 vs 0.99).
+BDV'' is the same story with more layer sensitivity. Reading after the model has responded helps
+the benchmark-vs-chat direction track EAB's cues, but the paper's stub direction read before the
+response still wins on every metric. BEST_VECTOR = PAV for Qwen; no GPU decision needed, pod is
+already down.
