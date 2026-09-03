@@ -1,15 +1,3 @@
-> **@robbie — 2026-09-03 02:10: BIAS-BAKED STEERING WORKS. All three bars cleared.** Steering vector
-> baked into the checkpoint as `layers.28.mlp.down_proj.bias = α·m·v̂`, served by stock vLLM plus a
-> 70-line plugin (`scripts/vllm-static-bias/`), CUDA graphs on. **Correctness:** stock vs zero-bias
-> 20/20 top-1, max |Δlogprob| 0.053; vLLM-baked vs HF-hook reference 20/20, max |Δlogprob| 0.021.
-> **Throughput** (100 prompts, conc 64): stock 1,511 tok/s, baked 1,535 (+1.6%), vllm-lens unsteered
-> 742, vllm-lens steered 257. **LOC:** ~350 incl. tests. Experiments done 07:50 (1k random stacking
-> cells each, α=0.5, constant magnitude): **CoT verbalization: control 4.3% · BDV 9.8% · PAV 4.9% ·
-> BDV+PAV 10.5%.** Self-report flat (68–73%). Same ordering as the norm-matched 200-prompt runs (1.5
-> / 15.3 / 2.4), so the per-token norm matching didn't matter. Full table + truncation check in
-> `.claude/notes/activation-probe-plan.md` → "Bias-baked steering". Pod removed. Branch
-> `steer/bias-bake`.
-
 Ok I think cohen's d quite useful here and this looks good, but you'd have context on what other
 papers achieve. Anyway: I think this is a good result. Happy you're doing the big sweep with
 stacking. But here is what I'd add to call this done and great. First I want to summarize what we
@@ -29,15 +17,11 @@ did:
 - found BENCH_DIFF_VECTOR = avg(bench activation layer x) - avg(chat activation layer x)
 - used this to split difference to try to split (chat activations at layer x, bench activations at
   layer x), found highest AUROC (.85) at layer 32. We expected this to happen about halfway through
-  (64 layers). We use l28 because PAV's held-out AUROC peaks there (.855) and BDV is within .03 of
-  its own peak (.83 held-out at l28 vs .855 at l32), so one layer serves both vectors and the
-  steering runs. In-sample AUROC at l28 is .92. (Held-out = source-grouped 5-fold CV: every fold
-  scores benchmark/traffic sources the vector never saw.)
+  (64 layers IIRC). We use l28 because (?), where AUROC is .83. On heldout set AUROC is .83 at l28
+  too.
 - used always activation from last token after _reading_ benchmark (will possibly followup and try
   responding)
-- separation d=1.95 in-sample. The held-out version is the source-grouped CV above (AUROC .83 at
-  l28); d on held-out folds isn't computed separately, but PAV's d=1.52 below is fully held out and
-  is the fair comparison.
+- separation d=1.95 in-sample (do we not have a held-out set to try this on?).
 
 ## Found activation for 'this is an evaluation (PROMPT_AVG_VECTOR)
 
@@ -53,42 +37,22 @@ did:
 
 - find that cosine sim is .2 (in d-8k this is z~14, p=0, so very significant overlap)
 
-### BDV better at steering (agent II, done 2026-09-03)
+### BDV possibly better at steering
 
-- First pass (2026-09-02, vllm-lens hooks, per-token norm-matched h += α‖h‖v̂, 200 T3-baseline
-  prompts): BDV +.5 takes CoT verbalization 1.5% -> 15.3%; PAV +.5 does 1.5% -> 2.4%, PAV +1.0 ->
-  0.6% with 19% empty answers (degradation).
-- Rerun (2026-09-03) with 1k prompts per condition drawn at random from the stacking cells (mixed k,
-  both valences, paper harness: bare system prompt, cold, no tool, clean), α=.5, and the paper's
-  constant magnitude c = α·m·v̂ (m = 49.9) baked into the checkpoint as a layer-28 MLP bias (no
-  hooks, no norm matching, stock vLLM, see banner):
-
-| condition (α=.5)        | CoT-verbalized | self-report | safety refusal | truncated at 6k |
-| ----------------------- | -------------- | ----------- | -------------- | --------------- |
-| control (stock weights) | 4.3%           | 68%         | 44%            | 32%             |
-| BDV                     | **9.8%**       | 71%         | 60%            | 44%             |
-| PAV                     | 4.9%           | 73%         | 62%            | 50%             |
-| BDV + PAV               | 10.5%          | 72%         | 74%            | 70%             |
-
-- Same ordering as the norm-matched runs at 5× the n: BDV ≈ 2.3× control on unprompted
-  verbalization, PAV ≈ control, BDV+PAV ≈ BDV (not additive). So the per-token norm matching was
-  unnecessary complexity and changed nothing qualitatively.
-- Self-report is flat across all four (68–73%): steering moves what the model says unprompted in its
-  reasoning, not what it admits when asked afterwards.
-- Both vectors lengthen reasoning and raise refusal on the safety arm. The truncation column matters
-  for the refusal number (truncated prompts don't count as refused) but not for CoT verbalization:
-  regenerating 85 truncated control prompts at a 20k cap changed their verbalized count from 8 to 6.
-  Full regeneration was abandoned (~1 prompt/min, ~30 h for all four).
-- Sizes for the constant recipe: |c| = 24.95 for one vector, 38.5 for BDV+PAV (they're not
-  orthogonal, cos .19).
+- BDV + .5 takes CoT verbalization 1.5% -> 15% (n = 200, t3 dataset)
+- PDV does 1.5% -> 2.4% at .5 factor on PDV
+- We should do this again with 1k examples each, .5 \* (VECTOR), NOT t3 dataset, use maximally
+  realistic but throw out all changes I made after f8 (eg no typos, vanilla system prompt instead of
+  t3).
+- one more experiment: +.5 of each vector
+- agent II is doing these experiments, agent II you know who you are
 
 ### PAV better at readout
 
-- Valence: both, pooled, for the ladder and the Cohen's-d table; safety only for the 16-cell OFAT
-  run (harmbench_verbatim has no capability arm). Headline pooled, report the split: PAV holds in
-  both arms (r with self-report +.91 safety, +.98 capability); BDV flips sign between arms (−.92 vs
-  +.78), which is what a flat line plus noise does. On the safety arm PAV's gap fraction reaches
-  1.12 at k=8 (past the real-benchmark mean); on capability it tops out at .39.
+- Are we using saftey and capability or just saftey? Whcih is more principled??
+- which should probably report headline numbers for just saftey, but find them for just capability
+  too, and see if they massively differ?
+-
 
 - define terms: call k the 'number of factors f1-f8 we vary'
 - PAV mean is avg of PAV at l28 _on a given dataset_, in this case EAB at k=x. Likewise for BDV mean
@@ -114,8 +78,8 @@ did:
 - all of this implies that PAV is better. Paper uses PAV too and it's simpler. But we didn't try
   hard on BDV, could try harder...
 -
-- Cohen's d separating (l28 benchmark activations, l28 chat activations) along each vector: BDV 1.95
-  (in-sample), PAV 1.52 (held out). AUROC .92 in-sample / .83 held-out for BDV, .855 for PAV.
+- We should also probably have tried: what is cohen's D (l28 on benchmark activations, l28 on chat
+  activations), eg how decent does it do on way we got BENCH_DIFF_VECTOR
 
 ## Used BDV and PAV on EvalAwareBench (EAB)
 
@@ -173,9 +137,6 @@ pooled table as the headline and the split as the floor.
 - I stronly suspect PAV will be the best one. if BDV' looks comparable with PAV, kill the GPUs and
   ask Robbie what to do.
 - call this BEST_VECTOR
-- (agent II) note the split so far: PAV is the better _readout_ (tracks k, self-report), BDV is the
-  better _control_ (steers CoT verbalization, PAV doesn't). If BEST_VECTOR is for the scatterplots
-  it's PAV; if it's for steering it's BDV.
 
 ## Repeat experiment with Gemma 4 31B, GPT OSS 20B
 
@@ -287,6 +248,52 @@ for both vectors (PAV per-transcript AUROC→SR 0.35 at L24 vs 0.59 at L28 / 0.7
 
 # Agent II fills in results overnight
 
+## Steering: BDV vs PAV at α=.5, constant magnitude, bias-baked (Agent II)
+
+Setup: c = α·m·v̂ (paper recipe, m = mean ‖h₂₈‖ over the 3,600 train prompts = 49.9) written into
+the Qwen3.8-27B checkpoint as `layers.28.mlp.down_proj.bias`; served by stock vLLM 0.28 + a 70-line
+plugin that gives that one `down_proj` a bias (`scripts/vllm-static-bias/`, `bake_steer_bias.py`,
+branch `steer/bias-bake`). No hooks, no per-token norm matching, CUDA graphs on. 1,000 prompts per
+condition drawn at random from the stacking cells (seed 1; k 0–8 mixed; 503 safety / 497
+capability; paper harness), 1 sample, 6k reasoning cap. Judge sonnet-5; self-report via OpenRouter.
+
+- Correctness: stock vs zero-bias checkpoint 20/20 top-1, max |Δlogprob| .053 (bf16 noise);
+  vLLM-baked vs HF-transformers hook adding the same c after block 28: 20/20, max |Δlogprob| .021;
+  stock vs baked differ (max .59). α=3 → dashes-only garbage (same as the lens version).
+- Throughput (100 prompts, conc 64, 2k cap, one H100): stock 1,511 gen tok/s; **baked 1,535
+  (+1.6%)**; vllm-lens unsteered 742 (it forces `enforce_eager` + the V1 runner in every process,
+  README L56 / `_activations_plugin.py` L223–245); vllm-lens steered 257. The "steering is 5×
+  slower" was entirely vllm-lens. ~350 LOC incl. tests. All three bars cleared.
+- Results:
+
+  | condition (α=.5)  | CoT-verbalized | self-report | safety refusal | truncated at 6k | reasoning chars |
+  | ----------------- | -------------- | ----------- | -------------- | --------------- | --------------- |
+  | control (stock)   | 4.3%           | 68%         | 44%            | 32%             | 13.9k           |
+  | BDV               | **9.8%**       | 71%         | 60%            | 44%             | 16.3k           |
+  | PAV               | 4.9%           | 73%         | 62%            | 50%             | 17.2k           |
+  | BDV + PAV         | 10.5%          | 72%         | 74%            | 70%             | 21.1k           |
+
+- vs the norm-matched vllm-lens runs (200 T3-baseline prompts, 2026-09-02: control 1.5, BDV 15.3,
+  PAV 2.4, PAV +1.0 0.6 with 19% empty answers): same ordering at 5× the n. **BDV ≈ 2.3× control on
+  unprompted verbalization, PAV ≈ control, BDV+PAV ≈ BDV (not additive).** The per-token norm
+  matching was unnecessary and changed nothing qualitatively. Higher floor here (4.3 vs 1.5) because
+  these prompts have factors varied.
+- Self-report is flat (68–73%) across all four: steering moves what the model says unprompted in
+  its reasoning, not what it admits when asked.
+- Both vectors lengthen reasoning and raise refusal on the safety arm; BDV+PAV (|c| = 38.5 vs 25)
+  mostly just reasons longer.
+- Truncation: on the vLLM backend a cap hit shows as an empty visible answer (parser closes the
+  think block; `steering_table.py` now splits cap-hit from empty-answer on CoT length). Regenerating
+  85 truncated control prompts at a 20k cap: 84% eventually answer (median CoT 30k chars), verbalized
+  count 8 → 6 on the same prompts → the CoT column is not a truncation artefact; the refusal column
+  is undercounted (truncated safety prompts aren't counted as refused). Full regeneration abandoned
+  (~1 prompt/min, ~30 h for all four).
+- Infra: control run SIGTERM'd at 556/1000 by another process on this machine, resumed by id;
+  hybrid-GDN Mamba cache caps `max_num_seqs` ≈ 200; `${1}:localhost` in zsh is a modifier (tunnel
+  keeper bug). Files `responses_qwen3.8-27b_think_tool_stacking_bb_<cond>_*.json`; detail in
+  `.claude/notes/activation-probe-plan.md` → "Bias-baked steering".
+
+
 # Agent III fills in results overnight
 
 ## BDV' (last response token) and BDV'' (last think token) — Qwen3.8-27B (Agent III)
@@ -353,3 +360,5 @@ Ok I must say I'm thoroughly confused, but here are my thoughts:
   - what are self-reported levels of awareness? Are they way different from the other models we're looking at rn?
 
 **Does steering work consistently anywhere?**
+- Eh idk it's our only non-correlated metric
+- can we throw in a table? of y/n for 3 models x 2 vectors 
