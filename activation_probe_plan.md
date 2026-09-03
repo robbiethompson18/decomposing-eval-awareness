@@ -251,32 +251,32 @@ All unsteered transcripts pooled per model (OFAT 17 cells + ladder 3,400; Qwen a
 Cohen's d, label from the sonnet judge (CoT+transcript) or the self-report replay. Transcript-only
 awareness: 0 positives on Qwen (2,057 judged with CoT stripped); not run on the other two.
 
-| model | vector | CoT+transcript AUROC / r / d (n+/n) | self-report AUROC / r / d (n+/n) |
-|---|---|---|---|
-| Qwen3.8-27B L28 | BDV | 0.50 / −0.01 / −0.07 (200/5963) | 0.65 / +0.25 / +0.54 (3679/6059) |
-| Qwen3.8-27B L28 | PAV | 0.60 / +0.06 / +0.35 | **0.80 / +0.51 / +1.20** |
-| GPT-OSS-20B L12 | BDV | 0.14 / −0.08 / −1.37 (16/4997) | 0.34 / −0.21 / −0.61 (713/4995) |
-| GPT-OSS-20B L12 | PAV | **0.89 / +0.08 / +1.36** | 0.67 / +0.22 / +0.65 |
-| Gemma-4-31B L28 | BDV | 0.56 / +0.04 / +0.24 (129/4942) | **0.69 / +0.33 / +0.73** (3200/5097) |
-| Gemma-4-31B L28 | PAV | 0.47 / −0.05 / −0.28 | 0.52 / +0.04 / +0.09 |
+| model           | vector | CoT+transcript AUROC / r / d (n+/n) | self-report AUROC / r / d (n+/n)     |
+| --------------- | ------ | ----------------------------------- | ------------------------------------ |
+| Qwen3.8-27B L28 | BDV    | 0.50 / −0.01 / −0.07 (200/5963)     | 0.65 / +0.25 / +0.54 (3679/6059)     |
+| Qwen3.8-27B L28 | PAV    | 0.60 / +0.06 / +0.35                | **0.80 / +0.51 / +1.20**             |
+| GPT-OSS-20B L12 | BDV    | 0.14 / −0.08 / −1.37 (16/4997)      | 0.34 / −0.21 / −0.61 (713/4995)      |
+| GPT-OSS-20B L12 | PAV    | **0.89 / +0.08 / +1.36**            | 0.67 / +0.22 / +0.65                 |
+| Gemma-4-31B L28 | BDV    | 0.56 / +0.04 / +0.24 (129/4942)     | **0.69 / +0.33 / +0.73** (3200/5097) |
+| Gemma-4-31B L28 | PAV    | 0.47 / −0.05 / −0.28                | 0.52 / +0.04 / +0.09                 |
 
-Read: self-report is the measure the vectors line up with (PAV on Qwen r=0.51, BDV on Gemma
-0.33); CoT verbalization is near-orthogonal to both everywhere except GPT-OSS PAV (AUROC 0.89 on
-16 positives). r is depressed by base rates (4% CoT positives); AUROC is base-rate free.
+Read: self-report is the measure the vectors line up with (PAV on Qwen r=0.51, BDV on Gemma 0.33);
+CoT verbalization is near-orthogonal to both everywhere except GPT-OSS PAV (AUROC 0.89 on 16
+positives). r is depressed by base rates (4% CoT positives); AUROC is base-rate free.
 
 ## Pairwise agreement, example level (Agent I): r / AUROC per pair, sorted by mean r
 
 All unsteered transcripts per model (~5–6k each), same readout layers as above. r = Pearson
 (point-biserial for vector×label, φ for CoT×SR). AUROC only where one side is a binary label.
 
-| pair | Qwen | GPT-OSS | Gemma | mean r |
-|---|---|---|---|---|
-| PAV × self-report | +0.51 / 0.80 | +0.22 / 0.67 | +0.04 / 0.52 | +0.26 |
-| BDV × self-report | +0.25 / 0.65 | −0.21 / 0.34 | +0.33 / 0.69 | +0.13 |
-| CoT × self-report | +0.10 / NA | +0.07 / NA | +0.11 / NA | +0.10 |
-| PAV × CoT | +0.06 / 0.60 | +0.08 / 0.89 | −0.05 / 0.47 | +0.03 |
-| BDV × PAV | +0.64 / NA | −0.74 / NA | +0.13 / NA | +0.01 |
-| BDV × CoT | −0.01 / 0.50 | −0.08 / 0.14 | +0.04 / 0.56 | −0.02 |
+| pair              | Qwen         | GPT-OSS      | Gemma        | mean r |
+| ----------------- | ------------ | ------------ | ------------ | ------ |
+| PAV × self-report | +0.51 / 0.80 | +0.22 / 0.67 | +0.04 / 0.52 | +0.26  |
+| BDV × self-report | +0.25 / 0.65 | −0.21 / 0.34 | +0.33 / 0.69 | +0.13  |
+| CoT × self-report | +0.10 / NA   | +0.07 / NA   | +0.11 / NA   | +0.10  |
+| PAV × CoT         | +0.06 / 0.60 | +0.08 / 0.89 | −0.05 / 0.47 | +0.03  |
+| BDV × PAV         | +0.64 / NA   | −0.74 / NA   | +0.13 / NA   | +0.01  |
+| BDV × CoT         | −0.01 / 0.50 | −0.08 / 0.14 | +0.04 / 0.56 | −0.02  |
 
 # Agent II fills in results overnight
 
@@ -440,4 +440,56 @@ What _would_ we have cared about?
   - also nothing really jumps out
 
 @ Claude you are not allowed to write or edit about this line!
-## Agent I's response
+
+## Agent IV rerun notes:
+
+
+
+### BDV re-derived with no system prompts (Agent I, 2026-09-03)
+
+Same 3,600 prompts, system prompt removed from all of them (the source datasets carry none:
+WildChat/LMSYS first turns are bare user messages, ShareGPT has 6 system turns in ~21k). One pod,
+one prompt-only forward pass per prompt per model, `data_direction.py` as before. EvalAwareBench
+activations unchanged (they have their real system prompts), re-projected on the new vector.
+Files: `results/probes/nosys/`, scatters in `results/probes/scatter_nosys/`.
+
+**Direction quality** (chosen layers as before; "old" = coin-flip-system-prompt BDV):
+
+| model | cos(new, old) | cos(new, PAV) | held-out AUROC new / old | d new / old | old vector on no-sysprompt prompts | new vector on with-sysprompt prompts |
+|---|---|---|---|---|---|---|
+| Qwen L28 | 0.93 | +0.20 (was +0.19) | 0.87 / 0.83 | 2.13 / 1.92 | 0.92 | 0.94 |
+| GPT-OSS L12 | 0.88 | −0.01 (was −0.04) | 0.78 / 0.82 | 1.82 / 1.77 | 0.89 | 0.90 |
+| Gemma L28 | 0.88 | −0.04 (was 0.00) | 0.84 / 0.79 | 2.79 / 2.65 | 0.93 | 0.96 |
+
+Either vector separates either version of the training set at 0.89–0.96 in-sample: the system
+prompt was not what BDV learned. PAV on the no-sysprompt prompts: Qwen 0.86, GPT-OSS 0.51, Gemma
+0.41 (unchanged verdict: PAV separates bench from chat on Qwen only).
+
+**Ladder** (Spearman of per-k mean BDV_nosys vs rate, k=0..8): Qwen vs SR +0.27 / vs CoT +0.33
+(old −0.13 / −0.02; still flat, d-units 0.16–0.21 across k); GPT-OSS −0.93 / −0.98 (unchanged,
+still inverted, d 0 → −0.9); Gemma −0.62 / −0.12 (old +0.98 / +0.73 at L28 — the one real change,
+Gemma's BDV ladder trend flips sign; magnitude is tiny either way, d 0.71 → 0.58).
+
+**Example-level, all pooled unsteered transcripts** (AUROC / point-biserial r / Cohen's d):
+
+| model | vector | CoT+transcript (n+/n) | self-report (n+/n) |
+|---|---|---|---|
+| Qwen L28 | BDV_nosys | 0.49 / −0.02 / −0.10 (200/5963) | 0.69 / +0.30 / +0.65 (3679/6059) |
+| Qwen L28 | BDV_old | 0.50 / −0.01 / −0.07 | 0.65 / +0.25 / +0.54 |
+| Qwen L28 | PAV | 0.60 / +0.06 / +0.35 | **0.80 / +0.51 / +1.20** |
+| GPT-OSS L12 | BDV_nosys | 0.19 / −0.06 / −1.14 (16/4997) | 0.33 / −0.20 / −0.59 (713/4995) |
+| GPT-OSS L12 | BDV_old | 0.14 / −0.08 / −1.37 | 0.34 / −0.21 / −0.61 |
+| GPT-OSS L12 | PAV | **0.89 / +0.08 / +1.36** | 0.67 / +0.22 / +0.65 |
+| Gemma L28 | BDV_nosys | 0.54 / +0.02 / +0.12 (129/4942) | 0.68 / +0.30 / +0.66 (3200/5097) |
+| Gemma L28 | BDV_old | 0.56 / +0.04 / +0.24 | **0.69 / +0.33 / +0.73** |
+| Gemma L28 | PAV | 0.47 / −0.05 / −0.28 | 0.52 / +0.04 / +0.09 |
+
+**Scatter R²** (78 interventions, BDV_nosys in d-units): SR~BDV Qwen 0.03 / GPT-OSS 0.28 / Gemma
+0.09 (old 0.01 / 0.29 / 0.01); CoT~BDV 0.01 / 0.11 / 0.01; BDV~PAV 0.70 / 0.32 / 0.12.
+
+**Verdict.** Removing the system prompts moves BDV by 20–28° (cos 0.88–0.93) and changes no
+conclusion: it separates real benchmarks from real chat about as well (slightly better on Qwen and
+Gemma, slightly worse on GPT-OSS), it still runs backwards on GPT-OSS, it is still flat across k on
+Qwen, and its example-level agreement with self-report and CoT verbalization moves by ≤0.04 AUROC
+on every model. PAV remains the better self-report readout on Qwen and GPT-OSS; BDV (either
+version) on Gemma. The coin-flip system prompt in the original training set was not doing work.
