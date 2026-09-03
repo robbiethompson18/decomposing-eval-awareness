@@ -16,7 +16,13 @@ COT = Path("results/eval_bench/cot")
 
 
 def stats(resp_file: str, cot_file: str) -> dict:
-    samples = json.loads((RESP / resp_file).read_text())["samples"]
+    samples = [
+        s
+        for s in json.loads((RESP / resp_file).read_text())["samples"]
+        if not str(s["response"]).startswith(
+            "ERROR"
+        )  # API failures are not model behavior
+    ]
     judged = {r["id"]: r for r in json.loads((COT / cot_file).read_text())}
     n = len(samples)
     no_answer = cap_hit = 0
