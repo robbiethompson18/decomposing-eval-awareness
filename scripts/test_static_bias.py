@@ -64,6 +64,7 @@ def run_vllm(model: str, out: str, topk: int = 10) -> None:
         max_model_len=4096,
         gpu_memory_utilization=0.85,
         enforce_eager=False,
+        max_num_seqs=64,  # hybrid GDN model: Mamba cache holds ~200 decode slots at this memory
     )
     sp = SamplingParams(max_tokens=1, temperature=0.0, logprobs=topk)
     outs = llm.generate(chat_texts(tok), sp)
