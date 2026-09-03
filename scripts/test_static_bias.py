@@ -16,6 +16,7 @@ Checks (see .claude/notes/activation-probe-plan.md):
 
 import argparse
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -61,6 +62,7 @@ def run_vllm(model: str, out: str, topk: int = 10) -> None:
     llm = LLM(
         model=model,
         dtype="bfloat16",
+        quantization=os.getenv("TEST_QUANT") or None,  # fp8 for Gemma 4 31B on one H100
         max_model_len=4096,
         gpu_memory_utilization=0.85,
         enforce_eager=False,
