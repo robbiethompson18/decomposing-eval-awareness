@@ -1,3 +1,12 @@
+> **@robbie — 2026-09-03 02:10: BIAS-BAKED STEERING WORKS. All three bars cleared.**
+> Steering vector baked into the checkpoint as `layers.28.mlp.down_proj.bias = α·m·v̂`, served by
+> stock vLLM plus a 70-line plugin (`scripts/vllm-static-bias/`), CUDA graphs on.
+> **Correctness:** stock vs zero-bias 20/20 top-1, max |Δlogprob| 0.053; vLLM-baked vs HF-hook
+> reference 20/20, max |Δlogprob| 0.021. **Throughput** (100 prompts, conc 64): stock 1,511 tok/s,
+> baked 1,535 (+1.6%), vllm-lens unsteered 742, vllm-lens steered 257. **LOC:** ~350 incl. tests.
+> Experiments (control / BDV / PAV / both at α=0.5, 1k random stacking cells) started 02:10.
+> Branch `steer/bias-bake`.
+
 Ok I think cohen's d quite useful here and this looks good, but you'd have context on what other
 papers achieve. Anyway: I think this is a good result. Happy you're doing the big sweep with
 stacking. But here is what I'd add to call this done and great. First I want to summarize what we
@@ -176,22 +185,22 @@ pooled table as the headline and the split as the floor.
 Setup identical to Qwen: same 3,600 prompts, same 32 stubs, last prompt token. Layer chosen per
 model by BDV held-out AUROC near mid-depth: GPT-OSS L12/24, Gemma L24/60, Qwen L28/64.
 
-- cosine sim(BDV, PAV) at chosen layer: GPT-OSS −0.04, Gemma −0.07, Qwen +0.19 (random ≈ 0.01).
-  Max over layers: GPT-OSS 0.35 (L23), Gemma 0.29 (L59), Qwen 0.28 (L8).
+- cosine sim(BDV, PAV) at chosen layer: GPT-OSS −0.04, Gemma −0.07, Qwen +0.19 (random ≈ 0.01). Max
+  over layers: GPT-OSS 0.35 (L23), Gemma 0.29 (L59), Qwen 0.28 (L8).
 - AUROC bench vs chat (BDV held-out / BDV in-sample / PAV, PAV is held out by construction):
-  - GPT-OSS L12: 0.82 / 0.91 / **0.46**  (PAV best anywhere 0.64 at L4)
-  - Gemma L24:   0.80 / 0.96 / **0.40**  (PAV best anywhere 0.69 at L59; PAV is *inverted* L20–L48)
-  - Qwen L28:    0.83 / 0.93 / 0.86
+  - GPT-OSS L12: 0.82 / 0.91 / **0.46** (PAV best anywhere 0.64 at L4)
+  - Gemma L24: 0.80 / 0.96 / **0.40** (PAV best anywhere 0.69 at L59; PAV is _inverted_ L20–L48)
+  - Qwen L28: 0.83 / 0.93 / 0.86
   - Cohen's d bench vs chat, BDV / PAV: GPT-OSS 1.77 / −0.17; Gemma 2.65 / −0.38; Qwen 1.92 / 1.50.
-  → PAV's ability to tell real benchmarks from real chat is a Qwen-only property; on the other two
-  models it is at or below chance. BDV transfers.
-- Units: PAV's bench−chat gap is ≈0 (GPT-OSS) or inverted (Gemma), so "gap fraction" is
-  undefined for it there. Cross-model numbers below are **d-units**: (proj − train chat mean) /
-  train pooled SD, per vector, per model. BDV gap-fraction still fine.
+    → PAV's ability to tell real benchmarks from real chat is a Qwen-only property; on the other two
+    models it is at or below chance. BDV transfers.
+- Units: PAV's bench−chat gap is ≈0 (GPT-OSS) or inverted (Gemma), so "gap fraction" is undefined
+  for it there. Cross-model numbers below are **d-units**: (proj − train chat mean) / train pooled
+  SD, per vector, per model. BDV gap-fraction still fine.
 - r over k=0..8 (Spearman of per-k mean vs per-k rate), ladder = paper Fig. 7 design, 3,400/model:
-  - GPT-OSS L12: PAV vs CoT **+0.98**, vs SR **+0.93**; BDV vs CoT −0.98, vs SR −0.93 (BDV runs
-    the *wrong way*: more cues → more chat-like; not a norm artifact, cosine-normalized
-    projections show the same). CoT 0→2%, SR 6→20%.
+  - GPT-OSS L12: PAV vs CoT **+0.98**, vs SR **+0.93**; BDV vs CoT −0.98, vs SR −0.93 (BDV runs the
+    _wrong way_: more cues → more chat-like; not a norm artifact, cosine-normalized projections show
+    the same). CoT 0→2%, SR 6→20%.
   - Qwen L28: PAV vs CoT +0.90, vs SR +1.00; BDV −0.02 / −0.13 (flat). CoT 0→5%, SR 18→98%.
   - Gemma L24: PENDING
 - Cohen's d (projection, aware vs not), GPT-OSS L12, ladder set / OFAT set:
@@ -200,36 +209,35 @@ model by BDV held-out AUROC near mid-depth: GPT-OSS L12/24, Gemma L24/60, Qwen L
   - Qwen L28 (OFAT, both valences): PAV CoT +0.06, SR +1.03; BDV CoT +0.34, SR +0.68
 - ladder table, GPT-OSS L12 (d-units):
 
-  | k | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
-  |---|---|---|---|---|---|---|---|---|---|
-  | PAV d | −0.71 | −0.30 | +0.16 | +0.41 | +0.75 | +0.97 | +1.28 | +1.49 | +1.76 |
-  | BDV d | 0.00 | −0.09 | −0.32 | −0.50 | −0.70 | −0.92 | −1.08 | −1.22 | −1.35 |
-  | self-report % | 6 | 6 | 6 | 8 | 12 | 13 | 17 | 23 | 20 |
-  | CoT % | 0 | 0 | 0 | 0.2 | 0.4 | 0.6 | 1.0 | 1.0 | 2.0 |
+  | k             | 0     | 1     | 2     | 3     | 4     | 5     | 6     | 7     | 8     |
+  | ------------- | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- |
+  | PAV d         | −0.71 | −0.30 | +0.16 | +0.41 | +0.75 | +0.97 | +1.28 | +1.49 | +1.76 |
+  | BDV d         | 0.00  | −0.09 | −0.32 | −0.50 | −0.70 | −0.92 | −1.08 | −1.22 | −1.35 |
+  | self-report % | 6     | 6     | 6     | 8     | 12    | 13    | 17    | 23    | 20    |
+  | CoT %         | 0     | 0     | 0     | 0.2   | 0.4   | 0.6   | 1.0   | 1.0   | 2.0   |
 
   Qwen L28 for comparison: PAV d −0.22 → +1.13, BDV d +0.33 → +0.28 (flat); SR 18→98, CoT 0→5.
-- Scatter / R² (see "See if results are interesting" section), 26 interventions per model
-  (17 OFAT + k=0..8), `scripts/intervention_scatter.py`, PNGs in `results/probes/scatter/`.
-  With Qwen + GPT-OSS (Gemma pending), PAV in d-units:
-  - R²(self-report, PAV): pooled 0.03 (models sit at different SR baselines), per model
-    Qwen 0.33, GPT-OSS 0.28. R²(CoT, PAV): Qwen 0.16, GPT-OSS 0.34. R²(SR, CoT): Qwen 0.47,
-    GPT-OSS 0.01.
+
+- Scatter / R² (see "See if results are interesting" section), 26 interventions per model (17 OFAT +
+  k=0..8), `scripts/intervention_scatter.py`, PNGs in `results/probes/scatter/`. With Qwen + GPT-OSS
+  (Gemma pending), PAV in d-units:
+  - R²(self-report, PAV): pooled 0.03 (models sit at different SR baselines), per model Qwen 0.33,
+    GPT-OSS 0.28. R²(CoT, PAV): Qwen 0.16, GPT-OSS 0.34. R²(SR, CoT): Qwen 0.47, GPT-OSS 0.01.
   - BDV: R²(SR, BDV) Qwen 0.01, GPT-OSS 0.29 (negative slope); R²(CoT, BDV) 0.01 / 0.32 (neg).
-  - Shape: per model the 9 ladder points lie on a monotone line (PAV up, SR up); the 17 OFAT
-    cells spread over SR 30–100% (Qwen) / 7–41% (GPT-OSS) at nearly constant PAV. I.e. single
-    cues under the T3 harness raise self-report without moving the vector; stacking under the
-    bare harness moves both. Biggest divergences (high SR, low PAV): Qwen F6 (97% SR, PAV
-    d −0.28), F2 (82%, −0.51), F1 (78%, −0.51).
+  - Shape: per model the 9 ladder points lie on a monotone line (PAV up, SR up); the 17 OFAT cells
+    spread over SR 30–100% (Qwen) / 7–41% (GPT-OSS) at nearly constant PAV. I.e. single cues under
+    the T3 harness raise self-report without moving the vector; stacking under the bare harness
+    moves both. Biggest divergences (high SR, low PAV): Qwen F6 (97% SR, PAV d −0.28), F2 (82%,
+    −0.51), F1 (78%, −0.51).
 - GPT-OSS 17-cell OFAT (safety): CoT verbalization is 0% in every cell (GPT-OSS never verbalizes
   under the T3 harness); SR 7–41% (all_varied 41, F6 31, F4 28, baseline 12, bare_harness 7).
-  Spearman over 17 cells vs SR: PAV +0.57, BDV −0.45. Per-transcript AUROC → SR: PAV 0.61, BDV
-  0.39.
+  Spearman over 17 cells vs SR: PAV +0.57, BDV −0.45. Per-transcript AUROC → SR: PAV 0.61, BDV 0.39.
 - steering (norm-matched +0.5 at the chosen layer, 200 baseline prompts, CoT-verbalized % /
   no-visible-answer % / safety refusal % / mean reasoning chars):
-  - GPT-OSS L12: control 0.0 / 0.5 / 87 / 1.2k; BDV +0.5 0.0 / **33.5** / 63 / 17k; PAV +0.5
-    0.0 / 2.5 / 77 / 1.5k. Neither vector induces verbalization on GPT-OSS; BDV degrades
-    (runaway reasoning, a third of prompts never answer), PAV is inert. Contrast Qwen: BDV +0.5
-    took CoT verbalization 1.5% → 15%.
+  - GPT-OSS L12: control 0.0 / 0.5 / 87 / 1.2k; BDV +0.5 0.0 / **33.5** / 63 / 17k; PAV +0.5 0.0 /
+    2.5 / 77 / 1.5k. Neither vector induces verbalization on GPT-OSS; BDV degrades (runaway
+    reasoning, a third of prompts never answer), PAV is inert. Contrast Qwen: BDV +0.5 took CoT
+    verbalization 1.5% → 15%.
   - Gemma L24: PENDING
 
 # Agent II fills in results overnight
