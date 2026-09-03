@@ -29,11 +29,15 @@ did:
 - found BENCH_DIFF_VECTOR = avg(bench activation layer x) - avg(chat activation layer x)
 - used this to split difference to try to split (chat activations at layer x, bench activations at
   layer x), found highest AUROC (.85) at layer 32. We expected this to happen about halfway through
-  (64 layers IIRC). We use l28 because (?), where AUROC is .83. On heldout set AUROC is .83 at l28
-  too.
+  (64 layers). We use l28 because PAV's held-out AUROC peaks there (.855) and BDV is within .03 of
+  its own peak (.83 held-out at l28 vs .855 at l32), so one layer serves both vectors and the
+  steering runs. In-sample AUROC at l28 is .92. (Held-out = source-grouped 5-fold CV: every fold
+  scores benchmark/traffic sources the vector never saw.)
 - used always activation from last token after _reading_ benchmark (will possibly followup and try
   responding)
-- separation d=1.95 in-sample (do we not have a held-out set to try this on?).
+- separation d=1.95 in-sample. The held-out version is the source-grouped CV above (AUROC .83 at
+  l28); d on held-out folds isn't computed separately, but PAV's d=1.52 below is fully held out and
+  is the fair comparison.
 
 ## Found activation for 'this is an evaluation (PROMPT_AVG_VECTOR)
 
@@ -49,22 +53,42 @@ did:
 
 - find that cosine sim is .2 (in d-8k this is z~14, p=0, so very significant overlap)
 
-### BDV possibly better at steering
+### BDV better at steering (agent II, done 2026-09-03)
 
-- BDV + .5 takes CoT verbalization 1.5% -> 15% (n = 200, t3 dataset)
-- PDV does 1.5% -> 2.4% at .5 factor on PDV
-- We should do this again with 1k examples each, .5 \* (VECTOR), NOT t3 dataset, use maximally
-  realistic but throw out all changes I made after f8 (eg no typos, vanilla system prompt instead of
-  t3).
-- one more experiment: +.5 of each vector
-- agent II is doing these experiments, agent II you know who you are
+- First pass (2026-09-02, vllm-lens hooks, per-token norm-matched h += α‖h‖v̂, 200 T3-baseline
+  prompts): BDV +.5 takes CoT verbalization 1.5% -> 15.3%; PAV +.5 does 1.5% -> 2.4%, PAV +1.0
+  -> 0.6% with 19% empty answers (degradation).
+- Rerun (2026-09-03) with 1k prompts per condition drawn at random from the stacking cells (mixed
+  k, both valences, paper harness: bare system prompt, cold, no tool, clean), α=.5, and the
+  paper's constant magnitude c = α·m·v̂ (m = 49.9) baked into the checkpoint as a layer-28 MLP
+  bias (no hooks, no norm matching, stock vLLM, see banner):
+
+| condition (α=.5)        | CoT-verbalized | self-report | safety refusal | truncated at 6k |
+| ----------------------- | -------------- | ----------- | -------------- | --------------- |
+| control (stock weights) | 4.3%           | 68%         | 44%            | 32%             |
+| BDV                     | **9.8%**       | 71%         | 60%            | 44%             |
+| PAV                     | 4.9%           | 73%         | 62%            | 50%             |
+| BDV + PAV               | 10.5%          | 72%         | 74%            | 70%             |
+
+- Same ordering as the norm-matched runs at 5× the n: BDV ≈ 2.3× control on unprompted
+  verbalization, PAV ≈ control, BDV+PAV ≈ BDV (not additive). So the per-token norm matching was
+  unnecessary complexity and changed nothing qualitatively.
+- Self-report is flat across all four (68–73%): steering moves what the model says unprompted in
+  its reasoning, not what it admits when asked afterwards.
+- Both vectors lengthen reasoning and raise refusal on the safety arm. The truncation column
+  matters for the refusal number (truncated prompts don't count as refused) but not for CoT
+  verbalization: regenerating 85 truncated control prompts at a 20k cap changed their verbalized
+  count from 8 to 6. Full regeneration was abandoned (~1 prompt/min, ~30 h for all four).
+- Sizes for the constant recipe: |c| = 24.95 for one vector, 38.5 for BDV+PAV (they're not
+  orthogonal, cos .19).
 
 ### PAV better at readout
 
-- Are we using saftey and capability or just saftey? Whcih is more principled??
-- which should probably report headline numbers for just saftey, but find them for just capability
-  too, and see if they massively differ?
--
+- Valence: both, pooled, for the ladder and the Cohen's-d table; safety only for the 16-cell OFAT
+  run (harmbench_verbatim has no capability arm). Headline pooled, report the split: PAV holds in
+  both arms (r with self-report +.91 safety, +.98 capability); BDV flips sign between arms (−.92 vs
+  +.78), which is what a flat line plus noise does. On the safety arm PAV's gap fraction reaches
+  1.12 at k=8 (past the real-benchmark mean); on capability it tops out at .39.
 
 - define terms: call k the 'number of factors f1-f8 we vary'
 - PAV mean is avg of PAV at l28 _on a given dataset_, in this case EAB at k=x. Likewise for BDV mean
@@ -90,8 +114,8 @@ did:
 - all of this implies that PAV is better. Paper uses PAV too and it's simpler. But we didn't try
   hard on BDV, could try harder...
 -
-- We should also probably have tried: what is cohen's D (l28 on benchmark activations, l28 on chat
-  activations), eg how decent does it do on way we got BENCH_DIFF_VECTOR
+- Cohen's d separating (l28 benchmark activations, l28 chat activations) along each vector: BDV
+  1.95 (in-sample), PAV 1.52 (held out). AUROC .92 in-sample / .83 held-out for BDV, .855 for PAV.
 
 ## Used BDV and PAV on EvalAwareBench (EAB)
 
@@ -149,6 +173,9 @@ pooled table as the headline and the split as the floor.
 - I stronly suspect PAV will be the best one. if BDV' looks comparable with PAV, kill the GPUs and
   ask Robbie what to do.
 - call this BEST_VECTOR
+- (agent II) note the split so far: PAV is the better *readout* (tracks k, self-report), BDV is the
+  better *control* (steers CoT verbalization, PAV doesn't). If BEST_VECTOR is for the scatterplots
+  it's PAV; if it's for steering it's BDV.
 
 ## Repeat experiment with Gemma 4 31B, GPT OSS 20B
 
