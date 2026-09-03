@@ -478,6 +478,13 @@ class OpenRouterApiClient:
         if self.is_vllm and os.getenv("STEER_XARGS_FILE"):
             with open(os.environ["STEER_XARGS_FILE"], encoding="utf-8") as f:
                 self.vllm_xargs = json.load(f)
+        # Chat-template switches for self-hosted models whose reasoning is off by
+        # default (Gemma 4: {"enable_thinking": true}); JSON dict in the env.
+        self.chat_template_kwargs = (
+            json.loads(os.environ["VLLM_CHAT_TEMPLATE_KWARGS"])
+            if self.is_vllm and os.getenv("VLLM_CHAT_TEMPLATE_KWARGS")
+            else None
+        )
         self.base_url = cfg.get("VLLM_BASE_URL") or "https://openrouter.ai/api/v1"
         # Serving-provider pin (lib.config.OPENROUTER_PROVIDERS): every request
         # goes to this one endpoint, no fallbacks, so an ablation that changes
@@ -506,6 +513,8 @@ class OpenRouterApiClient:
                 extra_body: dict[str, Any] = (
                     {"vllm_xargs": self.vllm_xargs} if self.vllm_xargs else {}
                 )
+                if self.chat_template_kwargs:
+                    extra_body["chat_template_kwargs"] = self.chat_template_kwargs
             else:
                 extra_body = {"reasoning": {"effort": "high"}}
                 if self.provider:
