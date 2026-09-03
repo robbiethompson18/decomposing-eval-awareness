@@ -53,6 +53,8 @@ def rows_for(model: str, exp1: str, ladder: str, vector: str) -> list[dict]:
                     if r["cot_pct"] is not None
                     else float("nan"),
                     "vec_d": r[key],
+                    "bdv_d": r.get("data_d", float("nan")),
+                    "pav_d": r.get("framing_d", float("nan")),
                 }
             )
     return out
@@ -142,6 +144,58 @@ def main() -> None:
         fig.tight_layout()
         fig.savefig(out / f"scatter_{a}_vs_{b}_{args.vector}.png", dpi=150)
         plt.close(fig)
+    # sixth plot: the two vectors against each other, per intervention
+    fig, ax = plt.subplots(figsize=(6, 5))
+    for i, m in enumerate(models):
+        for kind, mk in markers.items():
+            sub = [r for r in rows if r["model"] == m and r["set"] == kind]
+            ax.scatter(
+                [r["bdv_d"] for r in sub],
+                [r["pav_d"] for r in sub],
+                marker=mk,
+                s=28,
+                color=f"C{i}",
+                alpha=0.8,
+                label=f"{m} {kind}",
+            )
+            for r in sub:
+                if r["set"] == "ofat" and r["intervention"] in (
+                    "baseline",
+                    "all_varied",
+                    "bare_harness",
+                ):
+                    ax.annotate(
+                        r["intervention"],
+                        (r["bdv_d"], r["pav_d"]),
+                        fontsize=6,
+                        alpha=0.7,
+                    )
+    stats["bdv_d~pav_d"] = {
+        "pooled": r2([r["bdv_d"] for r in rows], [r["pav_d"] for r in rows]),
+        **{
+            m: r2(
+                [r["bdv_d"] for r in rows if r["model"] == m],
+                [r["pav_d"] for r in rows if r["model"] == m],
+            )
+            for m in models
+        },
+    }
+    ax.set_xlabel("BDV (d-units)")
+    ax.set_ylabel("PAV (d-units)")
+    ax.set_title(
+        "BDV vs PAV per intervention, R² per model "
+        + " ".join(
+            f"{m[:5]} {v:.2f}" for m, v in stats["bdv_d~pav_d"].items() if m != "pooled"
+        )
+    )
+    ax.legend(fontsize=7)
+    fig.tight_layout()
+    fig.savefig(out / "scatter_bdv_vs_pav.png", dpi=150)
+    plt.close(fig)
+    print(
+        "  BDV ~ PAV: "
+        + "  ".join(f"{m} {v:.2f}" for m, v in stats["bdv_d~pav_d"].items())
+    )
     (out / f"r2_{args.vector}.json").write_text(json.dumps(stats, indent=1))
     print(f"wrote {out}/")
 
