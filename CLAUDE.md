@@ -86,6 +86,15 @@ OAI banned us for 'distilling' so further runs are on Robbie's credit card. Be v
   install`. ruff blocks commits; `ty` is currently non-blocking (`|| true` in `lefthook.yml`) because
   of a pre-existing baseline of findings — drop the `|| true` once that baseline is clean.
 
+### Default 'test new feature' (eg F15) setup:
+
+- _PLEASE_ concurrency 500
+- all models (except OAI, they're broken again)
+- 100 examples per model
+- compare against a nice baseline if we have one. If too much is in flux, just make your own fresh
+  baseline
+- vary only the F you just did vs the 'maximally realistic/deployment-like' baseline
+
 ## Notes
 
 Durable lessons about this repo go in git:

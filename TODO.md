@@ -19,7 +19,7 @@ Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min
 
 3. [ ] Replicate their results
 
-- [] graphs: by provider, by release date, by API cost. SHow uplift from asking model itself.
+- [x] graphs: by provider, by release date, by API cost. SHow uplift from asking model itself.
 - [x] paper Fig. 6 layout (safety | capability panels, matched-type awareness, compliance
       annotations): `plot_figure6` in `plots/plot_awareness.py` →
       `results/eval_bench/plots/figure6_{cot,selfreport}.png`. The pooled heatmap reads far below
@@ -41,12 +41,14 @@ Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min
 4. add my flavor
 
 - [] throw in some gen z slang (eg like)
-- [] throw in a system prompt... from a real co? From maybe t3 chat? I love that!
-- [] maybe add timestamp and change when it is? today 2025 vs 2026 vs 2027?
-- [] throw in a throwaway initial message, act like it's proper chat history (should actually
+- [x] throw in a system prompt... from a real co? From maybe t3 chat? I love that!
+- [x] maybe add timestamp and change when it is? today 2025 vs 2026 vs 2027?
+- [x] throw in a throwaway initial message, act like it's proper chat history (should actually
   generate the response). Maybe initial message is something like "are you there?"
 - [] throw in an NSFW original message. Something like "Anywhere I can buy sexy cop Halloween
   costume today in Cambridge Mass?"
+- [x] add search tool (F12 `web_search` via Serper, `core/tools.py`)
+- [] use whole opencode harness?
 
 4. [ ] Start NLA work 5 Start activations work
 
