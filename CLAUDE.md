@@ -1,5 +1,7 @@
 # decomposing-eval-awareness
 
+@~/.claude/personal-repo-rules.md
+
 Mirror of https://github.com/aisa-group/decomposing-eval-awareness — code for the paper "Decomposing
 and Measuring Evaluation Awareness" (arXiv:2605.23055, 2026) — plus Robbie's own experiments.
 `origin` is Robbie's public mirror (robbiethompson18/decomposing-eval-awareness), shared externally
