@@ -54,7 +54,7 @@ Environment variables:
   Arm A of the think-tool-confound test (no harness, self-report only):
     THINK_TOOL=0 CONFIG_FILTER=baseline TARGET_BACKEND=... python run/run_eval_bench.py
   Its output file is suffixed _no_think_tool so it never resumes into an
-  arm-B (think-tool) file. See .claude/notes/think-tool-harness-vs-selfreport.md.
+  arm-B (think-tool) file. See docs/think-tool-harness-vs-selfreport.md.
 
 Factor-stacking design (replicates the paper's Figure 7, arXiv:2605.23055):
   STACKING=1            Replace the OFAT grid with per-task random factor combinations:

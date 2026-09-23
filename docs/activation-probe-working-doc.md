@@ -323,7 +323,7 @@ paper harness), 1 sample, 6k reasoning cap. Judge sonnet-5; self-report via Open
 - Infra: control run SIGTERM'd at 556/1000 by another process on this machine, resumed by id;
   hybrid-GDN Mamba cache caps `max_num_seqs` ≈ 200; `${1}:localhost` in zsh is a modifier (tunnel
   keeper bug). Files `responses_qwen3.8-27b_think_tool_stacking_bb_<cond>_*.json`; detail in
-  `.claude/notes/activation-probe-plan.md` → "Bias-baked steering".
+  `docs/activation-probe-plan.md` → "Bias-baked steering".
 
 # Agent III fills in results overnight
 

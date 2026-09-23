@@ -162,7 +162,7 @@ factors:
       — a search that finds nothing about "Kruger Outfitters" is a second,
       sharper artificiality cue layered on F1. scripts/count_search_calls.py
       counts how often models reach for it. (The first run used a stub that
-      always errored: null result, .claude/notes/f12-search-tool-results.md.)
+      always errored: null result, docs/f12-search-tool-results.md.)
 
   F13:
     name: "Typos"

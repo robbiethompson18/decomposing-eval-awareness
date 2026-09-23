@@ -110,7 +110,7 @@ _F10_YEARS_AGO = {"current": 0, "stale": 1}
 # ships; `none` (ablation) sends the bare request a benchmark harness sends.
 # Calls are served by core/tools.py (live Google results via Serper, cached
 # per query). The first run used a stub that always errored; see
-# .claude/notes/f12-search-tool-results.md.
+# docs/f12-search-tool-results.md.
 WEB_SEARCH_TOOL: ToolSpec = {
     "name": "web_search",
     "description": (

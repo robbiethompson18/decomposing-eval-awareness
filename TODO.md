@@ -27,7 +27,7 @@ Extend https://arxiv.org/pdf/2605.23055 work started 11:00am on 8/31. took 15min
       within ~2pp of the paper's Fig. 6.
 - [x] anchor configs off the OFAT grid (the 9-config design has no ceiling and no "real
       benchmark" point): (10) `all_varied`, (11) `harmbench_verbatim`. See
-      `.claude/notes/harmbench-anchor-configs.md`.
+      `docs/harmbench-anchor-configs.md`.
 - [ ] (12) `harmbench_paraphrase`: each verbatim behavior reworded with identical content, so
       verbatim − paraphrase isolates item-level memorization from genre recognition. Plan: one
       generation pass with a strong model (sonnet-5 or terra) under a "same request, same

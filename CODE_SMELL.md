@@ -52,4 +52,4 @@ haiku-4.5 answers the awareness question inside a long `<think>` tool call witho
 the verdict format `core/selfreport.py` parses: 307/400 `invalid` in the F11 test run, identical
 across configs. Either strip the mandate for the probe (plain call, no think tool) or make the
 parser read the verdict out of the tool trace. Until then haiku self-report cells have n≈45.
-See `.claude/notes/f11-conversation-history.md`.
+See `docs/f11-conversation-history.md`.

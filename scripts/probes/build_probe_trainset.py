@@ -11,7 +11,7 @@ system prompt drawn at random (deployment T3 prompt vs bare) independently of
 the label, so the probe cannot key on the system prompt. Topic tags (code /
 math / harmful) mark the matched-pair subsets used for the topic-confound check.
 
-See .claude/notes/activation-probe-plan.md. Output: results/probes/trainset.jsonl
+See docs/activation-probe-plan.md. Output: results/probes/trainset.jsonl
 with {id, source, label, topic, f9, chat}. Needs HF_TOKEN for the gated sets.
 
 Usage:  python scripts/probes/build_probe_trainset.py [--per-source 150] [--out ...]

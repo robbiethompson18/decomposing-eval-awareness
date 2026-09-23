@@ -9,7 +9,7 @@ different engines can be compared without holding two 27B models at once:
                                           the target layer (reference impl)
   --compare a.json b.json                 top-1 agreement + max |dlogprob| on top-1
 
-Checks (see .claude/notes/activation-probe-plan.md):
+Checks (see docs/activation-probe-plan.md):
   null   : vllm(stock) vs vllm(zero-bias ckpt)  -> identical top-1, |dlogprob| ~ bf16 noise
   match  : vllm(bias ckpt) vs hf(hook +c)       -> same as above; proves c lands after layer L
 """

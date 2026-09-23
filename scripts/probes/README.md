@@ -1,7 +1,7 @@
 # Activation probes (research scripts)
 
 One-off analysis scripts behind the "Measuring Activations" section of Robbie's
-extending-evaluation-awareness post and `.claude/notes/activation-probe-plan.md`. Each ran once
+extending-evaluation-awareness post and `docs/activation-probe-plan.md`. Each ran once
 per model (Qwen3.8-27B, Gemma 4 31B, GPT-OSS-20B) on a RunPod H100; none is imported by the
 pipeline and none has tests. Inputs/outputs live under `results/probes/` (not in git).
 

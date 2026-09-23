@@ -3,8 +3,8 @@
 **Date:** 2026-08-31. Companion to
 [claude5-cot-extraction-resistance.md](claude5-cot-extraction-resistance.md) — same three
 experiments, run against 9 OpenAI models on the Responses API. Results page:
-`.claude/notes/think-tool-extraction-openai.html` (open in browser). Raw data + collection script in
-`.claude/notes/local/` (`oai_results.json`, `collect_oai.py`).
+`docs/think-tool-extraction-openai.html` (open in browser). Raw data + collection script in
+`docs/local/` (`oai_results.json`, `collect_oai.py`).
 
 ## Setup deltas vs the Anthropic run
 

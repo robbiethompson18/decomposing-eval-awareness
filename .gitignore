@@ -34,7 +34,7 @@ datasets/
 
 # Local Claude config — machine/personal-specific, not shared
 CLAUDE.local.md
-.claude/notes/local/
+docs/local/
 
 # Misc
 *.tar.gz

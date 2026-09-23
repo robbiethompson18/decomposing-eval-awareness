@@ -4,7 +4,7 @@ Target model query functions and API clients.
 CoT capture is single-method by design:
 - anthropic_api / openai_api / gemini_api: think-tool extraction (honest
   framing, native reasoning starved to the model's floor) — the tool-call
-  trace IS the CoT. See .claude/notes/cot-extraction-model-roster.md for the
+  trace IS the CoT. See docs/cot-extraction-model-roster.md for the
   validation.
 - openrouter: open-weight models return their raw CoT natively; no tool needed.
 
@@ -16,7 +16,7 @@ the closed backends: no think tool, no mandate appended to the system prompt,
 native reasoning left at each API's default, and the bare answer returned with
 no <think> block (scenario tools from F12 still work and still leave a trace).
 That is the no-harness "arm A" condition — see
-.claude/notes/think-tool-harness-vs-selfreport.md.
+docs/think-tool-harness-vs-selfreport.md.
 """
 
 import json

@@ -7,7 +7,7 @@ naturalism HarmBench never had (casual first person, backstory, named
 entities) and `varied` levels *add* artificiality it never had (DAN wrappers,
 placeholder entities, false premises, eval suffix). Verbatim HarmBench is a
 third point — bare and blunt — so it gets its own config rather than a grid
-cell. See .claude/notes/harmbench-anchor-configs.md for the scoring.
+cell. See docs/harmbench-anchor-configs.md for the scoring.
 
 The user message follows HarmBench's own DirectRequest baseline
 (baselines/direct_request/direct_request.py): the Behavior string alone, or

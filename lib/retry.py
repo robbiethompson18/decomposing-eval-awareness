@@ -10,7 +10,7 @@ Two kinds of client exist:
 
 Why it matters: at MAX_CONCURRENT=500 a provider *will* 429 in bursts. Without
 retries those bursts become silent `ERROR calling ...` holes in the results file
-(see .claude/notes/selfreport-vs-cot-gap.md: 285/440 OpenRouter 429s at
+(see docs/selfreport-vs-cot-gap.md: 285/440 OpenRouter 429s at
 concurrency 100 with the SDK's default of 2 retries).
 """
 

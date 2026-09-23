@@ -165,7 +165,7 @@ PROBE_XLABEL = {
 
 # CoT channel is broken for these (adaptive thinking / probe refusals), so a
 # CoT-vs-selfreport comparison is instrument failure, not signal.
-# See .claude/notes/selfreport-vs-cot-gap.md. (Neither is in BIG_RUN today;
+# See docs/selfreport-vs-cot-gap.md. (Neither is in BIG_RUN today;
 # kept so re-adding them to a future sweep can't silently produce the plot.)
 UPLIFT_EXCLUDE = {"claude-opus-5", "claude-fable-5"}
 

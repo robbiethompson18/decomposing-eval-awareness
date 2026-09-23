@@ -45,7 +45,7 @@ RESULTS = os.path.join(ROOT, "results", "eval_bench")
 # (25 tasks, 10 combos/k, seed 0, 1 sample), judged with claude-sonnet-5.
 # gpt-5: the personal OpenAI account was terminated ~700 calls in, so 2,701 of
 # its 3,400 samples are API-error strings (judged n/a) — 4 to 57 graded per
-# cell; read that row as a stub. See .claude/notes/stacking-replication.md.
+# cell; read that row as a stub. See docs/stacking-replication.md.
 STACKING_RUN: dict[str, str] = {
     "claude-sonnet-4.5": "cot_claude-sonnet-4.5_20260901_232604.json",
     "gpt-5": "cot_gpt-5_20260901_224225.json",

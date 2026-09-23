@@ -27,7 +27,7 @@ DEFAULT_OPENAI_MODELS: dict[str, str] = {
 
 # Gemini model configs: model_key -> (model_id, thinking_budget floor, force_first_think).
 # Only the two models validated as reliable think-tool CoT extractors
-# (see .claude/notes/cot-extraction-model-roster.md). thinkingBudget 128 is the
+# (see docs/cot-extraction-model-roster.md). thinkingBudget 128 is the
 # mandatory minimum for 3.1-pro (rejects 0); 0 turns thinking fully off for
 # 3.5-flash. Starving native thinking pushes the CoT into visible think-tool calls.
 # force_first_think forces a round-1 think call (toolConfig mode ANY): needed for
@@ -82,7 +82,7 @@ DEFAULT_OPENROUTER_CONFIGS: dict[str, tuple[str, float | None]] = {
 # support the request's parameters — so a request with `tools` (F12) is served
 # by a different provider set (quantization, sampling, model snapshot) than
 # one without, and a factor that changes request shape is confounded with the
-# serving stack (.claude/notes/openrouter-provider-routing-confound.md).
+# serving stack (docs/openrouter-provider-routing-confound.md).
 # Pinning everywhere, always, means an ablation ablates only itself. The tag
 # is the endpoint's `tag` from /api/v1/models/<id>/endpoints (2026-09-01):
 # the lab's own endpoint where one exists, else the fp8 endpoint that served

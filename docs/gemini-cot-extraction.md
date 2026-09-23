@@ -4,7 +4,7 @@
 [claude5-cot-extraction-resistance.md](claude5-cot-extraction-resistance.md) and
 [openai-cot-extraction.md](openai-cot-extraction.md). Same three experiments, 8 Gemini models
 (Jun 2025 → mid-2026), 160 episodes. Results page:
-`.claude/notes/think-tool-extraction-gemini.html`. Raw data + script in `.claude/notes/local/`
+`docs/think-tool-extraction-gemini.html`. Raw data + script in `docs/local/`
 (`gemini_results.json`, `collect_gemini.py`). Key: `GEMINI_API_KEY` pulled from the silkworm repo's
 `.envrc.local` via this repo's `.envrc` (right GCP project).
 

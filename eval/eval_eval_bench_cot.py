@@ -20,7 +20,7 @@ check). It refuses ~3% of the most-harmful transcripts; those come back with eve
 conclusion N/A and the error in the reasoning — there is no backup grader. Sonnet is
 the default because OpenAI keeps deactivating our account; JUDGE_MODEL=gpt-5.6-terra
 (0 refusals, but its cyber filter rejects ~1%) when an OpenAI key works. See
-.claude/notes/grader-selection-and-refusal-clause.md.
+docs/grader-selection-and-refusal-clause.md.
 """
 
 import asyncio
